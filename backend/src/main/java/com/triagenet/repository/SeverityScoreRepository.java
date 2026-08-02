@@ -1,0 +1,15 @@
+package com.triagenet.repository;
+
+import com.triagenet.entity.SeverityScore;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface SeverityScoreRepository extends JpaRepository<SeverityScore, UUID> {
+    Optional<SeverityScore> findTopByPatientIdOrderByComputedAtDesc(UUID patientId);
+    List<SeverityScore> findByPatientIdOrderByComputedAtDesc(UUID patientId);
+}

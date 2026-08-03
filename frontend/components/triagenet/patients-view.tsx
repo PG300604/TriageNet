@@ -14,6 +14,7 @@ import {
   Sliders,
   ShieldAlert,
 } from 'lucide-react'
+import { getPatientStatusBadgeClass } from './status'
 
 interface PatientsViewProps {
   state: TriageState
@@ -113,15 +114,7 @@ export function PatientsView({ state }: PatientsViewProps) {
                     </div>
                   </div>
 
-                  <span
-                    className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      p.status === 'Assigned'
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : p.status === 'Preempted'
-                        ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                        : 'bg-amber-100 text-amber-800 border border-amber-300'
-                    }`}
-                  >
+                  <span className={`text-xs px-2.5 py-1 rounded-full ${getPatientStatusBadgeClass(p.status)}`}>
                     {p.status}
                   </span>
                 </div>

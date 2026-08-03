@@ -11,7 +11,7 @@ import {
   severityStatus,
   sortByPriority,
 } from '@/lib/triage-data'
-import { STATUS_CLASSES } from './status'
+import { STATUS_CLASSES, getPatientStatusBadgeClass } from './status'
 import {
   Activity,
   ArrowUpDown,
@@ -41,10 +41,10 @@ interface TriageQueueViewProps {
 }
 
 const STATUS_STYLE: Record<PatientStatus, string> = {
-  Waiting: 'bg-status-amber-soft text-status-amber-foreground',
-  Assigned: 'bg-secondary text-secondary-foreground font-medium',
-  Preempted: 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold',
-  Transferred: 'bg-status-green-soft text-status-green',
+  Waiting: 'bg-red-100 text-red-800 border border-red-300 font-bold',
+  Assigned: 'bg-slate-100 text-slate-800 border border-slate-300 font-bold',
+  Preempted: 'bg-purple-800 text-white border border-purple-900 font-extrabold shadow-2xs',
+  Transferred: 'bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold',
 }
 
 function SeverityBadge({ severity }: { severity: number }) {
@@ -52,7 +52,7 @@ function SeverityBadge({ severity }: { severity: number }) {
   return (
     <span
       className={cn(
-        'skeu-chip inline-flex min-w-11 items-center justify-center rounded-md px-2 py-1 font-mono text-sm font-semibold',
+        'skeu-chip inline-flex min-w-11 items-center justify-center rounded-md px-2 py-1 font-mono text-sm font-bold shadow-2xs',
         STATUS_CLASSES[status].badge,
       )}
     >
@@ -76,17 +76,17 @@ export function TriageQueueView({
   const ordered = sortByPriority(patients)
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Live Operational Notification Alert */}
+    <div className="flex flex-col gap-4 font-sans">
+      {/* Live Operational Notification Alert - High Contrast Slate-900 & Blue Banner */}
       {lastEventMessage && (
-        <div className="skeu-raised flex items-center justify-between rounded-xl border border-primary/50 bg-primary/10 p-4 text-foreground backdrop-blur-md animate-pulse">
+        <div className="flex items-center justify-between rounded-2xl border-2 border-blue-500 bg-slate-900 p-4 text-white shadow-md animate-pulse">
           <div className="flex items-center gap-3">
-            <Zap className="size-5 text-primary shrink-0" />
+            <Zap className="size-6 text-blue-400 shrink-0" />
             <div>
-              <span className="font-mono text-xs font-bold text-primary uppercase tracking-wider block">
+              <span className="font-mono text-xs font-extrabold text-blue-400 uppercase tracking-wider block">
                 OPERATIONAL TRIAGE SYSTEM EVENT
               </span>
-              <p className="text-sm font-medium">{lastEventMessage}</p>
+              <p className="text-sm font-bold text-white">{lastEventMessage}</p>
             </div>
           </div>
         </div>
@@ -94,25 +94,25 @@ export function TriageQueueView({
 
       {/* Regional Referral Load-Balancing Banner */}
       {referralRecommendation && onExecuteReferral && (
-        <div className="skeu-raised flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-500/50 bg-cyan-950/30 p-4 text-cyan-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-cyan-400 bg-slate-900 p-4 text-white shadow-md">
           <div className="flex items-center gap-3">
-            <Network className="size-5 text-cyan-400 shrink-0" />
+            <Network className="size-6 text-cyan-400 shrink-0" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-cyan-300 uppercase tracking-wider block">
+                <span className="font-mono text-xs font-extrabold text-cyan-400 uppercase tracking-wider block">
                   REGIONAL LOAD-BALANCING REFERRAL AVAILABLE
                 </span>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-mono font-extrabold text-emerald-900 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
                   {referralRecommendation.matchReason}
                 </span>
               </div>
-              <p className="text-sm font-medium text-cyan-100 mt-0.5">{referralRecommendation.reason}</p>
+              <p className="text-sm font-bold text-slate-100 mt-0.5">{referralRecommendation.reason}</p>
             </div>
           </div>
           <Button
             type="button"
             onClick={() => onExecuteReferral(referralRecommendation)}
-            className="skeu-chip skeu-pressable bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-bold"
+            className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-extrabold shadow-sm px-4 py-2 rounded-xl"
             size="sm"
           >
             <span>Execute Referral to {referralRecommendation.toHospitalName}</span>
@@ -123,48 +123,45 @@ export function TriageQueueView({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-foreground">
+          <h2 className="text-base font-bold tracking-tight text-slate-900">
             Triage Queue — {hospital.name}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-slate-500">
             {ordered.length} patients · sorted by effective priority (acuity + wait)
           </p>
         </div>
 
+        {/* High Contrast Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Real-World Bed Release Triggers */}
           {onTriggerBedRelease && (
             <>
-              <Button
+              <button
                 type="button"
                 onClick={() => onTriggerBedRelease('recovery')}
-                variant="outline"
-                className="skeu-chip skeu-pressable border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs"
-                size="sm"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 cursor-pointer"
                 title="Simulate patient early recovery discharge, immediately freeing a bed"
               >
-                <CheckCircle2 className="size-3.5 text-emerald-400" />
+                <CheckCircle2 className="size-4" />
                 <span>Early Recovery Discharge</span>
-              </Button>
+              </button>
 
-              <Button
+              <button
                 type="button"
                 onClick={() => onTriggerBedRelease('family_ama')}
-                variant="outline"
-                className="skeu-chip skeu-pressable border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs"
-                size="sm"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-amber-700 cursor-pointer"
                 title="Simulate family taking patient to another facility (AMA relocation)"
               >
-                <LogOut className="size-3.5 text-amber-400" />
+                <LogOut className="size-4" />
                 <span>Family AMA Relocation</span>
-              </Button>
+              </button>
             </>
           )}
 
           {/* Simulated Patient Arrival Injections */}
           {onInjectArrival && (
             <>
-              <Button
+              <button
                 type="button"
                 onClick={() =>
                   onInjectArrival(
@@ -173,15 +170,13 @@ export function TriageQueueView({
                     'Ventricular Fibrillation (SpO₂ 76%)',
                   )
                 }
-                variant="destructive"
-                className="skeu-chip skeu-pressable font-bold text-xs"
-                size="sm"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-red-700 cursor-pointer"
               >
-                <AlertTriangle className="size-3.5" />
+                <AlertTriangle className="size-4" />
                 <span>Critical Arrival (Preempt)</span>
-              </Button>
+              </button>
 
-              <Button
+              <button
                 type="button"
                 onClick={() =>
                   onInjectArrival(
@@ -190,45 +185,40 @@ export function TriageQueueView({
                     'Ankle Laceration / Mild Swelling',
                   )
                 }
-                variant="outline"
-                className="skeu-chip skeu-pressable border-border bg-background hover:bg-muted text-xs"
-                size="sm"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-xs font-bold text-white shadow-2xs hover:bg-slate-900 cursor-pointer"
               >
-                <UserPlus className="size-3.5 text-primary" />
+                <UserPlus className="size-4" />
                 <span>Routine Arrival (Hold)</span>
-              </Button>
+              </button>
             </>
           )}
 
-          <Button
+          <button
             type="button"
             onClick={onSimulate}
-            variant="outline"
-            className="skeu-chip skeu-pressable border-border bg-background hover:bg-muted text-xs"
-            size="sm"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 cursor-pointer"
           >
-            <Play className="size-3.5 text-primary" />
+            <Play className="size-4 fill-white" />
             <span>+7m Step</span>
-          </Button>
+          </button>
 
           {onFastForward5x && (
-            <Button
+            <button
               type="button"
               onClick={onFastForward5x}
-              className="skeu-chip skeu-pressable bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-xs"
-              size="sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-700 px-4 py-2 text-xs font-extrabold text-white shadow-md hover:bg-indigo-800 cursor-pointer"
             >
               <FastForward className="size-4" />
               <span>Fast Forward 5x (+35m)</span>
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
-      <div className="skeu-raised overflow-hidden rounded-xl border border-border bg-card">
-        <div className="skeu-inset grid grid-cols-[2.5rem_1fr] items-center gap-3 border-b border-border bg-muted/60 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid-cols-[2.5rem_1.6fr_5rem_6rem_1fr_7rem]">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+        <div className="grid grid-cols-[2.5rem_1fr] items-center gap-3 border-b border-slate-200/80 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-600 sm:grid-cols-[2.5rem_1.6fr_5rem_6rem_1fr_7rem]">
           <span className="flex items-center gap-1">
-            <ArrowUpDown className="size-3" />#
+            <ArrowUpDown className="size-3.5" />#
           </span>
           <span>Patient</span>
           <span className="hidden sm:block">Severity</span>
@@ -237,7 +227,7 @@ export function TriageQueueView({
           <span className="hidden text-right sm:block">Status</span>
         </div>
 
-        <ul>
+        <ul className="divide-y divide-slate-200/80">
           {ordered.map((patient, index) => {
             const flash = updatedIds.has(patient.id)
             const isPreempted = patient.status === 'Preempted'
@@ -246,37 +236,37 @@ export function TriageQueueView({
               <li
                 key={patient.id}
                 className={cn(
-                  'grid grid-cols-[2.5rem_1fr] items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 transition-colors sm:grid-cols-[2.5rem_1.6fr_5rem_6rem_1fr_7rem]',
-                  flash && 'triage-row-flash',
-                  isPreempted && 'bg-purple-950/20 border-purple-500/30',
+                  'grid grid-cols-[2.5rem_1fr] items-center gap-3 px-4 py-3.5 transition-colors sm:grid-cols-[2.5rem_1.6fr_5rem_6rem_1fr_7rem]',
+                  flash && 'bg-amber-50',
+                  isPreempted && 'bg-purple-100/90 border-l-4 border-l-purple-600',
                 )}
               >
-                <span className="skeu-chip flex size-7 items-center justify-center rounded-full bg-secondary font-mono text-sm font-semibold text-secondary-foreground">
+                <span className="flex size-7 items-center justify-center rounded-full bg-slate-100 font-mono text-xs font-extrabold text-slate-800 border border-slate-200">
                   {index + 1}
                 </span>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground flex items-center gap-2">
+                  <p className="truncate text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span>{patient.name}</span>
                     {isPreempted && (
-                      <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/40">
+                      <span className="text-[10px] font-mono font-extrabold text-white bg-purple-800 px-2 py-0.5 rounded shadow-2xs">
                         PREEMPTED ➔ STEP-DOWN
                       </span>
                     )}
                   </p>
-                  <p className="font-mono text-xs text-muted-foreground">
+                  <p className="font-mono text-xs font-bold text-slate-700">
                     {patient.id} · P{Math.round(effectivePriority(patient))}
                   </p>
                   {/* Mobile-only detail row */}
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:hidden">
                     <SeverityBadge severity={patient.severity} />
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="size-3" />
+                    <span className="flex items-center gap-1 text-xs text-slate-600 font-mono font-semibold">
+                      <Clock className="size-3.5 text-slate-500" />
                       {patient.waitMinutes}m
                     </span>
                     <span
                       className={cn(
-                        'skeu-chip rounded-full px-2 py-0.5 text-xs font-medium',
+                        'rounded-lg px-2.5 py-1 text-xs font-bold shadow-2xs',
                         STATUS_STYLE[patient.status],
                       )}
                     >
@@ -288,24 +278,24 @@ export function TriageQueueView({
                 <div className="hidden sm:block">
                   <SeverityBadge severity={patient.severity} />
                 </div>
-                <span className="hidden items-center gap-1 font-mono text-sm text-foreground sm:flex">
-                  <Clock className="size-3.5 text-muted-foreground" />
+                <span className="hidden items-center gap-1.5 font-mono text-xs font-extrabold text-slate-800 sm:flex">
+                  <Clock className="size-3.5 text-slate-500" />
                   {patient.waitMinutes}m
                 </span>
-                <span className="hidden items-center gap-1.5 text-sm text-muted-foreground sm:flex">
-                  <Activity className="size-3.5 shrink-0 text-primary" />
+                <span className="hidden items-center gap-1.5 text-xs font-semibold text-slate-700 sm:flex">
+                  <Activity className="size-3.5 shrink-0 text-emerald-600" />
                   <span className="truncate">{patient.topFactor}</span>
                 </span>
                 <span className="hidden justify-end sm:flex">
                   {patient.topFactor.startsWith('Referral from') ? (
-                    <span className="skeu-chip rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2.5 py-1 text-xs font-bold flex items-center gap-1">
-                      <CheckCircle2 className="size-3 text-cyan-400" />
+                    <span className="rounded-lg bg-cyan-100 text-cyan-900 border border-cyan-300 px-3 py-1 text-xs font-extrabold flex items-center gap-1 shadow-2xs">
+                      <CheckCircle2 className="size-3.5 text-cyan-700" />
                       Assigned (Referral)
                     </span>
                   ) : (
                     <span
                       className={cn(
-                        'rounded-full px-2.5 py-1 text-xs font-medium',
+                        'rounded-lg px-3 py-1 text-xs font-extrabold shadow-2xs',
                         STATUS_STYLE[patient.status],
                       )}
                     >

@@ -1,0 +1,49 @@
+package com.triagenet.controller;
+
+import com.triagenet.engine.SeverityScorer;
+import com.triagenet.entity.Patient;
+import com.triagenet.service.PatientService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/patients")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+public class PatientController {
+
+    private final PatientService patientService;
+
+    @GetMapping
+    public ResponseEntity<List<Patient>> getAllPatients() {
+        return ResponseEntity.ok(patientService.getAllPatients());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Patient> getPatientById(@PathVariable UUID id) {
+        return ResponseEntity.ok(patientService.getPatientById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<Patient> registerPatient(@RequestBody Patient patient) {
+        return ResponseEntity.ok(patientService.registerPatient(patient));
+    }
+
+    @PostMapping("/{id}/evaluate-vitals")
+    public ResponseEntity<SeverityScorer.SeverityResult> evaluateVitals(
+            @PathVariable UUID id,
+            @RequestBody SeverityScorer.ClinicalVitals vitals) {
+        return ResponseEntity.ok(patientService.evaluateVitals(id, vitals));
+    }
+
+    @PostMapping("/{id}/discharge")
+    public ResponseEntity<Patient> dischargePatient(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "Treatment Completed") String reason) {
+        return ResponseEntity.ok(patientService.dischargePatient(id, reason));
+    }
+}

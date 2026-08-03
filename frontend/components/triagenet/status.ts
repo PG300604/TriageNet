@@ -30,3 +30,19 @@ export const STATUS_CLASSES: Record<CapacityStatus, StatusClasses> = {
     dot: 'bg-status-red',
   },
 }
+
+export function getPatientStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'Discharged':
+      return 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
+    case 'Assigned':
+      return 'bg-slate-100 text-slate-700 border border-slate-300 font-medium'
+    case 'Preempted':
+      return 'bg-amber-100 text-amber-800 border border-amber-300 font-semibold'
+    case 'Transferred':
+      return 'bg-cyan-100 text-cyan-800 border border-cyan-300 font-semibold'
+    case 'Waiting':
+    default:
+      return 'bg-red-100 text-red-800 border border-red-300 font-semibold'
+  }
+}

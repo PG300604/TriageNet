@@ -14,6 +14,13 @@ export interface ResourcePool {
   total: number
 }
 
+export interface SpecialistRoster {
+  pulmonologists: { total: number; available: number }
+  cardiologists: { total: number; available: number }
+  traumaSurgeons: { total: number; available: number }
+  generalPhysicians: { total: number; available: number }
+}
+
 export interface Hospital {
   id: string
   name: string
@@ -22,8 +29,11 @@ export interface Hospital {
   x: number
   y: number
   beds: ResourcePool
+  icuBeds: ResourcePool
+  generalBeds: ResourcePool
   ventilators: ResourcePool
   specialists: ResourcePool
+  specialistRoster: SpecialistRoster
 }
 
 export interface Patient {
@@ -36,6 +46,9 @@ export interface Patient {
   waitMinutes: number
   topFactor: string
   status: PatientStatus
+  bedType?: 'ICU' | 'General' | 'None'
+  estRecoveryMinutes?: number
+  stepDownCountdown?: number
 }
 
 export interface Transfer {
@@ -89,8 +102,16 @@ function baseHospitals(): Hospital[] {
       x: 26,
       y: 30,
       beds: { used: 34, total: 48 },
+      icuBeds: { used: 14, total: 16 },
+      generalBeds: { used: 20, total: 32 },
       ventilators: { used: 7, total: 12 },
       specialists: { used: 5, total: 9 },
+      specialistRoster: {
+        pulmonologists: { total: 3, available: 1 },
+        cardiologists: { total: 3, available: 2 },
+        traumaSurgeons: { total: 3, available: 2 },
+        generalPhysicians: { total: 8, available: 5 },
+      },
     },
     {
       id: HOSPITAL_IDS.stmary,
@@ -99,8 +120,16 @@ function baseHospitals(): Hospital[] {
       x: 70,
       y: 22,
       beds: { used: 22, total: 36 },
+      icuBeds: { used: 8, total: 12 },
+      generalBeds: { used: 14, total: 24 },
       ventilators: { used: 4, total: 10 },
       specialists: { used: 3, total: 7 },
+      specialistRoster: {
+        pulmonologists: { total: 2, available: 2 },
+        cardiologists: { total: 2, available: 1 },
+        traumaSurgeons: { total: 3, available: 3 },
+        generalPhysicians: { total: 6, available: 4 },
+      },
     },
     {
       id: HOSPITAL_IDS.riverside,
@@ -109,8 +138,16 @@ function baseHospitals(): Hospital[] {
       x: 78,
       y: 74,
       beds: { used: 12, total: 40 },
+      icuBeds: { used: 4, total: 14 },
+      generalBeds: { used: 8, total: 26 },
       ventilators: { used: 2, total: 9 },
       specialists: { used: 2, total: 8 },
+      specialistRoster: {
+        pulmonologists: { total: 2, available: 2 },
+        cardiologists: { total: 3, available: 3 },
+        traumaSurgeons: { total: 3, available: 3 },
+        generalPhysicians: { total: 7, available: 6 },
+      },
     },
     {
       id: HOSPITAL_IDS.north,
@@ -119,8 +156,16 @@ function baseHospitals(): Hospital[] {
       x: 22,
       y: 78,
       beds: { used: 18, total: 20 },
+      icuBeds: { used: 7, total: 8 },
+      generalBeds: { used: 11, total: 12 },
       ventilators: { used: 6, total: 8 },
       specialists: { used: 4, total: 5 },
+      specialistRoster: {
+        pulmonologists: { total: 1, available: 0 },
+        cardiologists: { total: 2, available: 1 },
+        traumaSurgeons: { total: 2, available: 0 },
+        generalPhysicians: { total: 5, available: 2 },
+      },
     },
   ]
 }
@@ -128,26 +173,26 @@ function baseHospitals(): Hospital[] {
 function basePatients(): Patient[] {
   return [
     // City General
-    p('P-2041', 'Alan Whitfield', HOSPITAL_IDS.city, 88, 42, 'Low SpO₂ (86%)', 'Waiting'),
-    p('P-2044', 'Dana Cole', HOSPITAL_IDS.city, 72, 31, 'Chest pain', 'Waiting'),
-    p('P-2048', 'Marcus Reid', HOSPITAL_IDS.city, 54, 18, 'Elevated HR', 'Assigned'),
-    p('P-2052', 'Priya Nadella', HOSPITAL_IDS.city, 41, 12, 'Laceration', 'Waiting'),
-    p('P-2055', 'Grace Lin', HOSPITAL_IDS.city, 63, 55, 'Fever + rigidity', 'Waiting'),
+    p('P-2041', 'Alan Whitfield', HOSPITAL_IDS.city, 88, 42, 'Low SpO₂ (86%)', 'Waiting', 'ICU', 45, 18),
+    p('P-2044', 'Dana Cole', HOSPITAL_IDS.city, 72, 31, 'Chest pain', 'Waiting', 'General', 30, 0),
+    p('P-2048', 'Marcus Reid', HOSPITAL_IDS.city, 54, 18, 'Elevated HR', 'Assigned', 'General', 25, 0),
+    p('P-2052', 'Priya Nadella', HOSPITAL_IDS.city, 41, 12, 'Laceration', 'Waiting', 'General', 20, 0),
+    p('P-2055', 'Grace Lin', HOSPITAL_IDS.city, 63, 55, 'Fever + rigidity', 'Waiting', 'General', 35, 0),
     // St. Mary's
-    p('P-3011', 'Owen Barrett', HOSPITAL_IDS.stmary, 81, 26, 'Severe bleeding', 'Waiting'),
-    p('P-3014', 'Helena Vos', HOSPITAL_IDS.stmary, 47, 39, 'Abdominal pain', 'Waiting'),
-    p('P-3018', 'Tomas Vega', HOSPITAL_IDS.stmary, 33, 9, 'Sprain', 'Assigned'),
-    p('P-3021', 'Yuki Tanaka', HOSPITAL_IDS.stmary, 58, 21, 'Shortness of breath', 'Waiting'),
+    p('P-3011', 'Owen Barrett', HOSPITAL_IDS.stmary, 81, 26, 'Severe bleeding', 'Waiting', 'ICU', 50, 22),
+    p('P-3014', 'Helena Vos', HOSPITAL_IDS.stmary, 47, 39, 'Abdominal pain', 'Waiting', 'General', 15, 0),
+    p('P-3018', 'Tomas Vega', HOSPITAL_IDS.stmary, 33, 9, 'Sprain', 'Assigned', 'General', 10, 0),
+    p('P-3021', 'Yuki Tanaka', HOSPITAL_IDS.stmary, 58, 21, 'Shortness of breath', 'Waiting', 'General', 28, 0),
     // Riverside Medical
-    p('P-4007', 'Sofia Márquez', HOSPITAL_IDS.riverside, 76, 14, 'Head trauma', 'Waiting'),
-    p('P-4010', 'Ken Osei', HOSPITAL_IDS.riverside, 44, 33, 'Dehydration', 'Waiting'),
-    p('P-4013', 'Rita Sørensen', HOSPITAL_IDS.riverside, 29, 8, 'Migraine', 'Assigned'),
-    p('P-4016', 'Leo Fontaine', HOSPITAL_IDS.riverside, 61, 47, 'Arrhythmia', 'Waiting'),
+    p('P-4007', 'Sofia Márquez', HOSPITAL_IDS.riverside, 76, 14, 'Head trauma', 'Waiting', 'General', 40, 12),
+    p('P-4010', 'Ken Osei', HOSPITAL_IDS.riverside, 44, 33, 'Dehydration', 'Waiting', 'General', 15, 0),
+    p('P-4013', 'Rita Sørensen', HOSPITAL_IDS.riverside, 29, 8, 'Migraine', 'Assigned', 'General', 10, 0),
+    p('P-4016', 'Leo Fontaine', HOSPITAL_IDS.riverside, 61, 47, 'Arrhythmia', 'Waiting', 'General', 32, 0),
     // North District
-    p('P-5002', 'Amara Diallo', HOSPITAL_IDS.north, 84, 37, 'Low SpO₂ (88%)', 'Waiting'),
-    p('P-5005', 'Ivan Petrov', HOSPITAL_IDS.north, 69, 52, 'Elevated HR', 'Waiting'),
-    p('P-5008', 'Nina Kaur', HOSPITAL_IDS.north, 52, 19, 'Fracture', 'Assigned'),
-    p('P-5011', 'Beatriz Alves', HOSPITAL_IDS.north, 38, 11, 'Allergic reaction', 'Waiting'),
+    p('P-5002', 'Amara Diallo', HOSPITAL_IDS.north, 84, 37, 'Low SpO₂ (88%)', 'Waiting', 'ICU', 48, 20),
+    p('P-5005', 'Ivan Petrov', HOSPITAL_IDS.north, 69, 52, 'Elevated HR', 'Waiting', 'General', 30, 0),
+    p('P-5008', 'Nina Kaur', HOSPITAL_IDS.north, 52, 19, 'Fracture', 'Assigned', 'General', 20, 0),
+    p('P-5011', 'Beatriz Alves', HOSPITAL_IDS.north, 38, 11, 'Allergic reaction', 'Waiting', 'General', 12, 0),
   ]
 }
 
@@ -317,15 +362,37 @@ export function sortByPriority(patients: Patient[]): Patient[] {
   return [...patients].sort((a, b) => effectivePriority(b) - effectivePriority(a))
 }
 
-/** Advance simulated time: longer waits, gradually rising acuity, and auto-assigning top-priority patients when resources free up. */
+/** Advance simulated time: longer waits, treatment recovery countdown, and auto-step-down from ICU to General Bed. */
 export function advanceTime(patients: Patient[], stepMinutes = 7): Patient[] {
   const updated = patients.map((pt) => {
     if (pt.status === 'Transferred') return pt
     const waiting = pt.status === 'Waiting'
+    const nextWait = pt.waitMinutes + stepMinutes
+    const nextEstRecovery = Math.max(0, (pt.estRecoveryMinutes ?? 30) - stepMinutes)
+    const nextStepDown = Math.max(0, (pt.stepDownCountdown ?? 0) - stepMinutes)
+
+    let nextBedType = pt.bedType ?? 'General'
+    let nextSeverity = pt.severity
+
+    if (waiting) {
+      nextSeverity = Math.min(100, pt.severity + (pt.severity >= 70 ? 3 : 1))
+    } else {
+      // Assigned patient recovering over time
+      nextSeverity = Math.max(20, pt.severity - 2)
+      const req = getPatientClinicalRequirement(pt)
+      // Step-down from ICU to General Ward when severity drops below disease-specific threshold
+      if (nextBedType === 'ICU' && (nextSeverity < req.icuStepDownThreshold || nextStepDown === 0)) {
+        nextBedType = 'General'
+      }
+    }
+
     return {
       ...pt,
-      waitMinutes: pt.waitMinutes + stepMinutes,
-      severity: waiting ? Math.min(100, pt.severity + (pt.severity >= 70 ? 3 : 1)) : pt.severity,
+      waitMinutes: nextWait,
+      severity: nextSeverity,
+      bedType: nextBedType,
+      estRecoveryMinutes: nextEstRecovery,
+      stepDownCountdown: nextStepDown,
     }
   })
 
@@ -337,7 +404,7 @@ export function advanceTime(patients: Patient[], stepMinutes = 7): Patient[] {
   if (waitingPatients.length > 0) {
     const top = waitingPatients[0]
     if (effectivePriority(top) >= 80 || top.waitMinutes >= 30) {
-      return updated.map((p) => (p.id === top.id ? { ...p, status: 'Assigned' } : p))
+      return updated.map((p) => (p.id === top.id ? { ...p, status: 'Assigned', bedType: top.severity >= 80 ? 'ICU' : 'General' } : p))
     }
   }
 
@@ -372,7 +439,18 @@ export function processNewArrival(
       )
       newPt.status = 'Assigned'
     } else {
-      newPt.status = 'Waiting'
+      // Critical Occupancy Lock: All beds occupied by severe/critical patients (Preemption Prohibited)
+      // Trigger Emergency Overflow Assignment to nearby hospital to avoid casualty!
+      const candidateOverflow = state.hospitals.find(
+        (h) => h.id !== newPt.hospitalId && getHospitalOpenBeds(h) >= 2
+      )
+      if (candidateOverflow) {
+        newPt.hospitalId = candidateOverflow.id
+        newPt.status = 'Assigned'
+        newPt.topFactor += ` (Temp Holding at ${candidateOverflow.short})`
+      } else {
+        newPt.status = 'Waiting'
+      }
     }
   } else {
     newPt.status = 'Waiting'
@@ -475,9 +553,11 @@ export interface ClinicalRequirement {
   requiredEquipment: 'ventilator' | 'icu_bed' | 'monitor'
   requiredSpecialist: 'trauma_surgeon' | 'cardiologist' | 'pulmonologist' | 'general'
   matchReason: string
+  icuStepDownThreshold: number
+  icuMinMinutes: number
 }
 
-/** Evaluates the required equipment and specialist physician based on patient vitals/symptoms. */
+/** Evaluates required equipment, specialist, and disease-specific ICU step-down thresholds. */
 export function getPatientClinicalRequirement(patient: Patient): ClinicalRequirement {
   const f = patient.topFactor.toLowerCase()
 
@@ -485,7 +565,9 @@ export function getPatientClinicalRequirement(patient: Patient): ClinicalRequire
     return {
       requiredEquipment: 'ventilator',
       requiredSpecialist: 'pulmonologist',
-      matchReason: 'Respiratory Support required (Ventilator + Pulmonologist)',
+      matchReason: 'Severe Respiratory Support required (Ventilator + Pulmonologist)',
+      icuStepDownThreshold: 65, // Requires S < 65 before step-down to General Bed
+      icuMinMinutes: 35,
     }
   }
 
@@ -494,6 +576,8 @@ export function getPatientClinicalRequirement(patient: Patient): ClinicalRequire
       requiredEquipment: 'icu_bed',
       requiredSpecialist: 'cardiologist',
       matchReason: 'Cardiac Critical Care required (ECG Monitor + Cardiologist)',
+      icuStepDownThreshold: 70, // Requires S < 70 before step-down to General Bed
+      icuMinMinutes: 28,
     }
   }
 
@@ -502,6 +586,8 @@ export function getPatientClinicalRequirement(patient: Patient): ClinicalRequire
       requiredEquipment: 'icu_bed',
       requiredSpecialist: 'trauma_surgeon',
       matchReason: 'Trauma Intervention required (OR ICU Bed + Trauma Surgeon)',
+      icuStepDownThreshold: 74, // Requires S < 74 before step-down to General Bed
+      icuMinMinutes: 20,
     }
   }
 
@@ -509,6 +595,8 @@ export function getPatientClinicalRequirement(patient: Patient): ClinicalRequire
     requiredEquipment: 'icu_bed',
     requiredSpecialist: 'general',
     matchReason: 'Standard ICU / Step-Down Bed matched',
+    icuStepDownThreshold: 78,
+    icuMinMinutes: 12,
   }
 }
 

@@ -270,15 +270,23 @@ python train_severity_model.py
 - [x] Spring Security + JWT authentication (register/login)
 - [x] Docker Compose multi-container setup
 
-### 🔲 Phase 3 — Backend Core Engine (Next)
-- [ ] `SeverityScorer.java` — Java ML model integration
-- [ ] `PatientService` — CRUD + admission + discharge REST endpoints
-- [ ] `TriageQueueService` — Priority heap with dynamic decay
-- [ ] `DijkstraRouter` — Graph shortest-path referral engine
-- [ ] `HungarianMatcher` — Optimal bed assignment solver
-- [ ] Frontend-Backend API integration
+### ✅ Phase 3 — Java Backend Core Engine & Advanced Algorithmic Triage (Complete)
+- [x] `SeverityScorer.java` — Java ML Logistic Regression model ($\text{Sigmoid}(W \cdot X + b)$) with risk factor attributions
+- [x] `DijkstraRouter.java` — Graph shortest-path referral routing across regional hospital nodes
+- [x] `HungarianMatcher.java` — 3-way multi-resource clinical compatibility evaluator ($\text{Beds} \land \text{Equipment} \land \text{Specialist}$)
+- [x] `TriageQueueService.java` — Priority heap queue with dynamic priority decay ($E = S + \lambda \cdot W$)
+- [x] `PatientService`, `HospitalService`, `ReferralService` — Full JPA persistence & business logic services
+- [x] REST API Controllers (`/api/patients`, `/api/hospitals`, `/api/triage-queue`, `/api/resources`)
+- [x] Automated Maven test suite (8 test suites passed, 100% success)
+- [x] Bed Stratification (ICU Beds vs General Ward Beds)
+- [x] Disease-Specific ICU Recovery Thresholds ($S < 65$ Respiratory, $S < 70$ Cardiac, $S < 74$ Trauma)
+- [x] Non-Preemptible Critical Occupancy Lock ($S \ge 85$) & Emergency Overflow Holding
+- [x] Automatic Bed Release & Re-Assignment on Discharge
+- [x] On-Call Specialist Doctor Availability Rosters (Pulmonologist, Cardiologist, Trauma Surgeon)
+- [x] High-Contrast Accessible UI Styling for System Banners & Triage Action Controls
 
 ### 🔲 Phase 4 — Production & Deployment
+- [ ] End-to-End REST Client Integration (`frontend/lib/api.ts`)
 - [ ] CI/CD pipeline
 - [ ] Cloud deployment (AWS/GCP)
 - [ ] Performance testing & optimization

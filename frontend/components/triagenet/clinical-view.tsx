@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { type TriageState, triggerBedRelease, type Patient, getPatientClinicalRequirement } from '@/lib/triage-data'
-import { Stethoscope, CheckCircle2, UserX, UserCheck, AlertTriangle, BedDouble, Clock, Users, ArrowDownRight, Activity } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { type TriageState, triggerBedRelease, getPatientClinicalRequirement } from '@/lib/triage-data'
+import { Stethoscope, CheckCircle2, BedDouble, Clock } from 'lucide-react'
 
 interface ClinicalViewProps {
   state: TriageState
@@ -10,272 +11,176 @@ interface ClinicalViewProps {
 }
 
 export function ClinicalView({ state, onStateChange }: ClinicalViewProps) {
-  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(state.hospitals[0].id)
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
-  const [lastAction, setLastAction] = useState<string | null>(null)
+  const [selectedHospitalId, setSelectedHospitalId] = useState(state.hospitals[0]?.id ?? 'hosp-1')
+  const hospital = state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0]
 
-  const activeHospital = state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0]
-  const assignedPatients = state.patients.filter((p) => p.hospitalId === activeHospital.id && p.status === 'Assigned')
+  const hospitalPatients = state.patients.filter((p) => p.hospitalId === selectedHospitalId)
+  const assignedPatients = hospitalPatients.filter((p) => p.status === 'Assigned')
+  const icuPatients = assignedPatients.filter((p) => p.bedType === 'ICU')
+  const generalPatients = assignedPatients.filter((p) => p.bedType !== 'ICU')
 
-  const selectedPatient = assignedPatients.find((p) => p.id === selectedPatientId) ?? assignedPatients[0] ?? null
-
-  const handleBedRelease = (reason: 'recovery' | 'family_ama') => {
-    if (!selectedPatient) return
-    const res = triggerBedRelease(state, activeHospital.id, reason, selectedPatient.id)
-    if (onStateChange) onStateChange(res.state)
-    setLastAction(res.message)
-    setSelectedPatientId(null)
+  const handleBedReleaseAction = (reason: 'recovery' | 'family_ama') => {
+    if (!onStateChange) return
+    const { state: nextState } = triggerBedRelease(state, selectedHospitalId, reason)
+    onStateChange(nextState)
   }
 
-  const roster = activeHospital.specialistRoster ?? {
-    pulmonologists: { total: 3, available: 2 },
-    cardiologists: { total: 3, available: 2 },
-    traumaSurgeons: { total: 3, available: 3 },
-    generalPhysicians: { total: 8, available: 5 },
-  }
+  const specialistList = [
+    { name: 'Pulmonology (Respiratory ICU)', count: hospital?.specialistRoster?.pulmonologists?.available ?? 2 },
+    { name: 'Cardiology (Cardiac ICU)', count: hospital?.specialistRoster?.cardiologists?.available ?? 2 },
+    { name: 'Trauma Surgery (OR ICU)', count: hospital?.specialistRoster?.traumaSurgeons?.available ?? 1 },
+    { name: 'General Physician (Step-Down)', count: hospital?.specialistRoster?.generalPhysicians?.available ?? 4 },
+  ]
 
   return (
-    <div className="flex flex-col gap-6 font-sans text-slate-900">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+    <div className="space-y-6 font-sans text-[#2c1b0e]">
+      {/* Header Selector Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#382416]/15 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Stethoscope className="size-5 text-emerald-600" />
-            Clinical Operations, Bed Stratification & Care Timelines
+          <h2 className="text-lg font-bold tracking-tight text-[#382416] uppercase font-mono">
+            CLINICAL OPERATIONS — {hospital?.name.toUpperCase()}
           </h2>
-          <p className="text-xs text-slate-500">
-            Real-time ICU vs General bed allocations, specialist physician availability, and estimated treatment timelines.
+          <p className="text-xs font-semibold text-slate-500">
+            BED STRATIFICATION (ICU VS GENERAL WARD) & ON-CALL SPECIALIST ROSTER
           </p>
         </div>
 
-        {/* Hospital Selector Dropdown */}
-        <select
-          value={selectedHospitalId}
-          onChange={(e) => {
-            setSelectedHospitalId(e.target.value)
-            setSelectedPatientId(null)
-          }}
-          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs focus:outline-none"
-        >
+        {/* Hospital Switcher */}
+        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           {state.hospitals.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.name} ({h.beds.used}/{h.beds.total} Total Beds)
-            </option>
+            <button
+              key={h.id}
+              type="button"
+              onClick={() => setSelectedHospitalId(h.id)}
+              className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                selectedHospitalId === h.id
+                  ? 'bg-[#382416] text-[#ffedd7] border-[#382416] shadow-xs'
+                  : 'bg-white text-slate-700 border-[#382416]/20 hover:bg-[#f7f2ea]'
+              }`}
+            >
+              {h.name}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      {/* HOSPITAL BED STRATIFICATION & SPECIALIST ROSTER MATRIX */}
+      {/* Bed Stratification KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Card 1: Bed Stratification */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <span className="text-xs text-slate-500 font-semibold block mb-1">Bed Stratification (ICU vs General)</span>
-          <div className="grid grid-cols-2 gap-2 font-mono mt-2">
-            <div className="rounded-xl bg-red-50 p-2.5 border border-red-200 text-center">
-              <span className="text-[10px] text-red-700 font-sans block font-bold">ICU Beds</span>
-              <span className="text-base font-extrabold text-red-900">
-                {activeHospital.icuBeds?.used ?? 14}/{activeHospital.icuBeds?.total ?? 16}
-              </span>
-            </div>
-            <div className="rounded-xl bg-emerald-50 p-2.5 border border-emerald-200 text-center">
-              <span className="text-[10px] text-emerald-700 font-sans block font-bold">General Ward</span>
-              <span className="text-base font-extrabold text-emerald-900">
-                {activeHospital.generalBeds?.used ?? 20}/{activeHospital.generalBeds?.total ?? 32}
-              </span>
-            </div>
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
+            <span>ICU BEDS OCCUPIED</span>
+            <BedDouble className="size-4 text-red-600" />
           </div>
+          <p className="mt-2 text-3xl font-extrabold font-mono text-[#382416]">
+            {icuPatients.length} <span className="text-xs font-normal text-slate-500">/ {hospital?.icuBeds?.total ?? 4}</span>
+          </p>
         </div>
 
-        {/* Card 2: On-Call Specialist Doctors Today */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <span className="text-xs text-slate-500 font-semibold block mb-2">Specialist Doctor Availability Today</span>
-          <div className="space-y-1.5 font-mono text-xs">
-            <div className="flex justify-between">
-              <span className="text-slate-600">Pulmonologists:</span>
-              <span className="font-bold text-emerald-700">{roster.pulmonologists.available}/{roster.pulmonologists.total} On-Call</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-600">Cardiologists:</span>
-              <span className="font-bold text-emerald-700">{roster.cardiologists.available}/{roster.cardiologists.total} On-Call</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-600">Trauma Surgeons:</span>
-              <span className="font-bold text-emerald-700">{roster.traumaSurgeons.available}/{roster.traumaSurgeons.total} On-Call</span>
-            </div>
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
+            <span>GENERAL WARD OCCUPIED</span>
+            <BedDouble className="size-4 text-emerald-600" />
           </div>
+          <p className="mt-2 text-3xl font-extrabold font-mono text-[#382416]">
+            {generalPatients.length} <span className="text-xs font-normal text-slate-500">/ {hospital?.generalBeds?.total ?? 20}</span>
+          </p>
         </div>
 
-        {/* Card 3: Dynamic Patient Step-Down Engine */}
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <span className="text-xs font-bold text-emerald-900 flex items-center gap-1 mb-1">
-              <ArrowDownRight className="size-4 text-emerald-700" />
-              Dynamic Patient Step-Down Protocol
-            </span>
-            <p className="text-xs text-emerald-800 leading-relaxed font-medium">
-              When ICU patients recover below S &lt; 75, they are automatically shifted to General Ward beds to free critical ICU capacity.
-            </p>
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
+            <span>ON-CALL SPECIALISTS</span>
+            <Stethoscope className="size-4 text-blue-600" />
           </div>
-          <span className="text-[10px] font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300 w-fit">
-            Automatic Step-Down Active
-          </span>
+          <p className="mt-2 text-3xl font-extrabold font-mono text-[#382416]">
+            {hospital?.specialists?.total ?? 8} <span className="text-xs font-normal text-slate-500">ROSTERED</span>
+          </p>
         </div>
       </div>
 
-      {/* Event Message Banner */}
-      {lastAction && (
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-mono font-bold text-emerald-900 flex items-center justify-between shadow-xs">
-          <span>{lastAction}</span>
-          <span className="text-[10px] text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300">BED FREED & AUTO-ASSIGNED</span>
-        </div>
-      )}
+      {/* Main Clinical Task Column */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Ongoing Admissions & Countdown Timelines */}
+        <div className="lg:col-span-7 rounded-2xl border border-[#382416]/15 bg-white p-6 shadow-xs space-y-4">
+          <h3 className="text-xs font-mono font-bold uppercase text-[#382416] border-b border-[#382416]/15 pb-3">
+            ONGOING ICU & WARD ADMISSIONS ({assignedPatients.length})
+          </h3>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column: Ongoing Assigned Patients Selector & Care Timelines */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-7">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <UserCheck className="size-4 text-emerald-600" />
-              Ongoing Assigned Patients & Treatment Timelines ({assignedPatients.length})
+          <div className="space-y-3 font-mono">
+            {assignedPatients.map((p) => {
+              const req = getPatientClinicalRequirement(p)
+              const bed = p.bedType ?? 'General'
+
+              return (
+                <div
+                  key={p.id}
+                  className="rounded-xl border border-[#382416]/15 bg-[#f7f2ea]/50 p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold uppercase text-[#382416]">{p.name}</p>
+                      <p className="text-xs text-slate-500">ID: {p.id} · {p.topFactor}</p>
+                    </div>
+                    <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                      bed === 'ICU' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}>
+                      {bed} BED
+                    </span>
+                  </div>
+
+                  <div className="rounded-lg bg-white p-2.5 border border-[#382416]/15 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-700">
+                    <span className="flex items-center gap-1.5 font-sans">
+                      <Clock className="size-3.5 text-emerald-600" />
+                      Est. Recovery: <strong>{p.estRecoveryMinutes ?? 30}m remaining</strong>
+                    </span>
+                    {bed === 'ICU' && (
+                      <span className="text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Step-Down: S &lt; {req.icuStepDownThreshold} ({req.requiredSpecialist})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Right Column: Doctor Roster & Bed Actions */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Doctor Roster */}
+          <div className="rounded-2xl border border-[#382416]/15 bg-white p-6 shadow-xs space-y-4">
+            <h3 className="text-xs font-mono font-bold uppercase text-[#382416] border-b border-[#382416]/15 pb-3">
+              ON-CALL SPECIALIST PHYSICIANS
             </h3>
-            <span className="text-xs font-mono text-slate-500">Care Countdown Active</span>
+
+            <div className="space-y-2 font-mono text-xs">
+              {specialistList.map((spec) => (
+                <div key={spec.name} className="flex items-center justify-between rounded-xl border border-[#382416]/15 bg-[#f7f2ea]/50 p-3">
+                  <span className="font-bold text-[#382416] uppercase">{spec.name}</span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                    {spec.count} ON DUTY
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {assignedPatients.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-xs text-slate-500">
-              No assigned patients currently in beds at {activeHospital.name}.
-            </div>
-          ) : (
+          {/* Quick Bed Release Triggers */}
+          <div className="rounded-2xl border border-[#382416]/15 bg-white p-6 shadow-xs space-y-4">
+            <h3 className="text-xs font-mono font-bold uppercase text-[#382416] border-b border-[#382416]/15 pb-3">
+              TRIGGER CLINICAL DISCHARGE
+            </h3>
+
             <div className="space-y-3">
-              {assignedPatients.map((p, idx) => {
-                const isSelected = selectedPatient?.id === p.id
-                const bed = p.bedType ?? (p.severity >= 80 ? 'ICU' : 'General')
-                const recTime = p.estRecoveryMinutes ?? 35
-                const stepDownTime = p.stepDownCountdown ?? (p.severity >= 80 ? 18 : 0)
-
-                return (
-                  <div
-                    key={`${p.id}-${idx}`}
-                    onClick={() => setSelectedPatientId(p.id)}
-                    className={`flex flex-col gap-2.5 p-4 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-emerald-500 bg-emerald-50/60 shadow-xs ring-2 ring-emerald-500/20'
-                        : 'border-slate-200/80 bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-100 font-mono text-xs font-bold text-emerald-800 border border-emerald-200">
-                          {p.severity}
-                        </span>
-                        <div>
-                          <span className="text-sm font-bold text-slate-900 block">{p.name}</span>
-                          <span className="text-xs text-slate-500 font-mono">
-                            ID: {p.id} · {p.topFactor}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
-                          bed === 'ICU'
-                            ? 'bg-red-100 text-red-800 border-red-300'
-                            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        }`}>
-                          {bed} Bed
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Disease-Specific Treatment & Step-Down Timeline */}
-                    {(() => {
-                      const req = getPatientClinicalRequirement(p)
-                      return (
-                        <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-200/80 text-xs font-mono flex flex-wrap items-center justify-between gap-2 text-slate-700">
-                          <span className="flex items-center gap-1.5 text-slate-600 font-sans">
-                            <Clock className="size-3.5 text-emerald-600" />
-                            Est. Treatment: <strong>{recTime}m remaining</strong>
-                          </span>
-                          {bed === 'ICU' && (
-                            <span className="text-emerald-800 font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">
-                              Step-Down Threshold: S &lt; {req.icuStepDownThreshold} ({req.requiredSpecialist.replace('_', ' ')})
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })()}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Selected Patient Clinical Task Controls */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-5">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 mb-2">Perform Clinical Action</h3>
-            {selectedPatient ? (
-              <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Selected Patient:</span>
-                  <span className="font-bold text-slate-900">{selectedPatient.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Bed Assignment:</span>
-                  <span className="font-bold text-red-700">{selectedPatient.bedType ?? 'General'} Bed</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Severity Score:</span>
-                  <span className="font-bold text-emerald-600">{selectedPatient.severity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Facility:</span>
-                  <span className="text-slate-800">{activeHospital.name}</span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500 mb-6">Select an assigned patient from the left panel to execute tasks.</p>
-            )}
-
-            <div className="space-y-4">
-              {/* Task 1: Early Recovery Discharge */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="size-4 text-emerald-600" />
-                  Early Recovery Discharge
-                </h4>
-                <p className="text-xs text-slate-500 mb-3">
-                  Discharge patient early, free bed, and auto-assign top waiting patient.
-                </p>
-                <button
-                  type="button"
-                  disabled={!selectedPatient}
-                  onClick={() => handleBedRelease('recovery')}
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 font-mono text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  Discharge Selected Patient ({selectedPatient?.name ?? 'None Selected'})
-                </button>
-              </div>
-
-              {/* Task 2: Family AMA Relocation */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1">
-                  <UserX className="size-4 text-amber-600" />
-                  Family AMA / Private Relocation
-                </h4>
-                <p className="text-xs text-slate-500 mb-3">
-                  Sign out patient Against Medical Advice (AMA), freeing bed for triage queue.
-                </p>
-                <button
-                  type="button"
-                  disabled={!selectedPatient}
-                  onClick={() => handleBedRelease('family_ama')}
-                  className="w-full rounded-xl bg-amber-600 px-4 py-2.5 font-mono text-xs font-bold text-white shadow-xs hover:bg-amber-700 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  Relocate Selected Patient ({selectedPatient?.name ?? 'None Selected'})
-                </button>
-              </div>
+              <motion.button
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => handleBedReleaseAction('recovery')}
+                className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs flex items-center justify-center gap-2 cursor-pointer font-mono"
+              >
+                <CheckCircle2 className="size-4" />
+                <span>EARLY RECOVERY DISCHARGE</span>
+              </motion.button>
             </div>
           </div>
         </div>

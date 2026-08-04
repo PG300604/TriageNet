@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Play,
   Pause,
-  ShieldAlert,
   Siren,
   TrendingUp,
   FastForward,
@@ -75,282 +74,178 @@ export function TopBar({
   scenario,
   onRunScenario,
   onFastForward,
-  isPlaying,
+  isPlaying = false,
   onTogglePlay,
   onNavigateView,
 }: TopBarProps) {
-  const [hospitalOpen, setHospitalOpen] = useState(false)
-  const [scenarioOpen, setScenarioOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [hospOpen, setHospOpen] = useState(false)
+  const [scenOpen, setScenOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  const hospitalRef = useClickOutside(() => setHospitalOpen(false))
-  const scenarioRef = useClickOutside(() => setScenarioOpen(false))
-  const notifRef = useClickOutside(() => setNotifOpen(false))
-  const searchRef = useClickOutside(() => setSearchTerm(''))
+  const selectedHospital = hospitals.find((h) => h.id === selectedHospitalId) ?? hospitals[0]
 
-  const selected = hospitals.find((h) => h.id === selectedHospitalId) ?? hospitals[0]
-  const activeScenario = SCENARIOS.find((s) => s.key === scenario) ?? SCENARIOS[0]
+  const hospRef = useClickOutside(() => setHospOpen(false))
+  const scenRef = useClickOutside(() => setScenOpen(false))
+  const searchRef = useClickOutside(() => setSearchOpen(false))
 
-  const searchResults = searchTerm.trim()
+  const searchResults = searchQuery.trim()
     ? patients.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.topFactor.toLowerCase().includes(searchTerm.toLowerCase()),
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.topFactor.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : []
 
-  const notifications = [
-    { title: 'Sepsis Risk Flagged', desc: 'SpO₂ 84% & HR 118 bpm detected for Alan Whitfield', time: '2m ago', type: 'critical' },
-    { title: 'Dijkstra Referral Executed', desc: 'Patient Sofia Márquez routed ➔ Riverside Medical', time: '12m ago', type: 'info' },
-    { title: 'Early Bed Release', desc: 'ICU Bed #03 freed at City General', time: '24m ago', type: 'success' },
-  ]
-
   return (
-    <header className="relative z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-white px-4 md:px-6 shadow-2xs font-sans">
-      {/* Facility Selector */}
+    <header className="relative z-50 flex h-16 shrink-0 items-center justify-between border-b border-[#382416]/15 bg-[#fdfbf7]/95 px-4 md:px-6 font-sans text-[#2c1b0e] shadow-2xs backdrop-blur-md">
+      {/* Left: Hospital Switcher & Search */}
       <div className="flex items-center gap-3">
-        <div className="relative" ref={hospitalRef}>
+        {/* Hospital Dropdown */}
+        <div ref={hospRef} className="relative z-50">
           <button
             type="button"
-            onClick={() => setHospitalOpen((v) => !v)}
-            aria-expanded={hospitalOpen}
-            aria-haspopup="listbox"
-            className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-left transition-all hover:bg-slate-100 cursor-pointer"
+            onClick={() => setHospOpen((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-2 font-mono text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
           >
-            <Building2 className="size-4 text-slate-500" />
-            <span className="flex flex-col">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Selected Facility</span>
-              <span className="text-xs md:text-sm font-bold text-slate-900 leading-tight">{selected.name}</span>
-            </span>
-            <ChevronDown
-              className={cn(
-                'size-4 text-slate-500 transition-transform',
-                hospitalOpen && 'rotate-180',
-              )}
-            />
+            <Building2 className="size-4 text-[#dc5000]" />
+            <span>{selectedHospital?.name ?? 'Select Hospital'}</span>
+            <ChevronDown className="size-3.5 text-slate-400" />
           </button>
-          {hospitalOpen && (
-            <ul
-              role="listbox"
-              className="absolute left-0 top-[calc(100%+6px)] z-40 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
-            >
+
+          {hospOpen && (
+            <div className="absolute left-0 top-full mt-2 z-[100] w-64 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
               {hospitals.map((h) => (
-                <li key={h.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={h.id === selected.id}
-                    onClick={() => {
-                      onSelectHospital(h.id)
-                      setHospitalOpen(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors hover:bg-slate-50 cursor-pointer',
-                      h.id === selected.id && 'bg-emerald-50 text-emerald-800 font-bold',
-                    )}
-                  >
-                    <span>{h.name}</span>
-                    {h.id === selected.id && <Check className="size-4 text-emerald-600" />}
-                  </button>
-                </li>
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectHospital(h.id)
+                    setHospOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-mono text-left cursor-pointer',
+                    h.id === selectedHospitalId
+                      ? 'bg-[#382416] text-[#ffedd7] font-bold'
+                      : 'text-slate-700 hover:bg-[#f7f2ea]',
+                  )}
+                >
+                  <span>{h.name}</span>
+                  {h.id === selectedHospitalId && <Check className="size-3.5 text-[#dc5000]" />}
+                </button>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
         {/* Global Search Bar */}
-        <div className="relative hidden md:block" ref={searchRef}>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/20">
-            <Search className="size-4 text-slate-400" />
+        <div ref={searchRef} className="relative z-50 hidden sm:block">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 size-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search patients, vitals, beds..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-48 bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              placeholder="Search patient, ID, vitals..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setSearchOpen(true)
+              }}
+              onFocus={() => setSearchOpen(true)}
+              className="w-48 md:w-64 rounded-xl border border-[#382416]/20 bg-white py-1.5 pl-8 pr-3 font-sans text-xs text-[#2c1b0e] placeholder:text-slate-400 focus:border-[#382416] focus:outline-none"
             />
-            {searchTerm && (
-              <button type="button" onClick={() => setSearchTerm('')}>
-                <X className="size-3.5 text-slate-400 hover:text-slate-600" />
-              </button>
-            )}
-          </div>
-
-          {/* Real-time Search Dropdown */}
-          {searchTerm.trim() !== '' && (
-            <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-              <p className="px-2 py-1 text-[10px] font-bold uppercase text-slate-400">Search Results ({searchResults.length})</p>
-              {searchResults.length === 0 ? (
-                <p className="p-3 text-center text-xs text-slate-500 font-sans">No matching records found.</p>
-              ) : (
-                <div className="space-y-1">
-                  {searchResults.slice(0, 4).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        if (onNavigateView) onNavigateView('patients')
-                        setSearchTerm('')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg p-2 text-left text-xs hover:bg-slate-50 cursor-pointer"
-                    >
-                      <div>
-                        <span className="font-bold text-slate-900 block">{p.name}</span>
-                        <span className="text-[11px] text-slate-500">{p.topFactor}</span>
-                      </div>
-                      <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                        S: {p.severity}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* FAST FORWARD SIMULATION CONTROLS */}
-      <div className="hidden items-center gap-2 lg:flex">
-        {onFastForward && (
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1">
-            <button
-              type="button"
-              onClick={() => onFastForward(7)}
-              className="rounded-lg px-2.5 py-1 font-mono text-xs font-bold text-slate-700 hover:bg-white border border-transparent hover:border-slate-200 cursor-pointer"
-            >
-              +7m Step
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onFastForward(35)}
-              className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 font-mono text-xs font-bold text-white shadow-xs hover:bg-emerald-700 cursor-pointer"
-            >
-              <FastForward className="size-3.5" />
-              <span>5x (+35m)</span>
-            </button>
-
-            {onTogglePlay && (
+            {searchQuery && (
               <button
                 type="button"
-                onClick={onTogglePlay}
-                className={cn(
-                  'flex items-center gap-1 rounded-lg px-3 py-1 font-mono text-xs font-bold transition-all cursor-pointer',
-                  isPlaying
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
-                )}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-700"
               >
-                {isPlaying ? <Pause className="size-3.5" /> : <Play className="size-3.5 text-emerald-600" />}
-                <span>{isPlaying ? 'Pause' : 'Auto Play'}</span>
+                <X className="size-3.5" />
               </button>
             )}
           </div>
-        )}
+
+          {searchOpen && searchResults.length > 0 && (
+            <div className="absolute left-0 top-full mt-2 z-[100] w-80 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+              {searchResults.slice(0, 5).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    if (onNavigateView) onNavigateView('patients')
+                    setSearchOpen(false)
+                  }}
+                  className="flex w-full items-center justify-between rounded-lg p-2 text-xs font-mono text-left hover:bg-[#f7f2ea] cursor-pointer"
+                >
+                  <div>
+                    <p className="font-bold text-[#382416]">{p.name}</p>
+                    <p className="text-[10px] text-slate-500">{p.id} · {p.topFactor}</p>
+                  </div>
+                  <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                    S: {p.severity}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Right: Simulation Controls & User Lockup */}
       <div className="flex items-center gap-3">
-        {/* Role badge */}
-        <div className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 sm:flex">
-          <ShieldAlert className="size-4 text-emerald-600" />
-          <span className="text-xs font-bold text-emerald-800">
-            Regional Coordinator
-          </span>
-        </div>
-
-        {/* Interactive Notification Bell */}
-        <div className="relative" ref={notifRef}>
+        {/* Scenario Selector Dropdown */}
+        <div ref={scenRef} className="relative z-50">
           <button
             type="button"
-            onClick={() => setNotifOpen((v) => !v)}
-            className="relative flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 cursor-pointer"
+            onClick={() => setScenOpen((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-1.5 text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
           >
-            <Bell className="size-4" />
-            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-600 font-mono text-[10px] font-bold text-white">
-              3
-            </span>
+            <Sparkles className="size-3.5 text-[#dc5000]" />
+            <span className="hidden md:inline">{SCENARIOS.find((s) => s.key === scenario)?.label}</span>
+            <ChevronDown className="size-3 text-slate-400" />
           </button>
 
-          {notifOpen && (
-            <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-xl font-sans">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
-                <span className="text-xs font-bold text-slate-900">Telemetry Notifications</span>
-                <span className="text-[10px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">Live</span>
-              </div>
-              <div className="space-y-2">
-                {notifications.map((n, idx) => (
-                  <div key={idx} className="rounded-lg bg-slate-50 p-2.5 border border-slate-200/80">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-slate-900">{n.title}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{n.time}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-tight">{n.desc}</p>
+          {scenOpen && (
+            <div className="absolute right-0 top-full mt-2 z-[100] w-72 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+              {SCENARIOS.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => {
+                    onRunScenario(s.key)
+                    setScenOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-start gap-3 rounded-lg p-2 text-xs font-mono text-left cursor-pointer',
+                    s.key === scenario ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-[#f7f2ea] text-slate-800',
+                  )}
+                >
+                  <s.icon className="size-4 shrink-0 text-[#dc5000] mt-0.5" />
+                  <div>
+                    <p className="font-bold">{s.label}</p>
+                    <p className="text-[10px] text-slate-400">{s.desc}</p>
                   </div>
-                ))}
-              </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Run Scenario Button */}
-        <div className="relative" ref={scenarioRef}>
+        {/* Fast-Forward Simulation Button */}
+        {onFastForward && (
           <button
             type="button"
-            onClick={() => setScenarioOpen((v) => !v)}
-            aria-expanded={scenarioOpen}
-            aria-haspopup="menu"
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 cursor-pointer"
+            onClick={() => onFastForward(15)}
+            className="rounded-xl bg-[#382416] hover:bg-[#2c1b0e] px-3.5 py-1.5 text-xs font-bold text-[#ffedd7] shadow-2xs flex items-center gap-1.5 cursor-pointer"
           >
-            <activeScenario.icon className="size-4" />
-            <span className="hidden sm:inline">Run Scenario</span>
-            <ChevronDown
-              className={cn('size-4 transition-transform', scenarioOpen && 'rotate-180')}
-            />
+            <FastForward className="size-3.5" />
+            <span>+15M STEP</span>
           </button>
-          {scenarioOpen && (
-            <div
-              role="menu"
-              className="absolute right-0 top-[calc(100%+6px)] z-40 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
-            >
-              <p className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Simulate Scenario
-              </p>
-              {SCENARIOS.map((s) => {
-                const Icon = s.icon
-                const isActive = s.key === scenario
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      onRunScenario(s.key)
-                      setScenarioOpen(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs transition-colors hover:bg-slate-50 cursor-pointer',
-                      isActive && 'bg-slate-100 font-bold',
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        'mt-0.5 size-4 shrink-0',
-                        s.key === 'steady' ? 'text-slate-500' : 'text-red-600',
-                      )}
-                    />
-                    <span className="flex flex-1 flex-col">
-                      <span className="text-xs font-bold text-slate-900">{s.label}</span>
-                      <span className="text-[11px] text-slate-500">{s.desc}</span>
-                    </span>
-                    {isActive && <Check className="mt-0.5 size-4 text-emerald-600" />}
-                  </button>
-                )
-              })}
-            </div>
-          )}
+        )}
+
+        {/* Operator Profile */}
+        <div className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-[#ffedd7] font-mono text-xs font-bold shadow-2xs">
+          PG
         </div>
       </div>
     </header>

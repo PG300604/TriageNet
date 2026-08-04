@@ -2,74 +2,61 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Activity, ArrowRight, ShieldCheck, ShieldPlus } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowUpRight } from 'lucide-react'
 
 export function Navbar() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8 font-sans">
-      <div className="mx-auto max-w-7xl">
-        <nav className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/90 p-3.5 backdrop-blur-xl shadow-md">
-          {/* Brand Logo */}
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-300 transition-all duration-300 group-hover:scale-105">
-              <ShieldPlus className="size-6 transition-transform duration-300 group-hover:rotate-12" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-extrabold tracking-tight text-slate-900">
-                  Triage<span className="text-emerald-600">Net</span>
-                </span>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-800 border border-emerald-300 uppercase tracking-wider">
-                  Healthcare SaaS
-                </span>
-              </div>
-              <p className="text-[11px] font-medium text-slate-500 hidden sm:block">
-                Resource Allocation & Patient Telemetry System
-              </p>
-            </div>
-          </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-5 font-sans">
+      <nav className="mx-auto max-w-7xl flex items-center justify-between border-b border-dashed border-[#40372e]/60 pb-4 backdrop-blur-md bg-[#100904]/70">
+        {/* Left: Brand Wordmark (Clean TRIAGENET) */}
+        <Link href="/" className="flex items-center gap-3">
+          <span className="text-xs md:text-sm font-medium uppercase text-[#ffedd7] tracking-wider font-mono">
+            TRIAGENET
+          </span>
+        </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden items-center gap-8 md:flex">
-            <a
-              href="#problem"
-              className="text-sm font-semibold text-slate-600 transition-colors hover:text-emerald-600"
-            >
-              The Bottleneck
-            </a>
-            <a
-              href="#how-it-works"
-              className="text-sm font-semibold text-slate-600 transition-colors hover:text-emerald-600"
-            >
-              Sequence
-            </a>
-            <a
-              href="#algorithms"
-              className="text-sm font-semibold text-slate-600 transition-colors hover:text-emerald-600"
-            >
-              Four Algorithms
-            </a>
-            <a
-              href="#metrics"
-              className="text-sm font-semibold text-slate-600 transition-colors hover:text-emerald-600"
-            >
-              Analytics
-            </a>
-          </div>
+        {/* Center/Right: Navigation Items */}
+        <div className="hidden md:flex items-center gap-8 text-xs font-medium uppercase text-[#ffedd7] tracking-normal">
+          <a
+            href="#problem"
+            className="hover:text-[#dc5000] transition-colors border-b border-dashed border-[#40372e] pb-0.5"
+          >
+            INTRO
+          </a>
+          <a
+            href="#how-it-works"
+            className="hover:text-[#dc5000] transition-colors hover:border-b hover:border-dashed hover:border-[#40372e] pb-0.5"
+          >
+            FEATURES
+          </a>
+          <a
+            href="#algorithms"
+            className="hover:text-[#dc5000] transition-colors hover:border-b hover:border-dashed hover:border-[#40372e] pb-0.5"
+          >
+            ALGORITHMS
+          </a>
+          <a
+            href="#metrics"
+            className="hover:text-[#dc5000] transition-colors hover:border-b hover:border-dashed hover:border-[#40372e] pb-0.5"
+          >
+            TELEMETRY
+          </a>
+        </div>
 
-          {/* Primary Action Button */}
-          <div className="flex items-center gap-3">
+        {/* Right: Solid Bark Brown Pill Action Button */}
+        <div className="flex items-center gap-3">
+          <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
             <Link
               href="/dashboard"
-              className="group relative inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 hover:shadow-md active:scale-95"
+              className="oryzo-pill-button inline-flex items-center gap-2"
             >
-              <ShieldCheck className="size-4" />
-              <span>Launch Operational Console</span>
-              <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+              <span>LAUNCH CONSOLE</span>
+              <ArrowUpRight className="size-3.5 text-[#ffedd7]" />
             </Link>
-          </div>
-        </nav>
-      </div>
+          </motion.div>
+        </div>
+      </nav>
     </header>
   )
 }

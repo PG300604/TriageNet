@@ -12,6 +12,7 @@ import {
   getRegionalReferralRecommendation,
   processNewArrival,
   runContinuousSimulationStep,
+  runAiSupplyDispatch,
   severityStatus,
   triggerBedRelease,
 } from '@/lib/triage-data'
@@ -92,6 +93,13 @@ export function Dashboard() {
     window.setTimeout(() => setUpdatedIds(new Set()), 1200)
   }, [state.patients, selectedHospitalId])
 
+  const handleAiSupplyDispatch = useCallback(() => {
+    const { state: nextState, eventMsg } = runAiSupplyDispatch(state)
+    setState(nextState)
+    setLastEventMessage(eventMsg)
+    setTimeout(() => setLastEventMessage(null), 8000)
+  }, [state])
+
   const injectArrival = useCallback(
     (severity: number, name: string, complaint: string) => {
       const newPt: Patient = {
@@ -145,7 +153,7 @@ export function Dashboard() {
     [state],
   )
 
-  // Auto-play timer for long-duration simulation & anomaly testing
+  // Auto-play timer for continuous simulation
   useEffect(() => {
     if (!isPlaying) return
     const interval = setInterval(() => {
@@ -172,10 +180,10 @@ export function Dashboard() {
   )
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/80 to-[#ffffff] text-[#2c1b0e] font-sans">
       <Sidebar active={view} onChange={setView} criticalCount={criticalCount} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col relative z-20">
         <TopBar
           hospitals={state.hospitals}
           patients={state.patients}
@@ -189,14 +197,14 @@ export function Dashboard() {
           onNavigateView={setView}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/70 to-[#ffffff] relative z-1">
           <div className="mx-auto max-w-7xl">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <h1 className="text-lg font-bold tracking-tight text-foreground md:text-xl">
+            <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#382416]/15 pb-3">
+              <h1 className="text-lg font-bold tracking-tight text-[#382416] uppercase md:text-xl font-mono">
                 {VIEW_TITLES[view] ?? 'Dashboard'}
               </h1>
               {scenario !== 'steady' && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 border border-red-300 px-3 py-1 text-xs font-bold text-red-800 uppercase font-mono">
                   <Siren className="size-3.5" />
                   {scenario === 'mass-casualty' ? 'Mass Casualty Event' : 'Regional Surge'} active
                 </span>
@@ -209,6 +217,9 @@ export function Dashboard() {
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={setSelectedHospitalId}
                 onNavigateView={setView}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((v) => !v)}
+                onFastForward={simulateTime}
               />
             )}
             {view === 'queue' && (
@@ -223,6 +234,8 @@ export function Dashboard() {
                 referralRecommendation={referralRecommendation}
                 onExecuteReferral={handleExecuteReferral}
                 lastEventMessage={lastEventMessage}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((v) => !v)}
               />
             )}
             {view === 'network' && <RegionalNetworkView state={state} />}
@@ -232,8 +245,19 @@ export function Dashboard() {
             {(view as string) === 'clinical' && <ClinicalView state={state} onStateChange={setState} />}
             {(view as string) === 'billing' && <BillingView />}
             {(view as string) === 'docs' && <DocsView />}
-            {(view as string) === 'supplies' && <SuppliesView state={state} onStateChange={setState} />}
-            {(view as string) === 'reports' && <ReportsView />}
+            {(view as string) === 'supplies' && (
+              <SuppliesView
+                state={state}
+                onStateChange={setState}
+                onRunAiSupplyDispatch={handleAiSupplyDispatch}
+              />
+            )}
+            {(view as string) === 'reports' && (
+              <ReportsView
+                state={state}
+                onRunAiSupplyDispatch={handleAiSupplyDispatch}
+              />
+            )}
             {(view as string) === 'comms' && <CommsView />}
           </div>
         </main>

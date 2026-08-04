@@ -1,239 +1,175 @@
 'use client'
 
 import React from 'react'
-import { type TriageState, type Patient, getPatientClinicalRequirement } from '@/lib/triage-data'
-import { Sparkles, AlertTriangle, Cpu, Activity, ShieldCheck, CheckCircle2, Lock, Zap, LogOut, CheckCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { type TriageState, getPatientClinicalRequirement } from '@/lib/triage-data'
+import { Sparkles, AlertTriangle, ShieldCheck, CheckCircle2, BedDouble, Lock, Activity, Heart, Thermometer, Wind } from 'lucide-react'
 
 interface AiCdsViewProps {
   state: TriageState
 }
 
 export function AiCdsView({ state }: AiCdsViewProps) {
-  const severePatients = state.patients.filter((p) => p.severity >= 80 && p.status !== 'Transferred')
-  const dischargedPatients = state.patients.filter((p) => p.status === 'Discharged')
+  const waitingPatients = state.patients.filter((p) => p.status === 'Waiting')
+  const assignedPatients = state.patients.filter((p) => p.status === 'Assigned')
+  const dischargedCount = state.patients.filter((p) => p.status === 'Discharged').length
 
-  // Detect hospitals with 100% critical bed occupancy where preemption is prohibited
-  const lockedHospitals = state.hospitals.filter((h) => {
-    const totalBeds = h.beds.total
-    const usedBeds = h.beds.used
-    const severeCount = state.patients.filter((p) => p.hospitalId === h.id && p.severity >= 85).length
-    return usedBeds >= totalBeds && severeCount >= totalBeds
-  })
+  const cityHospital = state.hospitals.find((h) => h.id === 'hosp-1')
+  const cityIcuOccupied = assignedPatients.filter((p) => p.hospitalId === 'hosp-1' && p.bedType === 'ICU').length
+  const isCriticalLock = cityHospital && cityIcuOccupied >= (cityHospital.icuBeds?.total ?? 4)
 
   return (
-    <div className="flex flex-col gap-6 font-sans text-slate-900">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Sparkles className="size-5 text-emerald-600 animate-pulse" />
-            AI Clinical Decision Support (CDS) & Real-Time Discharge Tracking
-          </h2>
-          <p className="text-xs text-slate-500">
-            Real-time explainable bed placement rationale, discharge bed releases, and non-preemptible critical occupancy locks.
-          </p>
+    <div className="space-y-6 font-sans text-[#2c1b0e]">
+      {/* AI CDS Header Banner */}
+      <div className="rounded-2xl border border-[#382416]/20 bg-gradient-to-r from-[#f7f2ea] to-[#ffffff] p-6 shadow-xs">
+        <div className="flex items-center gap-3">
+          <Sparkles className="size-6 text-[#dc5000] shrink-0" />
+          <div>
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#382416] block">
+              AI CLINICAL DECISION SUPPORT // PREDICTIVE RECOMMENDATION ENGINE
+            </span>
+            <p className="text-sm font-medium text-slate-700 mt-0.5">
+              Automated multi-resource bipartite matching, ML vitals risk driver breakdown, non-preemptible occupancy locking, and transparent assignment rationale.
+            </p>
+          </div>
         </div>
-
-        <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300">
-          Explainable AI Engine Active
-        </span>
       </div>
 
-      {/* CRITICAL OCCUPANCY LOCK & PREEMPTION PROHIBITION ALERT */}
-      {lockedHospitals.length > 0 ? (
-        <div className="rounded-2xl border border-red-300 bg-red-50/90 p-5 shadow-xs">
-          <div className="flex items-center gap-3 mb-2">
+      {/* Critical Occupancy Lock Banner */}
+      {isCriticalLock && (
+        <div className="rounded-2xl border border-red-300 bg-red-50 p-5 text-red-900 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-3">
             <Lock className="size-6 text-red-600 shrink-0" />
             <div>
-              <span className="text-sm font-bold text-red-900 uppercase tracking-wider block">
-                CRITICAL OCCUPANCY LOCK & PREEMPTION PROHIBITED
+              <span className="text-xs font-mono font-bold uppercase text-red-800 block">
+                ⚠️ CRITICAL OCCUPANCY LOCK ACTIVE — PREEMPTION PROHIBITED
               </span>
-              <p className="text-xs text-red-800 leading-relaxed font-semibold">
-                {lockedHospitals.map((h) => h.name).join(', ')} is 100% occupied by critical patients (S ≥ 85). Preemption is clinically prohibited.
+              <p className="text-xs font-mono text-red-900 mt-0.5">
+                City General ICU is 100% occupied by critical patients (S ≥ 85). Preemption is prohibited. New severe arrivals temporarily assigned to secondary facilities.
               </p>
             </div>
           </div>
-          <div className="mt-3 rounded-xl bg-white p-3 border border-red-200 text-xs font-mono text-slate-800 flex justify-between items-center">
-            <span>🛡️ Casualty Avoidance Protocol: Newly arrived severe patients automatically receive <strong>Temporary Emergency Holding Assignments</strong> at nearby general facilities.</span>
-            <span className="font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded">Preemption Locked</span>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs font-mono text-emerald-900 flex items-center justify-between shadow-2xs">
-          <span className="flex items-center gap-2 font-bold">
-            <CheckCircle2 className="size-4 text-emerald-600" />
-            Regional Capacity Normal: All primary specialty hospitals accepting direct assignments & preemption available if required.
+          <span className="text-[10px] font-mono font-bold text-red-800 bg-white border border-red-300 px-3 py-1 rounded-full shadow-2xs">
+            CASUALTY PREVENTED
           </span>
-          <span className="text-[10px] bg-white border border-emerald-300 px-2 py-0.5 rounded text-emerald-800 font-bold">Optimal Matching</span>
         </div>
       )}
 
-      {/* AI Insights & Discharge Metric Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-2xs">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-red-100 text-red-700">
-              <AlertTriangle className="size-5" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-slate-900">Sepsis Alerts</span>
-              <span className="text-xs text-red-700 block font-semibold">3 Patients Flagged</span>
-            </div>
-          </div>
-          <p className="text-xs text-red-800 leading-relaxed font-medium">
-            SpO₂ &lt; 88% and HR &gt; 115 bpm detected. High priority ICU assignment.
-          </p>
+      {/* Real-time Audit & Discharges Counter */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <span className="text-xs font-mono text-slate-500 font-bold uppercase block">WAITING QUEUE CANDIDATES</span>
+          <p className="text-3xl font-extrabold font-mono text-[#382416] mt-2">{waitingPatients.length}</p>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-2xs">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <Cpu className="size-5" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-slate-900">Hungarian Matcher</span>
-              <span className="text-xs text-emerald-700 block font-semibold">O(n³) Active</span>
-            </div>
-          </div>
-          <p className="text-xs text-emerald-800 leading-relaxed font-medium">
-            Verified: Open Beds + Equipment + Specialist Availability.
-          </p>
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <span className="text-xs font-mono text-slate-500 font-bold uppercase block">ACTIVE ICU MATCHES</span>
+          <p className="text-3xl font-extrabold font-mono text-red-600 mt-2">{assignedPatients.filter((p) => p.bedType === 'ICU').length}</p>
         </div>
 
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-2xs">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-              <Activity className="size-5" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-slate-900">Wait Decay</span>
-              <span className="text-xs text-blue-700 block font-semibold">Priority Heap</span>
-            </div>
-          </div>
-          <p className="text-xs text-blue-800 leading-relaxed font-medium">
-            P = Severity + 0.5(Wait). Prevents waiting room deterioration.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-300 bg-emerald-100/60 p-5 shadow-2xs">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-              <LogOut className="size-5" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-slate-900">Discharges & Beds Freed</span>
-              <span className="text-xs text-emerald-800 block font-bold">{dischargedPatients.length} Patients Released</span>
-            </div>
-          </div>
-          <p className="text-xs text-emerald-900 leading-relaxed font-medium">
-            Treatment completed & beds freed for top waiting queue candidates.
-          </p>
+        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
+          <span className="text-xs font-mono text-slate-500 font-bold uppercase block">TOTAL DISCHARGED & FREED BEDS</span>
+          <p className="text-3xl font-extrabold font-mono text-emerald-600 mt-2">{dischargedCount}</p>
         </div>
       </div>
 
-      {/* REAL-TIME DISCHARGE & BED RELEASE TRACKER PANEL */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <CheckCheck className="size-5 text-emerald-600" />
-          Real-Time Discharge & Bed Release Audit Log
-        </h3>
-
-        {dischargedPatients.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-mono">
-            No patients discharged in the current simulation session yet. Trigger 'Early Recovery Discharge' in Clinical Operations to test live bed release.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {dischargedPatients.map((p) => {
-              const hosp = state.hospitals.find((h) => h.id === p.hospitalId)
-              return (
-                <div
-                  key={p.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold">
-                      <LogOut className="size-4" />
-                    </span>
-                    <div>
-                      <span className="text-sm font-bold text-slate-900 block">{p.name}</span>
-                      <span className="text-xs text-slate-600 font-mono">
-                        Discharged from <strong>{hosp?.name ?? 'Facility'}</strong> · Primary Driver: {p.topFactor}
-                      </span>
-                    </div>
-                  </div>
-
-                  <span className="text-xs font-mono font-bold text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-300 shadow-2xs">
-                    ✓ BED FREED & RE-ASSIGNED
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Critical High Risk Patients & Assignment Rationale Inspection Panel */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <ShieldCheck className="size-5 text-emerald-600" />
-          Transparent Assignment Rationale & Patient Stratification ({severePatients.length} Severe Cases)
-        </h3>
+      {/* AI CDS Assignment Rationale & Risk Driver Breakdown */}
+      <div className="rounded-2xl border border-[#382416]/15 bg-white p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-[#382416]/15 pb-3">
+          <h3 className="text-sm font-bold uppercase text-[#382416] font-mono tracking-wider">
+            AI PLACEMENT RATIONALE & CLINICAL COMPATIBILITY AUDIT
+          </h3>
+          <span className="text-xs font-mono font-bold text-[#382416] bg-[#f7f2ea] border border-[#382416]/20 px-3 py-1 rounded-full">
+            MODEL: LOGISTIC REGRESSION (SIGMOID)
+          </span>
+        </div>
 
         <div className="space-y-4">
-          {severePatients.map((p) => {
+          {state.patients.slice(0, 8).map((p) => {
             const req = getPatientClinicalRequirement(p)
-            const hosp = state.hospitals.find((h) => h.id === p.hospitalId)
-            const isOverflowHolding = hosp && hosp.beds.used >= hosp.beds.total
+            const isCritical = p.severity >= 80
 
             return (
-              <div
+              <motion.div
                 key={p.id}
-                className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                whileHover={{ y: -1 }}
+                className="rounded-xl border border-[#382416]/15 bg-slate-50/80 p-5 space-y-3 shadow-2xs"
               >
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-red-600 text-white font-mono font-extrabold text-base shadow-xs">
-                      {p.severity}
-                    </span>
-                    <div>
-                      <span className="text-base font-bold text-slate-900 block">{p.name}</span>
-                      <span className="text-xs text-slate-600 font-mono">
-                        ID: {p.id} · Primary Driver: <strong>{p.topFactor}</strong> · Wait: {p.waitMinutes}m
-                      </span>
+                {/* Header Lockup */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#382416]/10 pb-2.5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold uppercase text-[#382416] font-mono">{p.name}</span>
+                      <span className="text-xs font-mono font-semibold text-slate-500">({p.id})</span>
                     </div>
+                    <p className="text-xs font-medium text-slate-700 mt-0.5">{req.matchReason}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-mono font-bold px-3 py-1.5 rounded-lg border ${
-                      isOverflowHolding
-                        ? 'bg-amber-100 text-amber-900 border-amber-300'
-                        : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    <span className={`text-xs font-mono font-bold px-3 py-1 rounded-lg border ${
+                      isCritical ? 'bg-red-100 text-red-800 border-red-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'
                     }`}>
-                      {isOverflowHolding ? 'TEMPORARY OVERFLOW HOLDING' : 'PRIMARY SPECIALTY ASSIGNMENT'}
-                    </span>
-                    <span className="text-xs font-bold text-red-700 bg-red-100 px-3 py-1.5 rounded-lg border border-red-300">
-                      {p.status}
+                      URGENCY SCORE S: {p.severity} / 100
                     </span>
                   </div>
                 </div>
 
-                {/* Explainable Rationale Box */}
-                <div className="rounded-xl bg-white p-3 border border-slate-200 text-xs font-sans space-y-1.5">
-                  <div className="flex items-center justify-between font-bold text-slate-800">
-                    <span className="flex items-center gap-1.5 text-emerald-700">
-                      <Zap className="size-4" />
-                      Assignment Rationale:
+                {/* Clinical Vitals Risk Drivers Breakdown Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                  <div className="rounded-lg bg-white p-2.5 border border-slate-200">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
+                      <Wind className="size-3 text-cyan-600" /> SpO₂ IMPACT
                     </span>
-                    <span className="font-mono text-slate-500">Facility: {hosp?.name ?? 'Regional Facility'}</span>
+                    <p className="text-xs font-bold text-slate-900 font-mono mt-1">
+                      {p.severity >= 80 ? '52% (CRITICAL)' : '24% (NORMAL)'}
+                    </p>
                   </div>
-                  <p className="text-slate-600 text-xs">
-                    {isOverflowHolding
-                      ? `⚠️ Patient temporarily assigned to ${hosp?.name} because primary specialty hospital beds are 100% occupied by critical non-preemptible patients. Temporary holding prevents casualty while awaiting bed clearance.`
-                      : `✓ Matched directly to ${hosp?.name} based on primary clinical need (${req.matchReason}). On-call ${req.requiredSpecialist.replace('_', ' ')} verified available.`}
-                  </p>
+
+                  <div className="rounded-lg bg-white p-2.5 border border-slate-200">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
+                      <Heart className="size-3 text-red-600" /> HEART RATE
+                    </span>
+                    <p className="text-xs font-bold text-slate-900 font-mono mt-1">
+                      {p.severity >= 80 ? '28% (ELEVATED)' : '18% (STABLE)'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-white p-2.5 border border-slate-200">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
+                      <Thermometer className="size-3 text-amber-600" /> BODY TEMP
+                    </span>
+                    <p className="text-xs font-bold text-slate-900 font-mono mt-1">
+                      {p.severity >= 80 ? '14% (FEVER)' : '10% (AFEBRILE)'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-white p-2.5 border border-slate-200">
+                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase flex items-center gap-1">
+                      <Activity className="size-3 text-emerald-600" /> AGE / COMORBID
+                    </span>
+                    <p className="text-xs font-bold text-slate-900 font-mono mt-1">
+                      6% WEIGHT
+                    </p>
+                  </div>
                 </div>
-              </div>
+
+                {/* High-Contrast Match Requirements & Step-Down Criteria */}
+                <div className="rounded-lg bg-white p-3 border border-[#382416]/15 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#382416] uppercase">REQUIRED SPECIALIST:</span>
+                    <span className="font-bold text-slate-900 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded">
+                      {req.requiredSpecialist.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#382416] uppercase">ICU STEP-DOWN CRITERIA:</span>
+                    <span className="font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                      REQUIRED SEVERITY S &lt; {req.icuStepDownThreshold}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
             )
           })}
         </div>

@@ -14,7 +14,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
@@ -32,7 +32,7 @@
 
 ---
 
-## 🌍 Overview
+## Overview
 
 **TriageNet** is a full-stack healthcare operations platform designed as a **Final Year CSBS Project (PG300604)**. It currently connects **4 regional hospitals** via a weighted graph network, enabling Dijkstra shortest-path referrals when a facility faces capacity overflow.
 
@@ -42,9 +42,9 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🧠 AI & ML Engine
+### AI & ML Engine
 | Feature | Description |
 |---------|-------------|
 | **ML Severity Scorer** | Logistic Regression model trained on clinical vitals (SpO₂, HR, BP, Temp, Resp Rate, Age) producing real-time 0–100 severity scores with Sigmoid(W·X + b) |
@@ -52,7 +52,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 | **Explainable AI** | Top risk factor attribution with percentage breakdowns per patient |
 | **Priority Decay** | Dynamic priority escalation combining acuity score with wait-time degradation |
 
-### 🤖 Autonomous AI Supply Demand & Dispatcher Engine
+### Autonomous AI Supply Demand & Dispatcher Engine
 | Feature | Description |
 |---------|-------------|
 | **Autonomous 24/7 Telemetry** | Continuously monitors regional hospital bed and ICU capacity loads without requiring manual button triggers |
@@ -60,7 +60,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 | **Darkroom Terminal CLI** | Interactive macOS/Linux terminal streaming 100% live computed telemetry, bottleneck metrics, AI solutions, and embedded operator permission controls |
 | **Dynamic Need Flagging** | Automatically raises live supply flags for strained facilities (Load ≥ 70%) with one-click live approval |
 
-### 💰 AI Financial & Equipment Cost Management Agent (Indian Rupees ₹)
+### AI Financial & Equipment Cost Management Agent (Indian Rupees ₹)
 | Feature | Description |
 |---------|-------------|
 | **Rupees (₹) Denomination** | Managed in Indian Rupees (₹) across ₹12.80 Crore total regional operating budget |
@@ -68,7 +68,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 | **Net Cost Recovery Surplus** | Computes `Gross Recovered Care Revenue - Equipment Maintenance Expenses` (+₹1.46 Cr Surplus) with a **142.7% Cost Recovery Ratio** |
 | **Financial Terminal CLI** | Interactive darkroom terminal streaming live financial telemetry, asset valuations, and budget health diagnostics |
 
-### 🔗 Algorithmic Core
+### Algorithmic Core
 | Feature | Description |
 |---------|-------------|
 | **Dijkstra Regional Referrals** | Graph-weighted shortest-path inter-hospital transfers with real-time travel time computation |
@@ -76,7 +76,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 | **Hungarian Bed Assignment** | Optimal patient-to-bed matching considering severity and resource compatibility |
 | **Auto-Play Simulation** | Continuous stress testing with random arrivals, preemption cycles, discharge events, and anomaly detection |
 
-### 🖥️ Operations Dashboard & Telemetry
+### Operations Dashboard & Telemetry
 | Feature | Description |
 |---------|-------------|
 | **12 Operational Pages** | Dashboard, Patients, Triage Queue, Regional Network, AI CDS, Appointments, Clinical Operations, Billing & Revenue, Medical Records, Inventory & Supplies, Reports & Analytics, Communications |
@@ -87,7 +87,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 
 ---
 
-## 🤖 Autonomous AI Agents
+## Autonomous AI Agents
 
 | Agent Name | Primary Responsibility | Telemetry Output |
 |------------|------------------------|------------------|
@@ -97,7 +97,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -111,7 +111,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -147,7 +147,7 @@ The system uses **machine learning severity scoring**, **graph-based regional lo
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -194,7 +194,7 @@ cd backend
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 TriageNet/
@@ -220,7 +220,7 @@ TriageNet/
 │
 ├── ml/                          # Python ML Training Pipeline
 │   ├── train_severity_model.py  # Logistic Regression model training script
-│   ├── benchmark/               # Multi-dataset benchmarking files
+│   ├── benchmark_multi_kaggle_triage.py # Multi-dataset benchmarking script
 │   └── README.md                # ML pipeline documentation
 │
 ├── Essentials/                  # Project Documentation
@@ -238,7 +238,7 @@ TriageNet/
 
 ---
 
-## 📊 ML Pipeline
+## ML Pipeline
 
 The severity scoring model is a **Logistic Regression classifier** trained on clinical vital signs:
 
@@ -279,7 +279,9 @@ python train_severity_model.py
 
 ---
 
-## 🔬 ML Research & Multi-Dataset Benchmarking
+<a id="ml-research--multi-dataset-benchmarking"></a>
+<a id="ml-research-multi-dataset-benchmarking"></a>
+## ML Research & Multi-Dataset Benchmarking
 
 **4 Kaggle Datasets Tested:**
 1. `blueblushed/hospital-dataset-for-practice` — 1,000 synthetic patient records, general hospital vitals
@@ -315,7 +317,7 @@ python train_severity_model.py
 
 ---
 
-## 🗺️ State-Wide Scaling Vision
+## State-Wide Scaling Vision
 
 - **Target:** Jharkhand (24 districts, 500+ government health facilities)
 - **4-Layer Architecture:** Edge ML → Traffic-Aware Router → Fleet Load Balancer → State Command Center
@@ -325,7 +327,7 @@ python train_severity_model.py
 
 ---
 
-## 📈 Development Progress
+## Development Progress
 
 ### ✅ Phase 1 — Frontend & ML Engine (Complete)
 - [x] Panacea Healthcare SaaS design system (light clinical canvas & Walnut Shadow theme)
@@ -389,7 +391,7 @@ python train_severity_model.py
 
 ---
 
-## 🔒 Environment Variables
+## Environment Variables
 
 Create a `.env` file in the project root for Docker Compose:
 
@@ -409,7 +411,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 
 ---
 
-## 📄 License
+## License
 
 This project is released under the [MIT License](LICENSE). 
 

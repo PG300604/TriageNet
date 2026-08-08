@@ -20,6 +20,7 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final SeverityScoreRepository severityScoreRepository;
+    @lombok.Getter
     private final SeverityScorer severityScorer;
 
     @Transactional(readOnly = true)

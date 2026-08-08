@@ -59,15 +59,46 @@ public class Hospital {
     @Column(name = "icu_capacity_ratio")
     private Double icuiCapacityRatio;
 
+    @Column(name = "district_name", length = 100)
+    private String districtName;
+
+    @Column(name = "facility_tier", length = 50)
+    private String facilityTier; // TERTIARY, DISTRICT, SUB_DIVISIONAL, CHC
+
+    @Column(name = "total_general_beds")
+    private Integer totalGeneralBeds;
+
+    @Column(name = "available_general_beds")
+    private Integer availableGeneralBeds;
+
+    @Column(name = "total_icu_beds")
+    private Integer totalIcuBeds;
+
+    @Column(name = "available_icu_beds")
+    private Integer availableIcuBeds;
+
+    @Column(name = "has_ventilator")
+    private Boolean hasVentilator;
+
+    @Column(name = "has_trauma_surgery")
+    private Boolean hasTraumaSurgery;
+
+    @Column(name = "has_blood_bank")
+    private Boolean hasBloodBank;
+
+    @Column(name = "has_oxygen_generator")
+    private Boolean hasOxygenGenerator;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     // Convenience getters
-    public Integer getBedsTotal() { return totalBeds; }
+    public Integer getBedsTotal() { return totalBeds != null ? totalBeds : (totalGeneralBeds != null ? totalGeneralBeds : 100); }
     public Integer getBedsUsed() { return usedBeds != null ? usedBeds : 0; }
-    public Integer getVentsTotal() { return totalVentilators; }
+    public Integer getVentsTotal() { return totalVentilators != null ? totalVentilators : 10; }
     public Integer getVentsUsed() { return usedVentilators != null ? usedVentilators : 0; }
-    public Integer getSpecialistsTotal() { return totalSpecialists; }
+    public Integer getSpecialistsTotal() { return totalSpecialists != null ? totalSpecialists : 5; }
     public Integer getSpecialistsUsed() { return usedSpecialists != null ? usedSpecialists : 0; }
 }
+

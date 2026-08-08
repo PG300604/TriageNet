@@ -40,6 +40,12 @@ public class PatientController {
         return ResponseEntity.ok(patientService.evaluateVitals(id, vitals));
     }
 
+    @PostMapping("/score-vitals")
+    public ResponseEntity<SeverityScorer.SeverityResult> scoreVitalsStandalone(
+            @RequestBody SeverityScorer.ClinicalVitals vitals) {
+        return ResponseEntity.ok(patientService.getSeverityScorer().computeSeverity(vitals));
+    }
+
     @PostMapping("/{id}/discharge")
     public ResponseEntity<Patient> dischargePatient(
             @PathVariable UUID id,
@@ -47,3 +53,4 @@ public class PatientController {
         return ResponseEntity.ok(patientService.dischargePatient(id, reason));
     }
 }
+

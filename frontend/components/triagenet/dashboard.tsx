@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import {
   HOSPITAL_IDS,
   type Patient,
@@ -19,7 +20,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CapacityView } from './capacity-view'
 import { RegionalNetworkView } from './regional-network-view'
-import { Sidebar, type ViewKey } from './sidebar'
+import { Sidebar, type ViewKey, ROLE_ALLOWED_VIEWS, ROLE_CONFIGS } from './sidebar'
+import { useAuth, UserRole } from '@/lib/auth-context'
 import { TopBar } from './top-bar'
 import { TriageQueueView } from './triage-queue-view'
 import { PatientsView } from './patients-view'
@@ -49,13 +51,25 @@ const VIEW_TITLES: Record<string, string> = {
 }
 
 export function Dashboard() {
-  const [view, setView] = useState<ViewKey>('capacity')
+  const { user } = useAuth()
+  const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
+  const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
+  const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
+
+  const [view, setView] = useState<ViewKey>(allowedViews[0] || 'capacity')
   const [scenario, setScenario] = useState<ScenarioKey>('steady')
   const [state, setState] = useState<TriageState>(() => buildScenario('steady'))
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>(HOSPITAL_IDS.city)
   const [updatedIds, setUpdatedIds] = useState<Set<string>>(new Set())
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastEventMessage, setLastEventMessage] = useState<string | null>(null)
+
+  // Auto-redirect if current view is disallowed for the active role
+  useEffect(() => {
+    if (!allowedViews.includes(view)) {
+      setView(allowedViews[0])
+    }
+  }, [user, currentRole, allowedViews, view])
 
   const selectedHospital = useMemo(
     () => state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0],
@@ -199,6 +213,31 @@ export function Dashboard() {
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/70 to-[#ffffff] relative z-1">
           <div className="mx-auto max-w-7xl">
+            {/* RBAC Role Context Header */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#382416]/15 bg-white p-3.5 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-[#382416] text-[#ffedd7] shrink-0">
+                  <roleConfig.icon className="size-4 text-[#dc5000]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#382416] text-sm">{user?.name || 'Dr. Priyanshu Ghosh'}</span>
+                    <span className={cn('font-mono text-[9px] font-bold px-2 py-0.5 rounded border uppercase', roleConfig.color)}>
+                      [{roleConfig.badge}]
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {user?.roleTitle || 'System Super Admin'} · {user?.districtName || 'Statewide Command'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 font-mono text-[10px]">
+                <span className="bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#382416]/10 font-bold text-[#382416]">
+                  ROLE PERMITTED VIEWS: {allowedViews.length} / 12
+                </span>
+              </div>
+            </div>
+
             <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#382416]/15 pb-3">
               <h1 className="text-lg font-bold tracking-tight text-[#382416] uppercase md:text-xl font-mono">
                 {VIEW_TITLES[view] ?? 'Dashboard'}
@@ -210,6 +249,7 @@ export function Dashboard() {
                 </span>
               )}
             </div>
+
 
             {view === 'capacity' && (
               <CapacityView

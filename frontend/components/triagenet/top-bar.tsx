@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/auth-context'
 import type { Hospital, Patient, ScenarioKey } from '@/lib/triage-data'
 import {
   Building2,
@@ -78,6 +79,7 @@ export function TopBar({
   onTogglePlay,
   onNavigateView,
 }: TopBarProps) {
+  const { user } = useAuth()
   const [hospOpen, setHospOpen] = useState(false)
   const [scenOpen, setScenOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -243,11 +245,29 @@ export function TopBar({
           </button>
         )}
 
-        {/* Operator Profile */}
-        <div className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-[#ffedd7] font-mono text-xs font-bold shadow-2xs">
-          PG
+        {/* Operator Profile & Role Badge */}
+        <div className="flex items-center gap-2">
+          <a
+            href="/login"
+            className="hidden sm:flex flex-col items-end text-right hover:opacity-80 transition-opacity"
+          >
+            <span className="text-xs font-bold text-[#382416]">
+              {user ? user.name : 'Dr. Priyanshu Ghosh'}
+            </span>
+            <span className="font-mono text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded uppercase">
+              [{user ? user.role.replace(/_/g, ' ') : 'SUPER ADMIN'}]
+            </span>
+          </a>
+          <a
+            href="/login"
+            title="Switch User Role / Logout"
+            className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-[#ffedd7] font-mono text-xs font-bold shadow-2xs hover:bg-blue-950 cursor-pointer transition-colors"
+          >
+            {user ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2) : 'PG'}
+          </a>
         </div>
       </div>
     </header>
   )
 }
+

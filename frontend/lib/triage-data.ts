@@ -101,8 +101,8 @@ function baseHospitals(): Hospital[] {
   return [
     {
       id: HOSPITAL_IDS.city,
-      name: 'City General Hospital',
-      short: 'CG',
+      name: 'Rajendra Institute of Medical Sciences (RIMS), Ranchi',
+      short: 'RIMS',
       x: 18,
       y: 28,
       beds: { used: 26, total: 30 },
@@ -119,8 +119,8 @@ function baseHospitals(): Hospital[] {
     },
     {
       id: HOSPITAL_IDS.stmary,
-      name: "St. Mary's Trauma Center",
-      short: 'SM',
+      name: 'Sadar Hospital Ranchi',
+      short: 'SHR',
       x: 78,
       y: 22,
       beds: { used: 14, total: 18 },
@@ -137,8 +137,8 @@ function baseHospitals(): Hospital[] {
     },
     {
       id: HOSPITAL_IDS.riverside,
-      name: 'Riverside Medical Center',
-      short: 'RM',
+      name: 'MGM Medical College & Hospital, Jamshedpur',
+      short: 'MGM',
       x: 52,
       y: 72,
       beds: { used: 12, total: 32 },
@@ -155,8 +155,8 @@ function baseHospitals(): Hospital[] {
     },
     {
       id: HOSPITAL_IDS.north,
-      name: 'North District Hospital',
-      short: 'ND',
+      name: 'SNMMCH Dhanbad',
+      short: 'SNMMCH',
       x: 22,
       y: 78,
       beds: { used: 18, total: 20 },
@@ -173,6 +173,7 @@ function baseHospitals(): Hospital[] {
     },
   ]
 }
+
 
 function basePatients(): Patient[] {
   return [

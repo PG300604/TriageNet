@@ -200,4 +200,24 @@ export const ApiClient = {
     apiFetch<PatientApiData>(`/patients/${id}/discharge?reason=${encodeURIComponent(reason)}`, {
       method: 'POST',
     }),
+
+  // Spatial Routing & Dijkstra
+  findOptimalHospital: (req: {
+    originLat: number;
+    originLng: number;
+    preferredDistrict?: string;
+    requiresIcu?: boolean;
+    requiresVentilator?: boolean;
+    vitals?: VitalsInput;
+  }): Promise<any> =>
+    apiFetch('/routing/optimal', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  getDistrictDistanceMatrix: (districtName: string): Promise<any> =>
+    apiFetch(`/routing/matrix/${encodeURIComponent(districtName)}`),
 };
+
+export const apiClient = ApiClient;
+

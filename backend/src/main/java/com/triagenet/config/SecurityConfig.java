@@ -54,7 +54,7 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/dashboard/**", "/api/hospitals/**", "/api/patients/**", "/api/triage-queue/**", "/api/resources/**", "/h2-console/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/dashboard/**", "/api/routing/**", "/api/hospitals/**", "/api/patients/**", "/api/triage-queue/**", "/api/resources/**", "/h2-console/**", "/error").permitAll()
                 .anyRequest().authenticated()
             );
 

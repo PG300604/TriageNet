@@ -14,6 +14,8 @@ import { ArrowRight, Route, MapPin, Navigation, Sparkles, Activity, ShieldCheck,
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import type { MapHospitalNode } from './leaflet-map'
+import { useAuth } from '@/lib/auth-context'
+import { JHARKHAND_24_DISTRICTS } from '@/lib/jharkhand-data'
 import { apiClient } from '@/lib/api-client'
 
 // Dynamically import Leaflet map component to prevent SSR window reference issues
@@ -168,7 +170,27 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
     },
   ]
 
-  const mapNodes = realHospitals.length > 0 ? realHospitals : fallbackJharkhandNodes
+  // District & Tier Filters with RBAC Auto-Lock
+  const { user } = useAuth()
+  const [filterDistrict, setFilterDistrict] = useState<string>('ALL')
+  const [filterTier, setFilterTier] = useState<string>('ALL')
+
+  useEffect(() => {
+    if (user?.role === 'DISTRICT_CMO' && user.districtName) {
+      setFilterDistrict(user.districtName)
+    }
+  }, [user])
+
+  const allAvailableNodes = realHospitals.length > 0 ? realHospitals : fallbackJharkhandNodes
+
+  // Dynamically filter map nodes by District & Block/Tier
+  const filteredMapNodes = allAvailableNodes.filter((node) => {
+    const matchesDistrict = filterDistrict === 'ALL' || node.districtName.toLowerCase().includes(filterDistrict.toLowerCase()) || filterDistrict.toLowerCase().includes(node.districtName.toLowerCase())
+    const matchesTier = filterTier === 'ALL' || node.facilityTier === filterTier
+    return matchesDistrict && matchesTier
+  })
+
+  const mapNodes = filteredMapNodes
 
   const byId = new Map(hospitals.map((h) => [h.id, h]))
   const activeTransfers = transfers.filter((t) => t.active)
@@ -180,7 +202,7 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
       const res = await apiClient.findOptimalHospital({
         originLat: 23.3441,
         originLng: 85.3096,
-        preferredDistrict: 'Ranchi',
+        preferredDistrict: filterDistrict === 'ALL' ? 'Ranchi' : filterDistrict,
         requiresIcu: true,
         vitals: {
           spo2: 86,
@@ -196,6 +218,7 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
       setCalculatingRoute(false)
     }
   }
+
 
   useEffect(() => {
     handleCalculateOptimalRoute()
@@ -251,8 +274,48 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
         </div>
       </div>
 
+      {/* State, District & Block Filtering Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#382416]/15 rounded-2xl p-3.5 shadow-2xs">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">DISTRICT SCOPE:</span>
+            <select
+              value={filterDistrict}
+              onChange={(e) => setFilterDistrict(e.target.value)}
+              disabled={user?.role === 'DISTRICT_CMO'}
+              className="bg-[#FAF6F0] border border-[#382416]/20 text-[#382416] text-xs font-mono font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+            >
+              <option value="ALL">🌟 ALL 24 DISTRICTS (STATEWIDE - 79 HOSPITALS)</option>
+              {JHARKHAND_24_DISTRICTS.map((d) => (
+                <option key={d.id} value={d.name}>{d.name} District</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">BLOCK / TIER:</span>
+            <select
+              value={filterTier}
+              onChange={(e) => setFilterTier(e.target.value)}
+              className="bg-[#FAF6F0] border border-[#382416]/20 text-[#382416] text-xs font-mono font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+            >
+              <option value="ALL">ALL FACILITY TIERS</option>
+              <option value="TERTIARY">TERTIARY (Medical Colleges & Apex)</option>
+              <option value="DISTRICT">DISTRICT (Sadar Hospitals)</option>
+              <option value="SUB_DIVISIONAL">SUB-DIVISIONAL (SDH Referral)</option>
+              <option value="CHC">CHC (Community Health Centers)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-xl">
+          VISIBLE MAP NODES: {mapNodes.length} / {allAvailableNodes.length}
+        </div>
+      </div>
+
       {/* Main Grid View */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_22rem]">
+
         {/* Left Primary Display: Interactive Map or Network Graph */}
         <div className="space-y-4">
           {activeTab === 'map' ? (

@@ -18,7 +18,9 @@ import {
   X,
   AlertTriangle,
   Sparkles,
+  MapPin,
 } from 'lucide-react'
+
 import { useEffect, useRef, useState } from 'react'
 
 interface TopBarProps {
@@ -81,13 +83,26 @@ export function TopBar({
 }: TopBarProps) {
   const { user } = useAuth()
   const [hospOpen, setHospOpen] = useState(false)
+  const [distOpen, setDistOpen] = useState(false)
   const [scenOpen, setScenOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
+  // District & Tier Filters
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL')
+  const [selectedTier, setSelectedTier] = useState<string>('ALL')
+
+  // Auto-lock district selector if user is District CMO or Hospital Staff
+  useEffect(() => {
+    if (user?.role === 'DISTRICT_CMO' && user.districtName) {
+      setSelectedDistrict(user.districtName)
+    }
+  }, [user])
+
   const selectedHospital = hospitals.find((h) => h.id === selectedHospitalId) ?? hospitals[0]
 
   const hospRef = useClickOutside(() => setHospOpen(false))
+  const distRef = useClickOutside(() => setDistOpen(false))
   const scenRef = useClickOutside(() => setScenOpen(false))
   const searchRef = useClickOutside(() => setSearchOpen(false))
 
@@ -100,24 +115,97 @@ export function TopBar({
       )
     : []
 
+  const canSwitchDistrict = user?.role === 'SUPER_ADMIN' || user?.role === 'STATE_HEALTH_DEPT'
+
   return (
     <header className="relative z-50 flex h-16 shrink-0 items-center justify-between border-b border-[#382416]/15 bg-[#fdfbf7]/95 px-4 md:px-6 font-sans text-[#2c1b0e] shadow-2xs backdrop-blur-md">
-      {/* Left: Hospital Switcher & Search */}
-      <div className="flex items-center gap-3">
+      {/* Left: District Scope & Hospital Selector */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* District & State Selector Dropdown */}
+        <div ref={distRef} className="relative z-50">
+          <button
+            type="button"
+            onClick={() => canSwitchDistrict && setDistOpen((v) => !v)}
+            disabled={!canSwitchDistrict}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 font-mono text-xs font-bold transition-all shadow-2xs',
+              canSwitchDistrict
+                ? 'border-[#382416]/20 bg-[#382416] text-[#ffedd7] hover:bg-[#28180d] cursor-pointer'
+                : 'border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed opacity-90',
+            )}
+          >
+            <MapPin className="size-3.5 text-[#dc5000]" />
+            <span className="truncate max-w-[150px] md:max-w-[200px]">
+              {selectedDistrict === 'ALL'
+                ? '🌟 ALL 24 DISTRICTS (JHARKHAND)'
+                : `${selectedDistrict.toUpperCase()} DISTRICT`}
+            </span>
+            {canSwitchDistrict && <ChevronDown className="size-3 text-[#ffedd7]" />}
+          </button>
+
+          {distOpen && canSwitchDistrict && (
+            <div className="absolute left-0 top-full mt-2 z-[100] w-72 max-h-96 overflow-y-auto rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+              <div className="px-2 py-1 text-[9px] font-mono font-bold text-slate-400 uppercase">
+                STATEWIDE OVERVIEW
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDistrict('ALL')
+                  setDistOpen(false)
+                }}
+                className={cn(
+                  'flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-mono font-bold text-left cursor-pointer',
+                  selectedDistrict === 'ALL' ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-[#f7f2ea] text-slate-800',
+                )}
+              >
+                <span>🌟 ALL 24 DISTRICTS (STATEWIDE)</span>
+                {selectedDistrict === 'ALL' && <Check className="size-3.5 text-[#dc5000]" />}
+              </button>
+
+              <div className="px-2 pt-2 pb-1 text-[9px] font-mono font-bold text-slate-400 uppercase border-t border-slate-100">
+                24 JHARKHAND DISTRICTS
+              </div>
+              {[
+                'Ranchi', 'East Singhbhum (Jamshedpur)', 'Dhanbad', 'Bokaro', 'Hazaribagh',
+                'Deoghar', 'Palamu (Daltonganj)', 'Dumka', 'Giridih', 'West Singhbhum (Chaibasa)',
+                'Ramgarh', 'Koderma', 'Chatra', 'Jamtara', 'Godda', 'Pakur', 'Sahibganj',
+                'Latehar', 'Garhwa', 'Khunti', 'Gumla', 'Simdega', 'Lohardaga', 'Seraikela Kharsawan'
+              ].map((dName) => (
+                <button
+                  key={dName}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDistrict(dName)
+                    setDistOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-mono text-left cursor-pointer',
+                    selectedDistrict === dName ? 'bg-[#382416] text-[#ffedd7] font-bold' : 'hover:bg-[#f7f2ea] text-slate-700',
+                  )}
+                >
+                  <span>{dName}</span>
+                  {selectedDistrict === dName && <Check className="size-3.5 text-[#dc5000]" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Hospital Dropdown */}
-        <div ref={hospRef} className="relative z-50">
+        <div ref={hospRef} className="relative z-50 hidden md:block">
           <button
             type="button"
             onClick={() => setHospOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-2 font-mono text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-1.5 font-mono text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
           >
-            <Building2 className="size-4 text-[#dc5000]" />
-            <span>{selectedHospital?.name ?? 'Select Hospital'}</span>
-            <ChevronDown className="size-3.5 text-slate-400" />
+            <Building2 className="size-3.5 text-[#dc5000]" />
+            <span className="truncate max-w-[160px]">{selectedHospital?.name ?? 'Select Hospital'}</span>
+            <ChevronDown className="size-3 text-slate-400" />
           </button>
 
           {hospOpen && (
-            <div className="absolute left-0 top-full mt-2 z-[100] w-64 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+            <div className="absolute left-0 top-full mt-2 z-[100] w-72 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
               {hospitals.map((h) => (
                 <button
                   key={h.id}
@@ -140,6 +228,7 @@ export function TopBar({
             </div>
           )}
         </div>
+
 
         {/* Global Search Bar */}
         <div ref={searchRef} className="relative z-50 hidden sm:block">

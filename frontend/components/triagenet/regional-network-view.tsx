@@ -80,104 +80,28 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
     fetchRealHospitals()
   }, [])
 
-  // Real Jharkhand hospital coordinates fallback dataset
-  const fallbackJharkhandNodes: MapHospitalNode[] = [
-    {
-      id: 'jh-rims-ranchi',
-      name: 'Rajendra Institute of Medical Sciences (RIMS), Ranchi',
-      districtName: 'Ranchi',
-      facilityTier: 'TERTIARY',
-      lat: 23.3853,
-      lng: 85.3411,
-      totalBeds: 1500,
-      usedBeds: 1220,
-      availableGeneralBeds: 280,
-      availableIcuBeds: 15,
-      hasVentilator: true,
-      hasTraumaSurgery: true,
-      hasBloodBank: true,
-    },
-    {
-      id: 'jh-sadar-ranchi',
-      name: 'Sadar Hospital Ranchi',
-      districtName: 'Ranchi',
-      facilityTier: 'DISTRICT',
-      lat: 23.3667,
-      lng: 85.3250,
-      totalBeds: 500,
-      usedBeds: 410,
-      availableGeneralBeds: 90,
-      availableIcuBeds: 8,
-      hasVentilator: true,
-      hasTraumaSurgery: false,
-      hasBloodBank: true,
-    },
-    {
-      id: 'jh-mgm-jamshedpur',
-      name: 'MGM Medical College & Hospital, Jamshedpur',
-      districtName: 'East Singhbhum (Jamshedpur)',
-      facilityTier: 'TERTIARY',
-      lat: 22.8124,
-      lng: 86.2163,
-      totalBeds: 660,
-      usedBeds: 542,
-      availableGeneralBeds: 110,
-      availableIcuBeds: 8,
-      hasVentilator: true,
-      hasTraumaSurgery: true,
-      hasBloodBank: true,
-    },
-    {
-      id: 'jh-snmmch-dhanbad',
-      name: 'Shahid Nirmal Mahto Medical College Hospital (SNMMCH), Dhanbad',
-      districtName: 'Dhanbad',
-      facilityTier: 'TERTIARY',
-      lat: 23.8111,
-      lng: 86.4389,
-      totalBeds: 600,
-      usedBeds: 500,
-      availableGeneralBeds: 95,
-      availableIcuBeds: 5,
-      hasVentilator: true,
-      hasTraumaSurgery: true,
-      hasBloodBank: true,
-    },
-    {
-      id: 'jh-aiims-deoghar',
-      name: 'AIIMS Deoghar',
-      districtName: 'Deoghar',
-      facilityTier: 'TERTIARY',
-      lat: 24.4632,
-      lng: 86.7214,
-      totalBeds: 830,
-      usedBeds: 628,
-      availableGeneralBeds: 180,
-      availableIcuBeds: 22,
-      hasVentilator: true,
-      hasTraumaSurgery: true,
-      hasBloodBank: true,
-    },
-    {
-      id: 'jh-sheikh-bhikari-hazaribagh',
-      name: 'Sheikh Bhikari Medical College and Hospital, Hazaribagh',
-      districtName: 'Hazaribagh',
-      facilityTier: 'TERTIARY',
-      lat: 23.9982,
-      lng: 85.3688,
-      totalBeds: 540,
-      usedBeds: 449,
-      availableGeneralBeds: 85,
-      availableIcuBeds: 6,
-      hasVentilator: true,
-      hasTraumaSurgery: true,
-      hasBloodBank: true,
-    },
-  ]
+  // Complete 79 Real Jharkhand Government Healthcare Facilities
+  const fallbackJharkhandNodes: MapHospitalNode[] = JHARKHAND_79_HOSPITALS.map((h) => ({
+    id: h.id,
+    name: h.name,
+    districtName: h.districtName,
+    facilityTier: h.facilityTier,
+    lat: h.latitude,
+    lng: h.longitude,
+    totalBeds: h.totalGeneralBeds + h.totalIcuBeds,
+    usedBeds: (h.totalGeneralBeds + h.totalIcuBeds) - (h.availableGeneralBeds + h.availableIcuBeds),
+    availableGeneralBeds: h.availableGeneralBeds,
+    availableIcuBeds: h.availableIcuBeds,
+    hasVentilator: h.hasVentilator,
+    hasTraumaSurgery: h.hasTraumaSurgery,
+    hasBloodBank: h.hasBloodBank,
+  }))
 
   // District & Tier Filters with RBAC Auto-Lock
   const { user } = useAuth()
   const [filterDistrict, setFilterDistrict] = useState<string>('ALL')
   const [filterTier, setFilterTier] = useState<string>('ALL')
+
 
   useEffect(() => {
     if (user?.role === 'DISTRICT_CMO' && user.districtName) {
@@ -406,9 +330,10 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
                 </defs>
 
                 {/* Base network edges */}
-                {EDGES.map((edge) => {
+                {(state.edges && state.edges.length > 0 ? state.edges : EDGES).map((edge) => {
                   const a = byId.get(edge.fromId)
                   const b = byId.get(edge.toId)
+
                   if (!a || !b) return null
                   const pa = toXY(a)
                   const pb = toXY(b)

@@ -50,16 +50,83 @@ const VIEW_TITLES: Record<string, string> = {
   comms: 'Regional Emergency Communications',
 }
 
+import {
+  getHospitalsForDistrict,
+  convertFacilityToHospital,
+  generateInterconnectivityEdges,
+  JHARKHAND_24_DISTRICTS,
+} from '@/lib/jharkhand-data'
+
+function buildDistrictState(districtName: string, scenarioKey: ScenarioKey = 'steady'): TriageState {
+  const facilities = getHospitalsForDistrict(districtName)
+  const hospitals: Hospital[] = facilities.map((f, i) => convertFacilityToHospital(f, i, facilities.length))
+  const edges = generateInterconnectivityEdges(hospitals)
+
+  // Generate realistic clinical patients for the hospitals in this district
+  const patients: Patient[] = []
+  const factors = [
+    'Low SpO₂ (82%) · Acute Hypoxia',
+    'Tachycardia (136 bpm) · STEMI',
+    'Hypotension (84/52) · Septic Shock',
+    'High Fever (39.6°C) · Sepsis Alert',
+    'Acute Respiratory Distress',
+    'Trauma Laceration / Fracture',
+    'Severe Abdominal Pain',
+    'Head Injury / Altered Sensorium'
+  ]
+  const names = [
+    'Ramesh Soren', 'Sunita Murmu', 'Babloo Munda', 'Anita Kumari', 'Deepak Mahto',
+    'Pooja Devi', 'Manoj Oraon', 'Priyanka Singh', 'Vikram Hembrom', 'Anand Kumar',
+    'Meena Gope', 'Sanjay Tirkey', 'Sunil Roy', 'Neha Choudhary', 'Rohit Bedia'
+  ]
+
+  let pCounter = 101
+  hospitals.forEach((h, hIdx) => {
+    const numPatients = scenarioKey === 'mass-casualty' && hIdx === 0 ? 8 : (scenarioKey === 'regional-surge' ? 5 : 3)
+    for (let i = 0; i < numPatients; i++) {
+      const severity = scenarioKey === 'mass-casualty' && hIdx === 0 && i < 3 
+        ? Math.floor(84 + Math.random() * 14) 
+        : Math.floor(35 + Math.random() * 55)
+      const name = names[(pCounter + i) % names.length]
+      const topFactor = factors[(pCounter + i) % factors.length]
+      const bedType = severity >= 80 ? 'ICU' : 'General'
+      const status = i < (bedType === 'ICU' ? 2 : 3) ? 'Assigned' : 'Waiting'
+
+      patients.push({
+        id: `P-${pCounter++}`,
+        name,
+        hospitalId: h.id,
+        severity,
+        waitMinutes: Math.floor(4 + Math.random() * 28),
+        topFactor,
+        status,
+        bedType: status === 'Assigned' ? bedType : 'None',
+        estRecoveryMinutes: Math.floor(18 + Math.random() * 45),
+        stepDownCountdown: 15
+      })
+    }
+  })
+
+  return {
+    hospitals,
+    patients,
+    transfers: [],
+    edges,
+  }
+}
+
 export function Dashboard() {
   const { user } = useAuth()
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
   const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
 
+  const initialDistrict = user?.districtName || 'Ranchi'
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(initialDistrict)
   const [view, setView] = useState<ViewKey>(allowedViews[0] || 'capacity')
   const [scenario, setScenario] = useState<ScenarioKey>('steady')
-  const [state, setState] = useState<TriageState>(() => buildScenario('steady'))
-  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(HOSPITAL_IDS.city)
+  const [state, setState] = useState<TriageState>(() => buildDistrictState(initialDistrict, 'steady'))
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => state.hospitals[0]?.id || 'jh-rims-ranchi')
   const [updatedIds, setUpdatedIds] = useState<Set<string>>(new Set())
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastEventMessage, setLastEventMessage] = useState<string | null>(null)
@@ -71,26 +138,41 @@ export function Dashboard() {
     }
   }, [user, currentRole, allowedViews, view])
 
+  // Handle District Switch
+  const handleSelectDistrict = useCallback((newDistrict: string) => {
+    setSelectedDistrict(newDistrict)
+    const nextState = buildDistrictState(newDistrict, scenario)
+    setState(nextState)
+    if (nextState.hospitals.length > 0) {
+      setSelectedHospitalId(nextState.hospitals[0].id)
+    }
+    setLastEventMessage(`Switched district view to ${newDistrict === 'ALL' ? 'Statewide Jharkhand (79 Facilities)' : `${newDistrict} District (${nextState.hospitals.length} Facilities)`}`)
+    setTimeout(() => setLastEventMessage(null), 5000)
+  }, [scenario])
+
   const selectedHospital = useMemo(
     () => state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0],
     [state.hospitals, selectedHospitalId],
   )
 
   const runScenario = useCallback((next: ScenarioKey) => {
-    const built = buildScenario(next)
+    const built = buildDistrictState(selectedDistrict, next)
     setScenario(next)
     setState(built)
     setIsPlaying(false)
     setLastEventMessage(null)
     if (next === 'mass-casualty') {
-      setSelectedHospitalId(HOSPITAL_IDS.city)
+      if (built.hospitals.length > 0) {
+        setSelectedHospitalId(built.hospitals[0].id)
+      }
       setView('queue')
       setUpdatedIds(new Set(built.patients.map((p) => p.id)))
       window.setTimeout(() => setUpdatedIds(new Set()), 1200)
     } else {
       setUpdatedIds(new Set())
     }
-  }, [])
+  }, [selectedDistrict])
+
 
   const simulateTime = useCallback((stepMinutes = 7) => {
     setState((prev) => {
@@ -203,13 +285,16 @@ export function Dashboard() {
           patients={state.patients}
           selectedHospitalId={selectedHospitalId}
           onSelectHospital={setSelectedHospitalId}
+          selectedDistrict={selectedDistrict}
+          onSelectDistrict={handleSelectDistrict}
           scenario={scenario}
           onRunScenario={runScenario}
           onFastForward={simulateTime}
           isPlaying={isPlaying}
-          onTogglePlay={() => setIsPlaying((v) => !v)}
-          onNavigateView={setView}
+          onTogglePlay={() => setIsPlaying((p) => !p)}
+          onNavigateView={(v) => setView(v as ViewKey)}
         />
+
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/70 to-[#ffffff] relative z-1">
           <div className="mx-auto max-w-7xl">

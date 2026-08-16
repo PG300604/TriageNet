@@ -28,6 +28,8 @@ interface TopBarProps {
   patients?: Patient[]
   selectedHospitalId: string
   onSelectHospital: (id: string) => void
+  selectedDistrict?: string
+  onSelectDistrict?: (district: string) => void
   scenario: ScenarioKey
   onRunScenario: (scenario: ScenarioKey) => void
   onFastForward?: (stepMinutes: number) => void
@@ -46,7 +48,7 @@ const SCENARIOS: {
   {
     key: 'mass-casualty',
     label: 'Mass Casualty Event',
-    desc: 'Surge & overflow at City General',
+    desc: 'Surge & overflow at Apex Hospital',
     icon: Siren,
   },
   {
@@ -74,6 +76,8 @@ export function TopBar({
   patients = [],
   selectedHospitalId,
   onSelectHospital,
+  selectedDistrict = 'ALL',
+  onSelectDistrict,
   scenario,
   onRunScenario,
   onFastForward,
@@ -88,16 +92,13 @@ export function TopBar({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
-  // District & Tier Filters
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL')
-  const [selectedTier, setSelectedTier] = useState<string>('ALL')
-
   // Auto-lock district selector if user is District CMO or Hospital Staff
   useEffect(() => {
-    if (user?.role === 'DISTRICT_CMO' && user.districtName) {
-      setSelectedDistrict(user.districtName)
+    if (user?.role === 'DISTRICT_CMO' && user.districtName && onSelectDistrict) {
+      onSelectDistrict(user.districtName)
     }
-  }, [user])
+  }, [user, onSelectDistrict])
+
 
   const selectedHospital = hospitals.find((h) => h.id === selectedHospitalId) ?? hospitals[0]
 
@@ -151,7 +152,7 @@ export function TopBar({
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedDistrict('ALL')
+                  onSelectDistrict?.('ALL')
                   setDistOpen(false)
                 }}
                 className={cn(
@@ -176,7 +177,7 @@ export function TopBar({
                   key={dName}
                   type="button"
                   onClick={() => {
-                    setSelectedDistrict(dName)
+                    onSelectDistrict?.(dName)
                     setDistOpen(false)
                   }}
                   className={cn(
@@ -188,6 +189,7 @@ export function TopBar({
                   {selectedDistrict === dName && <Check className="size-3.5 text-[#dc5000]" />}
                 </button>
               ))}
+
             </div>
           )}
         </div>

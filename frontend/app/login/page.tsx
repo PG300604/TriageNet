@@ -18,6 +18,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+import Image from 'next/image';
+
 export default function LoginPage() {
   const router = useRouter();
   const { login, loginAsDemoRole, isLoading } = useAuth();
@@ -70,7 +72,18 @@ export default function LoginPage() {
 
       <div className="relative z-10 max-w-4xl mx-auto w-full">
         {/* Top Header Card */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="relative size-16 mb-4 overflow-hidden rounded-2xl shadow-md border-2 border-[#382416]/20 bg-[#382416]">
+            <Image
+              src="/triagenet-logo.png"
+              alt="TriageNet Official Logo"
+              width={64}
+              height={64}
+              className="object-cover"
+              priority
+            />
+          </div>
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#382416]/15 shadow-2xs mb-3">
             <Activity className="h-4 w-4 text-[#dc5000]" />
             <span className="font-mono text-[11px] font-bold text-[#382416] tracking-wider uppercase">
@@ -85,6 +98,7 @@ export default function LoginPage() {
             Panacea Healthcare SaaS · State-Wide Emergency Triage, Load Balancing & Real-Time Telemetry
           </p>
         </div>
+
 
         {/* Dual Panel Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">

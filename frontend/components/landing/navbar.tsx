@@ -5,16 +5,29 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 
+import Image from 'next/image'
+
 export function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-5 font-sans">
       <nav className="mx-auto max-w-7xl flex items-center justify-between border-b border-dashed border-[#40372e]/60 pb-4 backdrop-blur-md bg-[#100904]/70">
-        {/* Left: Brand Wordmark (Clean TRIAGENET) */}
-        <Link href="/" className="flex items-center gap-3">
-          <span className="text-xs md:text-sm font-medium uppercase text-[#ffedd7] tracking-wider font-mono">
+        {/* Left: Brand Wordmark with Official TriageNet Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="relative size-8 overflow-hidden rounded-lg shadow-sm border border-[#ffedd7]/20 group-hover:scale-105 transition-transform shrink-0">
+            <Image
+              src="/triagenet-logo.png"
+              alt="TriageNet Official Logo"
+              width={32}
+              height={32}
+              className="object-cover"
+              priority
+            />
+          </div>
+          <span className="text-xs md:text-sm font-bold uppercase text-[#ffedd7] tracking-wider font-mono">
             TRIAGENET
           </span>
         </Link>
+
 
         {/* Center/Right: Navigation Items */}
         <div className="hidden md:flex items-center gap-8 text-xs font-medium uppercase text-[#ffedd7] tracking-normal">

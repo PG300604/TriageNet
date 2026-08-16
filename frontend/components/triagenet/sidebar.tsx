@@ -1,6 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
+
 import { useAuth, UserRole } from '@/lib/auth-context'
 import { motion } from 'framer-motion'
 import {
@@ -85,13 +87,15 @@ export const ROLE_CONFIGS: Record<UserRole, { title: string; badge: string; colo
   AMBULANCE_DISPATCH: { title: '108 Ambulance Dispatch', badge: 'DISPATCH CONTROL', color: 'bg-orange-900/90 text-orange-200 border-orange-500/30', icon: Truck },
 }
 
-interface SidebarProps {
+export function Sidebar({
+  active,
+  onChange,
+  criticalCount = 0,
+}: {
   active: ViewKey
   onChange: (view: ViewKey) => void
-  criticalCount: number
-}
-
-export function Sidebar({ active, onChange, criticalCount }: SidebarProps) {
+  criticalCount?: number
+}) {
   const { user } = useAuth()
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
@@ -103,9 +107,16 @@ export function Sidebar({ active, onChange, criticalCount }: SidebarProps) {
   return (
     <aside className="relative z-20 flex w-16 shrink-0 flex-col border-r border-[#382416]/15 bg-[#fdfbf7] text-[#2c1b0e] md:w-64 font-sans shadow-2xs">
       {/* Brand Header */}
-      <div className="flex h-16 items-center gap-3 border-b border-[#382416]/15 px-4 md:px-5">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-[#382416] text-[#ffedd7] font-bold shadow-xs shrink-0">
-          <ShieldPlus className="size-5 text-[#dc5000]" />
+      <div className="flex h-16 items-center gap-3 border-b border-[#382416]/15 px-3 md:px-4">
+        <div className="relative size-10 overflow-hidden rounded-xl shadow-xs shrink-0 border border-[#382416]/20 bg-[#382416]">
+          <Image
+            src="/triagenet-logo.png"
+            alt="TriageNet Official Logo"
+            width={40}
+            height={40}
+            className="object-cover"
+            priority
+          />
         </div>
         <div className="hidden flex-col md:flex min-w-0">
           <span className="font-mono text-sm font-bold uppercase tracking-wider text-[#382416] truncate">

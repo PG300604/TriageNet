@@ -50,11 +50,21 @@ export function CtaFooter() {
 
         {/* Footer Meta Details */}
         <div className="mt-16 flex flex-col items-center justify-between gap-6 border-t border-dashed border-[#40372e] pt-8 sm:flex-row text-xs text-[#6c5f51]">
-          <div className="flex items-center gap-2">
-            <span className="font-medium uppercase text-[#ffedd7]">TRIAGENET</span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative size-6 overflow-hidden rounded-md border border-[#ffedd7]/20 shrink-0">
+              <Image
+                src="/triagenet-logo.png"
+                alt="TriageNet Official Logo"
+                width={24}
+                height={24}
+                className="object-cover"
+              />
+            </div>
+            <span className="font-bold uppercase text-[#ffedd7] tracking-wider font-mono">TRIAGENET</span>
             <span>·</span>
             <span className="text-[#dc5000] uppercase font-mono">* DESIGNED & BUILT BY PRIYANSHU GHOSH (CSBS 2027)</span>
           </div>
+
 
           <div className="flex items-center gap-6 font-mono text-[11px]">
             <a

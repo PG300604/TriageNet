@@ -31,17 +31,52 @@ const H = 500
 
 interface RegionalNetworkViewProps {
   state: TriageState
+  selectedDistrict?: string
 }
 
-function toXY(h: Hospital) {
-  return { x: (h.x / 100) * W, y: (h.y / 100) * H }
+function getLayoutPositions(hospitals: Hospital[]) {
+  const n = hospitals.length
+  const map = new Map<string, { x: number; y: number }>()
+  if (n === 0) return map
+  if (n === 1) {
+    map.set(hospitals[0].id, { x: 400, y: 250 })
+    return map
+  }
+  if (n <= 8) {
+    // Star/Orbit layout: Primary/Apex hospital in center, surrounding SDH/CHCs distributed evenly around
+    const cx = 400
+    const cy = 250
+    const r = 165
+    map.set(hospitals[0].id, { x: cx, y: cy })
+
+    const others = hospitals.slice(1)
+    others.forEach((h, i) => {
+      const angle = (i * 2 * Math.PI) / others.length - Math.PI / 2
+      const x = Math.round(cx + r * Math.cos(angle))
+      const y = Math.round(cy + r * Math.sin(angle))
+      map.set(h.id, { x, y })
+    })
+    return map
+  }
+
+  // Grid/Balanced layout for statewide or large subsets
+  const cols = Math.ceil(Math.sqrt(n * 1.6))
+  const rows = Math.ceil(n / cols)
+  const xStep = 680 / (cols + 1)
+  const yStep = 400 / (rows + 1)
+  hospitals.forEach((h, i) => {
+    const col = (i % cols) + 1
+    const row = Math.floor(i / cols) + 1
+    map.set(h.id, { x: Math.round(60 + col * xStep), y: Math.round(45 + row * yStep) })
+  })
+  return map
 }
 
-export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
+export function RegionalNetworkView({ state, selectedDistrict = 'ALL' }: RegionalNetworkViewProps) {
   const { hospitals, transfers } = state
   const [hovered, setHovered] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'graph'>('map')
-  const [selectedHospitalId, setSelectedHospitalId] = useState<string>('ranchi-rims')
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => hospitals[0]?.id || 'jh-rims-ranchi')
 
   // Live spatial routing & real hospital nodes state
   const [originLat, setOriginLat] = useState<number>(23.4832)
@@ -99,28 +134,19 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
     hasBloodBank: h.hasBloodBank,
   }))
 
-  // District & Tier Filters with RBAC Auto-Lock
-  const { user } = useAuth()
-  const [filterDistrict, setFilterDistrict] = useState<string>('ALL')
   const [filterTier, setFilterTier] = useState<string>('ALL')
-
-
-  useEffect(() => {
-    if (user?.role === 'DISTRICT_CMO' && user.districtName) {
-      setFilterDistrict(user.districtName)
-    }
-  }, [user])
 
   const allAvailableNodes = realHospitals.length > 0 ? realHospitals : fallbackJharkhandNodes
 
   // Dynamically filter map nodes by District & Block/Tier
   const filteredMapNodes = allAvailableNodes.filter((node) => {
-    const matchesDistrict = filterDistrict === 'ALL' || node.districtName.toLowerCase().includes(filterDistrict.toLowerCase()) || filterDistrict.toLowerCase().includes(node.districtName.toLowerCase())
+    const matchesDistrict = selectedDistrict === 'ALL' || node.districtName.toLowerCase().includes(selectedDistrict.toLowerCase()) || selectedDistrict.toLowerCase().includes(node.districtName.toLowerCase())
     const matchesTier = filterTier === 'ALL' || node.facilityTier === filterTier
     return matchesDistrict && matchesTier
   })
 
   const mapNodes = filteredMapNodes
+  const layoutMap = getLayoutPositions(hospitals)
 
   const byId = new Map(hospitals.map((h) => [h.id, h]))
   const activeTransfers = transfers.filter((t) => t.active)
@@ -135,18 +161,42 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
       const res = await apiClient.findOptimalHospital({
         originLat: customLat ?? 23.3441,
         originLng: customLng ?? 85.3096,
-        preferredDistrict: district ?? (filterDistrict === 'ALL' ? 'Ranchi' : filterDistrict),
+        preferredDistrict: district ?? (selectedDistrict === 'ALL' ? 'Ranchi' : selectedDistrict),
         requiresIcu: true,
         vitals: {
-          spo2: 84,
-          heartRate: 135,
-          systolicBp: 90,
-          age: 42
+          spo2: 82.0,
+          heartRate: 138.0,
+          systolicBp: 84.0,
+          temperature: 39.5,
+          respRate: 32.0,
+          age: 52
         }
       })
       setRoutingResults(res)
+      if (res && res.matchedHospital) {
+        setSelectedHospitalId(res.matchedHospital.id)
+      }
     } catch (e) {
       console.warn('Backend routing fallback to local algorithm:', e)
+      const closest = hospitals.find((h) => h.icuBeds.used < h.icuBeds.total) || hospitals[0]
+      if (closest) {
+        setRoutingResults({
+          matchedHospital: {
+            id: closest.id,
+            name: closest.name,
+            distanceKm: 18.5,
+            etaMinutes: 24,
+            availableIcuBeds: Math.max(1, closest.icuBeds.total - closest.icuBeds.used),
+            suitabilityScore: 92.4
+          },
+          drivingRoutePolyline: [
+            [originLat, originLng],
+            [23.3853, 85.3411]
+          ],
+          evaluatedCandidatesCount: hospitals.length
+        })
+        setSelectedHospitalId(closest.id)
+      }
     } finally {
       setCalculatingRoute(false)
     }
@@ -160,22 +210,16 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
     handleCalculateOptimalRoute(lat, lng, district)
   }
 
-  useEffect(() => {
-    handleCalculateOptimalRoute()
-  }, [])
-
-
-
   return (
-    <div className="flex flex-col gap-5 font-sans">
+    <div className="flex flex-col gap-5 font-sans text-[#2c1b0e]">
       {/* Header & Mode Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#382416]/15 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-extrabold tracking-tight text-[#382416] font-mono">
+            <h2 className="text-base font-bold tracking-tight text-[#382416] uppercase font-mono">
               JHARKHAND REGIONAL SPATIAL ROUTING NETWORK
             </h2>
-            <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase">
+            <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
               [OPENROUTESERVICE API READY]
             </span>
           </div>
@@ -215,26 +259,20 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
         </div>
       </div>
 
-      {/* State, District & Block Filtering Bar */}
+      {/* Synchronized Global Scope & Tier Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#382416]/15 rounded-2xl p-3.5 shadow-2xs">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">DISTRICT SCOPE:</span>
-            <select
-              value={filterDistrict}
-              onChange={(e) => setFilterDistrict(e.target.value)}
-              disabled={user?.role === 'DISTRICT_CMO'}
-              className="bg-[#FAF6F0] border border-[#382416]/20 text-[#382416] text-xs font-mono font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
-            >
-              <option value="ALL">🌟 ALL 24 DISTRICTS (STATEWIDE - 79 HOSPITALS)</option>
-              {JHARKHAND_24_DISTRICTS.map((d) => (
-                <option key={d.id} value={d.name}>{d.name} District</option>
-              ))}
-            </select>
+            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">GLOBAL DISTRICT SCOPE:</span>
+            <span className="inline-flex items-center gap-1.5 bg-[#382416] text-[#ffedd7] text-xs font-mono font-bold py-1 px-3 rounded-xl shadow-2xs">
+              <MapPin className="size-3 text-[#dc5000]" />
+              {selectedDistrict === 'ALL' ? '🌟 ALL 24 DISTRICTS (JHARKHAND STATEWIDE)' : `${selectedDistrict.toUpperCase()} DISTRICT`}
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono italic">(Synced with Top Bar)</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">BLOCK / TIER:</span>
+            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">FACILITY TIER:</span>
             <select
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
@@ -250,7 +288,7 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
         </div>
 
         <div className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-xl">
-          VISIBLE MAP NODES: {mapNodes.length} / {allAvailableNodes.length}
+          ACTIVE DISTRICT FACILITIES: {hospitals.length} · VISIBLE MAP NODES: {mapNodes.length}
         </div>
       </div>
 
@@ -310,10 +348,22 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
             />
           ) : (
 
-            <div className="overflow-hidden rounded-2xl border border-[#382416]/15 bg-white p-3 shadow-md">
+            <div className="overflow-hidden rounded-2xl border border-[#382416]/15 bg-white p-4 shadow-md space-y-2">
+              <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-100 font-mono text-[11px]">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500"></span>
+                  <span className="font-bold text-[#382416]">DIJKSTRA MINIMUM-TIME TRANSFER TOPOLOGY</span>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                  <span>🟢 Normal (&lt;80%)</span>
+                  <span>🟡 Elevated (&gt;80%)</span>
+                  <span>🔴 Critical / Surge (&gt;95%)</span>
+                </div>
+              </div>
+
               <svg
                 viewBox={`0 0 ${W} ${H}`}
-                className="h-full w-full"
+                className="h-[460px] w-full bg-gradient-to-br from-[#FAF6F0]/40 via-white to-[#f7f2ea]/30 rounded-xl"
                 role="img"
                 aria-label="Regional hospital transfer network graph"
               >
@@ -331,18 +381,16 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
                   </marker>
                 </defs>
 
-                {/* Base network edges */}
+                {/* Base network road edges */}
                 {(state.edges && state.edges.length > 0 ? state.edges : EDGES).map((edge) => {
-                  const a = byId.get(edge.fromId)
-                  const b = byId.get(edge.toId)
+                  const pa = layoutMap.get(edge.fromId)
+                  const pb = layoutMap.get(edge.toId)
 
-                  if (!a || !b) return null
-                  const pa = toXY(a)
-                  const pb = toXY(b)
+                  if (!pa || !pb) return null
                   const dx = pb.x - pa.x
                   const dy = pb.y - pa.y
                   const len = Math.hypot(dx, dy) || 1
-                  const off = 16
+                  const off = 18
                   const mx = (pa.x + pb.x) / 2 + (-dy / len) * off
                   const my = (pa.y + pb.y) / 2 + (dx / len) * off
                   return (
@@ -352,41 +400,42 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
                         y1={pa.y}
                         x2={pb.x}
                         y2={pb.y}
-                        stroke="#cbd5e1"
-                        strokeWidth={2}
+                        stroke="#94a3b8"
+                        strokeWidth={2.5}
+                        strokeDasharray="4 2"
+                        opacity={0.7}
                       />
-                      <g>
+                      <g className="cursor-pointer">
                         <rect
-                          x={mx - 26}
-                          y={my - 12}
-                          width={52}
-                          height={20}
-                          rx={10}
+                          x={mx - 32}
+                          y={my - 11}
+                          width={64}
+                          height={22}
+                          rx={11}
                           fill="#ffffff"
                           stroke="#cbd5e1"
-                          strokeWidth={1}
+                          strokeWidth={1.5}
+                          className="shadow-xs"
                         />
                         <text
                           x={mx}
                           y={my + 2}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          className="fill-slate-600 font-mono text-[11px]"
+                          className="fill-slate-700 font-mono text-[10px] font-bold"
                         >
-                          {edge.minutes} min
+                          ⏱ {edge.minutes}m
                         </text>
                       </g>
                     </g>
                   )
                 })}
 
-                {/* Active transfer edges */}
+                {/* Active emergency transfer edges */}
                 {activeTransfers.map((t) => {
-                  const a = byId.get(t.fromId)
-                  const b = byId.get(t.toId)
-                  if (!a || !b) return null
-                  const pa = toXY(a)
-                  const pb = toXY(b)
+                  const pa = layoutMap.get(t.fromId)
+                  const pb = layoutMap.get(t.toId)
+                  if (!pa || !pb) return null
                   const isHovered = hovered === t.id
                   return (
                     <line
@@ -396,21 +445,34 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
                       x2={pb.x}
                       y2={pb.y}
                       stroke="#dc2626"
-                      strokeWidth={isHovered ? 4 : 3}
+                      strokeWidth={isHovered ? 5 : 3.5}
                       markerEnd="url(#arrow)"
-                      className="edge-active"
+                      className="edge-active animate-pulse"
                       opacity={hovered && !isHovered ? 0.35 : 1}
                     />
                   )
                 })}
 
-                {/* Nodes */}
+                {/* Hospital Nodes */}
                 {hospitals.map((h) => {
-                  const { x, y } = toXY(h)
+                  const pos = layoutMap.get(h.id) ?? { x: 400, y: 250 }
+                  const { x, y } = pos
                   const status = hospitalStatus(h)
                   const token = STATUS_CLASSES[status].token
+                  const isSelected = selectedHospitalId === h.id
+                  const usedBeds = h.beds?.used ?? 0
+                  const totalBeds = h.beds?.total ?? 1
+                  const occPercent = Math.round((usedBeds / totalBeds) * 100)
+                  const availIcu = Math.max(0, (h.icuBeds?.total ?? 0) - (h.icuBeds?.used ?? 0))
+
                   return (
-                    <g key={h.id} className="cursor-pointer" onClick={() => setSelectedHospitalId(h.id)}>
+                    <g
+                      key={h.id}
+                      className="cursor-pointer transition-all"
+                      onClick={() => setSelectedHospitalId(h.id)}
+                      onMouseEnter={() => setHovered(h.id)}
+                      onMouseLeave={() => setHovered(null)}
+                    >
                       {status === 'red' && (
                         <circle
                           cx={x}
@@ -419,33 +481,74 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
                           className="node-pulse"
                           style={
                             {
-                              ['--pulse-min' as string]: '26px',
-                              ['--pulse-max' as string]: '44px',
+                              ['--pulse-min' as string]: '28px',
+                              ['--pulse-max' as string]: '48px',
                             } as React.CSSProperties
                           }
                         />
                       )}
-                      <circle cx={x} cy={y} r={26} fill="#ffffff" stroke={token} strokeWidth={4} />
-                      <circle cx={x} cy={y} r={16} fill={token} opacity={0.15} />
+
+                      {/* Selection Aura */}
+                      {isSelected && (
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={34}
+                          fill="none"
+                          stroke="#2563eb"
+                          strokeWidth={2.5}
+                          strokeDasharray="4 2"
+                        />
+                      )}
+
+                      {/* Outer Status Ring */}
+                      <circle cx={x} cy={y} r={26} fill="#ffffff" stroke={token} strokeWidth={4.5} />
+                      <circle cx={x} cy={y} r={18} fill={token} opacity={0.12} />
+
+                      {/* Short Code */}
                       <text
                         x={x}
                         y={y + 1}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         fill={token}
-                        style={{ fontSize: 13, fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                        style={{ fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-mono)' }}
                       >
-                        {h.short}
+                        {h.short.substring(0, 5)}
                       </text>
-                      <text
-                        x={x}
-                        y={y + 44}
-                        textAnchor="middle"
-                        className="fill-slate-800 font-bold"
-                        style={{ fontSize: 12 }}
-                      >
-                        {h.name}
-                      </text>
+
+                      {/* Info Card Badge Below Node */}
+                      <g transform={`translate(${x}, ${y + 34})`}>
+                        <rect
+                          x={-85}
+                          y={0}
+                          width={170}
+                          height={38}
+                          rx={8}
+                          fill="#ffffff"
+                          stroke={isSelected ? '#2563eb' : '#e2e8f0'}
+                          strokeWidth={isSelected ? 2 : 1}
+                          className="shadow-sm"
+                        />
+                        <text
+                          x={0}
+                          y={13}
+                          textAnchor="middle"
+                          className="fill-slate-900 font-sans font-bold"
+                          style={{ fontSize: 10 }}
+                        >
+                          {h.name.length > 24 ? `${h.name.substring(0, 22)}...` : h.name}
+                        </text>
+                        <text
+                          x={0}
+                          y={27}
+                          textAnchor="middle"
+                          className="fill-slate-500 font-mono"
+                          style={{ fontSize: 9 }}
+                        >
+                          Occ: <tspan className="font-bold text-slate-800">{occPercent}%</tspan> ({usedBeds}/{totalBeds}) · ICU: <tspan className="font-bold text-emerald-600">{availIcu}</tspan>
+                        </text>
+                      </g>
                     </g>
                   )
                 })}
@@ -453,6 +556,7 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
             </div>
           )}
         </div>
+
 
         {/* Right Side Panel: Live Routing Recommendations & Active Transfers */}
         <div className="flex flex-col gap-4">

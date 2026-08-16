@@ -363,7 +363,10 @@ export function Dashboard() {
                 onTogglePlay={() => setIsPlaying((v) => !v)}
               />
             )}
-            {view === 'network' && <RegionalNetworkView state={state} />}
+            {view === 'network' && (
+              <RegionalNetworkView state={state} selectedDistrict={selectedDistrict} />
+            )}
+
             {(view as string) === 'patients' && <PatientsView state={state} />}
             {(view as string) === 'aicds' && <AiCdsView state={state} />}
             {(view as string) === 'appointments' && <AppointmentsView />}

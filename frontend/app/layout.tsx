@@ -92,9 +92,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/icon-light-32x32.png',
-    shortcut: '/icon-light-32x32.png',
-    apple: '/apple-icon.png',
+    icon: [
+      { url: '/triagenet-logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/triagenet-logo.png',
+    apple: '/triagenet-logo.png',
   },
   manifest: '/manifest.webmanifest',
 }
@@ -156,11 +159,17 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>
+        {/* Favicon and Apple Touch Icons */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/triagenet-logo.png" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/triagenet-logo.png" />
+
         {/* Resource Hints: Preconnect & DNS-Prefetch for Fast CDN and Map Tile Loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
         <link rel="dns-prefetch" href="https://unpkg.com" />
+
 
         {/* PWA & Mobile Web Capabilities */}
         <meta name="application-name" content="TriageNet" />

@@ -364,8 +364,14 @@ export function Dashboard() {
               />
             )}
             {view === 'network' && (
-              <RegionalNetworkView state={state} selectedDistrict={selectedDistrict} />
+              <RegionalNetworkView
+                state={state}
+                selectedDistrict={selectedDistrict}
+                onStateChange={setState}
+                onInjectArrival={injectArrival}
+              />
             )}
+
 
             {(view as string) === 'patients' && <PatientsView state={state} />}
             {(view as string) === 'aicds' && <AiCdsView state={state} />}

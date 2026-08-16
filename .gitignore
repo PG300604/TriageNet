@@ -76,6 +76,8 @@ graphify-out/
 
 # ──── Gemini / Antigravity Agent State ────
 .agents/
+!.agents/rules/
+!.agents/workflows/
 .gemini/
 
 # ──── Test Coverage & Reports ────

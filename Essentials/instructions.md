@@ -1,83 +1,74 @@
 # instructions.md — Operating Instructions for Antigravity
 
-These are the working rules for the AI coding agent while building TriageNet. Read `brain.md`
-first for context, then follow these rules for *how* to work.
+These are the operational working rules for the AI coding agent (**Google Antigravity / Gemini**) building and maintaining **TriageNet**. Read [`brain.md`](file:///p:/TriageNet/Essentials/brain.md) first for standing context, then adhere strictly to these guidelines.
 
 ---
 
-## 1. Session workflow
+## 1. Session Workflow & Anti-Hallucination Directives
 
-1. At the start of every session, re-read `brain.md`, `PRD.md`, `TRD.md`, and `ERD.md` if any
-   time has passed since the last session — don't rely on stale in-context memory of the plan.
-2. Work in the phase order defined in the PRD's 5-week plan. Don't jump ahead to Week 3 work
-   (assignment engine) before Week 1–2 foundations (schema, auth, scoring, triage queue) are
-   working and tested.
-3. Before writing code for a new module, restate in 2-3 sentences what you're about to build
-   and which section of the TRD it corresponds to. This keeps the build traceable to the spec.
-4. After finishing a module, run/describe a quick manual sanity check (or a unit test) before
-   moving to the next module. Don't stack unverified modules on top of each other.
+1. **Pre-Phase Mandatory Document Review**: Before starting any phase, feature, or code module, agents **MUST** read and inspect all 5 core source-of-truth documents in [`Essentials/`](file:///p:/TriageNet/Essentials): [`brain.md`](file:///p:/TriageNet/Essentials/brain.md), [`PRD.md`](file:///p:/TriageNet/Essentials/PRD.md), [`TRD.md`](file:///p:/TriageNet/Essentials/TRD.md), [`ERD.md`](file:///p:/TriageNet/Essentials/ERD.md), and [`instructions.md`](file:///p:/TriageNet/Essentials/instructions.md). Do not rely on unverified memory.
+2. **Post-Phase Automatic Document Update**: Upon finishing development on any phase or feature, agents **MUST** immediately update all 5 essential documents in `Essentials/` (`brain.md`, `PRD.md`, `TRD.md`, `ERD.md`, `instructions.md`) and run `graphify update .` to reflect the latest codebase changes. A phase is **NOT DONE** until all documents are updated. (Enforced via [`.agents/rules/phase-doc-synchronization.md`](file:///p:/TriageNet/.agents/rules/phase-doc-synchronization.md)).
+3. **Never Hallucinate Dataset Scope**: TriageNet is integrated with **100% authentic Jharkhand healthcare infrastructure data** (79 real facilities across 24 districts). Never revert to claiming data is purely synthetic or that real maps/geospatial coordinates are absent.
+4. **Traceability**: Before writing or refactoring any module, ensure your implementation directly aligns with the technical contracts specified in `TRD.md` and `ERD.md`.
+5. **Verification Requirement**: Never declare a task complete without executing concrete runtime verification (e.g. running unit tests or build commands).
 
-## 2. Code style & structure
+---
 
-- Follow standard Spring Boot layered architecture: `controller/`, `service/`, `repository/`,
-  `entity/`, `dto/`, `config/`. Keep algorithm implementations (Hungarian, Dijkstra, priority
-  queue, severity scorer) in a clearly separated `algorithms/` or `engine/` package — these are
-  the heart of the project and should be easy to point to directly in a code walkthrough.
-- Favor clear, well-commented algorithm code over clever one-liners. The person reviewing this
-  in a viva or interview should be able to read the Hungarian algorithm implementation and
-  understand it without external references.
-- Use environment variables for all secrets (DB credentials, JWT signing key) — never hardcode.
-  This is a hard rule, not a preference, carried over from a prior security-hardening pass on
-  ShopFlow.
-- Keep the frontend to the 3 views defined in the TRD. If a new view idea comes up mid-build,
-  flag it rather than silently building it.
+## 2. Code Structure & Engineering Principles
 
-## 3. When to ask vs. when to proceed
+### Backend (`backend/src/main/java/com/triagenet/`)
+- Adhere strictly to standard Spring Boot layered architecture:
+  - `controller/`: REST API controllers and RBAC annotation enforcement.
+  - `service/`: Business logic, seeders, and referral orchestration.
+  - `repository/`: Spring Data JPA interfaces.
+  - `entity/`: JPA entities mapping to `ERD.md`.
+  - `dto/`: Request/Response data transfer objects.
+  - `config/`: Spring Security + JWT authentication rules.
+  - `engine/`: Core algorithms ([`SeverityScorer.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/engine/SeverityScorer.java), [`HungarianMatcher.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/engine/HungarianMatcher.java), [`DijkstraRouter.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/engine/DijkstraRouter.java)).
+- Keep algorithm code clean, hand-coded, and thoroughly commented. Avoid replacing core algorithms with third-party library black boxes.
 
-**Proceed without asking when:**
-- Implementing something already fully specified in PRD/TRD/ERD.
-- Making small implementation choices (variable names, minor helper functions, standard Spring
-  Boot boilerplate).
+### Frontend (`frontend/`)
+- Next.js 15 (App Router) + React 19 + Tailwind CSS + Lucide icons + Leaflet maps.
+- Maintain the **Panacea Healthcare SaaS design language**: `Walnut Shadow` tone, `#491205` brand accent, official logo lockups, crisp cards, zero generic placeholders or emojis.
+- Respect the **6-Role RBAC System**: `SUPER_ADMIN`, `STATE_HEALTH_DEPT`, `DISTRICT_CMO`, `HOSPITAL_ADMIN`, `TRIAGE_NURSE`, `AMBULANCE_DISPATCH`.
 
-**Stop and ask Priyanshu when:**
-- A core algorithm (Hungarian, Dijkstra/MCMF, priority queue, severity scorer) would need to be
-  simplified, replaced with a library call, or cut due to time pressure. This is the one thing
-  that must not silently degrade.
-- The 5-week phase plan needs to slip or reorder.
-- A new feature is being considered that isn't in the PRD's MVP or stretch-goal list.
-- Something in the TRD/ERD turns out to be technically wrong or infeasible as written — flag it,
-  propose a fix, but don't just quietly deviate from the documented plan.
+---
 
-## 4. Testing expectations
+## 3. When to Ask vs. When to Proceed
 
-- Every algorithm module needs at least a minimal correctness check before being considered
-  "done": e.g. Hungarian algorithm verified against a small hand-computed cost matrix; Dijkstra
-  verified against a small known graph with an obvious shortest path; priority queue verified
-  to reorder correctly when a new high-severity patient arrives.
-- Don't consider Week 3/4 modules complete until this kind of sanity check exists, even if
-  informal (a `main` method or a simple test class is fine — doesn't need full JUnit coverage
-  given the timeline).
+### Proceed Without Asking
+- Implementing features or bug fixes directly specified in PRD/TRD/ERD.
+- Refactoring helper methods, DTOs, or standard Spring Boot / Next.js boilerplate.
+- Resolving lint errors, build breaks, or styling misalignments.
 
-## 5. Documentation as you go
+### Stop and Ask Priyanshu
+- Modifying core mathematical formulations of the 4 algorithms (Severity scoring weights, Priority decay lambda, Hungarian cost matrix penalties, Dijkstra shortest path logic).
+- Adding new global database entities that break existing ERD relationships.
+- Changing security model permissions or altering RBAC role definitions.
 
-- Keep a running `DECISIONS.md` (create if it doesn't exist) logging any meaningful deviation
-  from the original PRD/TRD — one line per decision, e.g. "Week 3: simplified MCMF to
-  single-hospital Dijkstra routing only due to time; documented as a stretch goal not completed."
-  This becomes useful both for `brain.md` updates and for the final report's honesty about scope.
-- When a module is finished, briefly note in commit messages which TRD section it implements
-  (e.g. `feat: implement Hungarian algorithm assignment engine (TRD §3.4)`).
+---
 
-## 6. Demo/report readiness
+## 4. Testing & Verification Workflows
 
-- By end of Week 4, the system should be deployed (Docker → Railway/Render backend, Vercel
-  frontend) and runnable end-to-end via the Scenario Simulator.
-- Week 5 is reserved for: dashboard polish, running and recording the mass-casualty-event demo
-  scenario, and writing/assembling the final report — not for new features. If Week 4 finishes
-  early, resist scope creep; use the extra time to harden tests and polish the demo instead.
+- **Backend Build & Verification**:
+  ```powershell
+  cd backend
+  ./mvnw clean test
+  ```
+- **Frontend Build & Verification**:
+  ```powershell
+  cd frontend
+  npm run build
+  ```
+- **Knowledge Graph Synchronization**:
+  After modifying source code or documentation files in a session, always update the graphify index:
+  ```powershell
+  graphify update .
+  ```
 
-## 7. Tone/scope honesty
+---
 
-- When generating any user-facing copy (dashboard labels, report language, README), be accurate
-  about what this system is: a simulation/demonstration of algorithmic techniques applied to a
-  healthcare resource-allocation scenario — not a validated clinical tool. Don't let generated
-  marketing-style copy overclaim real-world readiness.
+## 5. Security & Secret Handling
+
+- **No Hardcoded Credentials**: Never commit hardcoded DB passwords, JWT secret keys, or API tokens. Always use environment variables (`APPLICATION_PROPERTIES`, `.env.local`).
+- **RBAC Enforcement**: Ensure every new backend endpoint is annotated with proper security checks matching `TRD.md` §3.1.

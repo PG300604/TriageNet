@@ -8,11 +8,15 @@ import './globals.css'
 const geistSans = Geist({
   subsets: ['latin'],
   variable: '--font-geist-sans',
+  display: 'swap',
+  preload: true,
 })
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
+  display: 'swap',
+  preload: true,
 })
 
 export const metadata: Metadata = {
@@ -92,6 +96,7 @@ export const metadata: Metadata = {
     shortcut: '/icon-light-32x32.png',
     apple: '/apple-icon.png',
   },
+  manifest: '/manifest.webmanifest',
 }
 
 export const viewport: Viewport = {
@@ -151,12 +156,27 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>
+        {/* Resource Hints: Preconnect & DNS-Prefetch for Fast CDN and Map Tile Loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
+        <link rel="dns-prefetch" href="https://unpkg.com" />
+
+        {/* PWA & Mobile Web Capabilities */}
+        <meta name="application-name" content="TriageNet" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="TriageNet" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
+        {/* Structured Data (Schema.org JSON-LD) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdStructuredData) }}
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased selection:bg-[#dc5000] selection:text-[#ffedd7]">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
@@ -165,5 +185,6 @@ export default function RootLayout({
     </html>
   )
 }
+
 
 

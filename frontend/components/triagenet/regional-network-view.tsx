@@ -42,9 +42,13 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>('ranchi-rims')
 
   // Live spatial routing & real hospital nodes state
+  const [originLat, setOriginLat] = useState<number>(23.4832)
+  const [originLng, setOriginLng] = useState<number>(85.4611)
+  const [originName, setOriginName] = useState<string>('NH-33 Toll Crash (Ormanjhi)')
   const [routingResults, setRoutingResults] = useState<any>(null)
   const [calculatingRoute, setCalculatingRoute] = useState(false)
   const [realHospitals, setRealHospitals] = useState<MapHospitalNode[]>([])
+
 
   // Fetch real Jharkhand hospitals from backend API on mount
   useEffect(() => {
@@ -195,20 +199,23 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
   const byId = new Map(hospitals.map((h) => [h.id, h]))
   const activeTransfers = transfers.filter((t) => t.active)
 
+  // 108 Dispatch Hotspot State
+  const [activeHotspot, setActiveHotspot] = useState<string>('ormanjhi')
+
   // Trigger optimal spatial routing call to backend API
-  const handleCalculateOptimalRoute = async () => {
+  const handleCalculateOptimalRoute = async (customLat?: number, customLng?: number, district?: string) => {
     setCalculatingRoute(true)
     try {
       const res = await apiClient.findOptimalHospital({
-        originLat: 23.3441,
-        originLng: 85.3096,
-        preferredDistrict: filterDistrict === 'ALL' ? 'Ranchi' : filterDistrict,
+        originLat: customLat ?? 23.3441,
+        originLng: customLng ?? 85.3096,
+        preferredDistrict: district ?? (filterDistrict === 'ALL' ? 'Ranchi' : filterDistrict),
         requiresIcu: true,
         vitals: {
-          spo2: 86,
-          heartRate: 125,
-          systolicBp: 95,
-          age: 48
+          spo2: 84,
+          heartRate: 135,
+          systolicBp: 90,
+          age: 42
         }
       })
       setRoutingResults(res)
@@ -219,10 +226,18 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
     }
   }
 
+  const triggerEmergencyHotspot = (key: string, name: string, lat: number, lng: number, district: string) => {
+    setActiveHotspot(key)
+    setOriginLat(lat)
+    setOriginLng(lng)
+    setOriginName(name)
+    handleCalculateOptimalRoute(lat, lng, district)
+  }
 
   useEffect(() => {
     handleCalculateOptimalRoute()
   }, [])
+
 
 
   return (
@@ -313,6 +328,48 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
         </div>
       </div>
 
+      {/* 108 Tactical Emergency Incident Hotspot Selector */}
+      <div className="rounded-2xl border border-red-200 bg-gradient-to-r from-red-50/70 via-white to-amber-50/50 p-3.5 shadow-2xs space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-lg bg-red-600 text-white font-mono text-[10px] font-bold">
+              108
+            </span>
+            <span className="font-mono text-xs font-bold text-red-950 uppercase">
+              108 AMBULANCE DISPATCH HOTSPOTS & INCIDENT ORIGINS
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-500">
+            Click an incident hotspot to simulate live GPS road routing & hospital capacity matching
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+          {[
+            { key: 'ormanjhi', label: 'NH-33 Toll Crash (Ormanjhi)', lat: 23.4832, lng: 85.4611, dist: 'Ranchi' },
+            { key: 'bundu', label: 'Bundu Rural Crush Trauma', lat: 23.1678, lng: 85.5891, dist: 'Ranchi' },
+            { key: 'jharia', label: 'Dhanbad Jharia Colliery Surge', lat: 23.7501, lng: 86.4162, dist: 'Dhanbad' },
+            { key: 'jamshedpur', label: 'Adityapur Industrial Blast', lat: 22.7801, lng: 86.1950, dist: 'East Singhbhum (Jamshedpur)' },
+            { key: 'deoghar', label: 'Jasidih Railway Line Trauma', lat: 24.5120, lng: 86.6450, dist: 'Deoghar' },
+          ].map((spot) => (
+            <button
+              key={spot.key}
+              type="button"
+              onClick={() => triggerEmergencyHotspot(spot.key, spot.label, spot.lat, spot.lng, spot.dist)}
+              className={cn(
+                'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+                activeHotspot === spot.key
+                  ? 'bg-red-700 text-white border-red-800 shadow-xs ring-2 ring-red-400/40'
+                  : 'bg-white text-slate-700 border-red-200 hover:bg-red-50',
+              )}
+            >
+              <Truck className="size-3.5 text-red-500" />
+              <span>{spot.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Main Grid View */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_22rem]">
 
@@ -323,9 +380,10 @@ export function RegionalNetworkView({ state }: RegionalNetworkViewProps) {
               hospitals={mapNodes}
               selectedHospitalId={selectedHospitalId}
               onSelectHospital={setSelectedHospitalId}
-              ambulanceLocation={{ lat: 23.3441, lng: 85.3096 }}
+              ambulanceLocation={{ lat: originLat, lng: originLng }}
             />
           ) : (
+
             <div className="overflow-hidden rounded-2xl border border-[#382416]/15 bg-white p-3 shadow-md">
               <svg
                 viewBox={`0 0 ${W} ${H}`}

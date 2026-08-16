@@ -28,14 +28,14 @@ public class JharkhandApiIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/dashboard/state-overview - Should return 24 districts and 79 Jharkhand hospitals")
+    @DisplayName("GET /api/dashboard/state-overview - Should return 24 districts and 111 Jharkhand hospitals")
     public void testGetStateOverview() throws Exception {
         mockMvc.perform(get("/api/dashboard/state-overview"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stateName", is("Jharkhand")))
                 .andExpect(jsonPath("$.stateCode", is("JH")))
                 .andExpect(jsonPath("$.totalDistricts", is(24)))
-                .andExpect(jsonPath("$.totalHospitals", is(79)))
+                .andExpect(jsonPath("$.totalHospitals", is(111)))
                 .andExpect(jsonPath("$.totalGeneralBeds", greaterThan(5000)))
                 .andExpect(jsonPath("$.totalIcuBeds", greaterThan(500)))
                 .andExpect(jsonPath("$.districts", hasSize(24)));
@@ -47,7 +47,7 @@ public class JharkhandApiIntegrationTest {
         mockMvc.perform(get("/api/dashboard/district/Ranchi"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.district.name", is("Ranchi")))
-                .andExpect(jsonPath("$.facilityCount", greaterThanOrEqualTo(3)))
+                .andExpect(jsonPath("$.facilityCount", greaterThanOrEqualTo(5)))
                 .andExpect(jsonPath("$.hospitals[*].name", hasItem(containsString("Rajendra Institute of Medical Sciences"))));
     }
 
@@ -77,8 +77,9 @@ public class JharkhandApiIntegrationTest {
     public void testGetAllHospitals() throws Exception {
         mockMvc.perform(get("/api/hospitals"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(79)))
+                .andExpect(jsonPath("$", hasSize(111)))
                 .andExpect(jsonPath("$[0].districtName", notNullValue()))
                 .andExpect(jsonPath("$[0].facilityTier", notNullValue()));
     }
 }
+

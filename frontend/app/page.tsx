@@ -9,11 +9,23 @@ import { AlgorithmShowcase } from '@/components/landing/algorithm-showcase'
 import { StatsBand } from '@/components/landing/stats-band'
 import { CtaFooter } from '@/components/landing/cta-footer'
 
-export const metadata = {
-  title: 'TriageNet — Intelligent Healthcare Resource Allocation Platform',
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'TriageNet — Intelligent Healthcare Resource & Emergency Dispatch Platform',
   description:
-    'Algorithmic healthcare resource allocation platform for hospital surge capacity, dynamic priority queuing, Hungarian bipartite matching, and Dijkstra regional overflow routing.',
+    'Algorithmic healthcare resource allocation platform for hospital surge capacity, dynamic priority queuing, Hungarian bipartite matching, and Dijkstra 108 ambulance regional routing across Jharkhand.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'TriageNet — Intelligent Healthcare Resource & Emergency Dispatch Platform',
+    description:
+      'Algorithmic healthcare resource allocation platform for hospital surge capacity, dynamic priority queuing, Hungarian bipartite matching, and Dijkstra 108 ambulance regional routing across Jharkhand.',
+    url: '/',
+  },
 }
+
 
 export default function LandingPage() {
   return (

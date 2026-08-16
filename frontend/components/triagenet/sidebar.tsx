@@ -108,16 +108,17 @@ export function Sidebar({
     <aside className="relative z-20 flex w-16 shrink-0 flex-col border-r border-[#382416]/15 bg-[#fdfbf7] text-[#2c1b0e] md:w-64 font-sans shadow-2xs">
       {/* Brand Header: Centered & Enlarged */}
       <div className="flex flex-col items-center justify-center border-b border-[#382416]/15 py-4 px-3 bg-gradient-to-b from-[#f7f2ea]/80 to-transparent">
-        <div className="relative size-12 md:size-16 overflow-hidden rounded-2xl shadow-sm border-2 border-[#382416]/20 bg-[#2d0c03] transition-transform hover:scale-105 shrink-0 flex items-center justify-center p-1">
+        <div className="relative size-12 md:size-16 overflow-hidden rounded-2xl shadow-sm border border-[#491205] bg-[#491205] transition-transform hover:scale-105 shrink-0 flex items-center justify-center">
           <Image
             src="/triagenet-logo.png"
             alt="TriageNet Official Logo"
             width={64}
             height={64}
-            className="object-contain w-full h-full"
+            className="object-cover w-full h-full"
             priority
           />
         </div>
+
         <div className="hidden flex-col items-center text-center mt-2.5 min-w-0 md:flex">
           <span className="font-mono text-base font-extrabold uppercase tracking-wider text-[#382416]">
             TRIAGENET

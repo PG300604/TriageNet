@@ -13,13 +13,13 @@ export function Navbar() {
       <nav className="mx-auto max-w-7xl flex items-center justify-between border-b border-dashed border-[#40372e]/60 pb-4 backdrop-blur-md bg-[#100904]/70">
         {/* Left: Brand Wordmark with Official TriageNet Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative size-8 overflow-hidden rounded-lg shadow-sm border border-[#ffedd7]/20 group-hover:scale-105 transition-transform shrink-0">
+          <div className="relative size-8 overflow-hidden rounded-lg shadow-sm border border-[#491205] bg-[#491205] group-hover:scale-105 transition-transform shrink-0">
             <Image
               src="/triagenet-logo.png"
               alt="TriageNet Official Logo"
               width={32}
               height={32}
-              className="object-cover"
+              className="object-cover w-full h-full"
               priority
             />
           </div>
@@ -27,6 +27,7 @@ export function Navbar() {
             TRIAGENET
           </span>
         </Link>
+
 
 
         {/* Center/Right: Navigation Items */}

@@ -794,48 +794,71 @@ export function runContinuousSimulationStep(state: TriageState): { state: Triage
   let updatedHospitals = [...state.hospitals]
   let eventMsg = 'Simulation step advanced (+7m).'
 
-  if (Math.random() < 0.6) {
-    const targetHosp = state.hospitals[Math.floor(Math.random() * state.hospitals.length)]
-
-    const randomVitals = {
-      spo2: Math.floor(76 + Math.random() * 24),
-      hr: Math.floor(65 + Math.random() * 95),
-      sysBp: Math.floor(90 + Math.random() * 85),
-      diaBp: Math.floor(60 + Math.random() * 40),
-      temp: 36.5 + Math.random() * 3.5,
-      respRate: Math.floor(12 + Math.random() * 24),
-      age: Math.floor(18 + Math.random() * 65),
-    }
-
-    const devSpo2 = (98 - randomVitals.spo2) * 1.5
-    const devHr = Math.abs(randomVitals.hr - 75) * 0.8
-    const devTemp = Math.abs(randomVitals.temp - 37.0) * 10
-    const rawScore = Math.min(100, Math.max(10, Math.round((devSpo2 * 0.145 + devHr * 0.042 + devTemp * 0.35 + 2.5) * 10)))
-
-    const RANDOM_NAMES = ['Carlos Ramirez', 'Elena Rostova', 'Aarav Sharma', 'Mei Chen', 'David Vance', 'Vikram Patel', 'Siddharth Roy', 'Kavya Nair']
-    const RANDOM_COMPLAINTS = ['Acute Chest Pain', 'Low SpO₂ (84%)', 'Fracture + Hemorrhage', 'Shortness of Breath']
-
-    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)]
-    const randomComplaint = RANDOM_COMPLAINTS[Math.floor(Math.random() * RANDOM_COMPLAINTS.length)]
-
-    const newPt: Patient = {
-      id: `P-${Date.now().toString().slice(-4)}-${Math.floor(100 + Math.random() * 900)}`,
-      name: randomName,
-      hospitalId: targetHosp.id,
-      severity: rawScore,
-      waitMinutes: 0,
-      topFactor: randomComplaint,
-      status: 'Waiting',
-    }
-
-    const res = processNewArrival({ ...state, patients: updatedPatients }, newPt)
-    updatedPatients = res.state.patients
-    if (res.preemptedPatientName) {
-      eventMsg = `⚡ AUTO-PREEMPTION at ${targetHosp.name}: New arrival ${newPt.name} (S: ${rawScore}) assigned! Preempted ${res.preemptedPatientName}.`
-    } else {
-      eventMsg = `🏥 AUTO-ARRIVAL: ${newPt.name} (ML Severity: ${rawScore}) registered at ${targetHosp.name}.`
+  if (!state.hospitals || state.hospitals.length === 0) {
+    return {
+      state: {
+        ...state,
+        patients: updatedPatients,
+      },
+      eventMsg,
     }
   }
+
+  if (Math.random() < 0.6) {
+    const targetHosp = state.hospitals[Math.floor(Math.random() * state.hospitals.length)]
+    if (targetHosp && targetHosp.id) {
+      const randomVitals = {
+        spo2: Math.floor(76 + Math.random() * 24),
+        hr: Math.floor(65 + Math.random() * 95),
+        sysBp: Math.floor(90 + Math.random() * 85),
+        diaBp: Math.floor(60 + Math.random() * 40),
+        temp: 36.5 + Math.random() * 3.5,
+        respRate: Math.floor(12 + Math.random() * 24),
+        age: Math.floor(18 + Math.random() * 65),
+      }
+
+      const devSpo2 = (98 - randomVitals.spo2) * 1.5
+      const devHr = Math.abs(randomVitals.hr - 75) * 0.8
+      const devTemp = Math.abs(randomVitals.temp - 37.0) * 10
+      const rawScore = Math.min(100, Math.max(10, Math.round((devSpo2 * 0.145 + devHr * 0.042 + devTemp * 0.35 + 2.5) * 10)))
+
+      const RANDOM_NAMES = [
+        'Ramesh Soren', 'Sunita Murmu', 'Babloo Munda', 'Anita Kumari', 'Deepak Mahto',
+        'Pooja Devi', 'Manoj Oraon', 'Priyanka Singh', 'Vikram Hembrom', 'Anand Kumar',
+        'Meena Gope', 'Sanjay Tirkey', 'Sunil Roy', 'Neha Choudhary', 'Rohit Bedia'
+      ]
+      const RANDOM_COMPLAINTS = [
+        'Acute Chest Pain / STEMI',
+        'Low SpO₂ (82%) · Acute Hypoxia',
+        'Highway Fracture + Hemorrhage',
+        'Severe Shortness of Breath',
+        'Sepsis Shock & High Fever',
+        'Severe Abdominal Rigidity'
+      ]
+
+      const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)]
+      const randomComplaint = RANDOM_COMPLAINTS[Math.floor(Math.random() * RANDOM_COMPLAINTS.length)]
+
+      const newPt: Patient = {
+        id: `P-${Date.now().toString().slice(-4)}-${Math.floor(100 + Math.random() * 900)}`,
+        name: randomName,
+        hospitalId: targetHosp.id,
+        severity: rawScore,
+        waitMinutes: 0,
+        topFactor: randomComplaint,
+        status: 'Waiting',
+      }
+
+      const res = processNewArrival({ ...state, hospitals: updatedHospitals, patients: updatedPatients }, newPt)
+      updatedPatients = res.state.patients
+      if (res.preemptedPatientName) {
+        eventMsg = `⚡ AUTO-PREEMPTION at ${targetHosp.name}: New arrival ${newPt.name} (Severity: ${rawScore}) assigned! Preempted ${res.preemptedPatientName}.`
+      } else {
+        eventMsg = `🏥 AUTO-ARRIVAL: ${newPt.name} (ML Severity: ${rawScore}) registered at ${targetHosp.name}.`
+      }
+    }
+  }
+
 
   // 2. STRICT CLINICAL DISCHARGE: Only patients who have recovered to low severity (Severity <= 35 AND estRecoveryMinutes === 0)
   if (Math.random() < 0.4) {

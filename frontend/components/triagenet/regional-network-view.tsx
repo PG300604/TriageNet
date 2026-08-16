@@ -15,8 +15,10 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import type { MapHospitalNode } from './leaflet-map'
 import { useAuth } from '@/lib/auth-context'
-import { JHARKHAND_24_DISTRICTS } from '@/lib/jharkhand-data'
+import { JHARKHAND_24_DISTRICTS, JHARKHAND_79_HOSPITALS } from '@/lib/jharkhand-data'
 import { apiClient } from '@/lib/api-client'
+
+
 
 // Dynamically import Leaflet map component to prevent SSR window reference issues
 const LeafletMap = dynamic(

@@ -260,6 +260,7 @@ graph TD
     CtrlPkg --> DashCtrl["DashboardController<br/>/api/dashboard"]
     CtrlPkg --> HospCtrl["HospitalController<br/>/api/hospitals"]
     CtrlPkg --> PatCtrl["PatientController<br/>/api/patients"]
+    CtrlPkg --> RefCtrl["ReferralController<br/>/api/referrals"]
     CtrlPkg --> ResCtrl["ResourceController<br/>/api/resources"]
     CtrlPkg --> RouteCtrl["RoutingController<br/>/api/routing"]
     CtrlPkg --> QueueCtrl["TriageQueueController<br/>/api/triage-queue"]
@@ -455,6 +456,42 @@ flowchart LR
     style Stage2 fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     style Stage3 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     style Stage4 fill:#fce4ec,stroke:#c62828,color:#b71c1c
+```
+
+### Secure 108 Referral & Bed Pre-Booking Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dispatcher as 🚑 108 Dispatcher / Nurse
+    participant Frontend as Next.js Dashboard UI
+    participant SecFilter as Spring Security & CORS Filter
+    participant RefCtrl as ReferralController
+    participant RefSvc as ReferralService
+    participant Router as Dijkstra Spatial Router
+    participant Repo as TransferRequestRepository
+    participant RecvHosp as Receiving Hospital Triage
+
+    Dispatcher->>Frontend: Select Target Hospital & Click "Pre-Book Bed & Dispatch"
+    Frontend->>SecFilter: POST /api/referrals (Bearer JWT + Payload)
+    Note over SecFilter: 1. Validate CORS Origin<br/>2. Authenticate JWT Bearer<br/>3. Verify @PreAuthorize role
+    SecFilter->>RefCtrl: Authorized Request Dispatched
+    RefCtrl->>RefSvc: executeReferral(request)
+    RefSvc->>Router: calculateShortestPath(fromHosp, toHosp)
+    Router-->>RefSvc: travelTimeMinutes + shortestPathNodes
+    RefSvc->>Repo: save(TransferRequest{status=PROPOSED, token=#JH-108-DISPATCH-XXXX})
+    Repo-->>RefSvc: Persisted Entity
+    RefSvc-->>RefCtrl: ReferralResponse (Token + ETA + Route)
+    RefCtrl-->>Frontend: 200 OK (Dispatch Token + Bed Reservation)
+    Frontend->>RecvHosp: Injects In-Flight Patient to Receiving ED Priority Heap
+    Frontend-->>Dispatcher: Display Live Telemetry Countdown & Tactical Token
+
+    opt In-Flight Status Updates
+        Dispatcher->>Frontend: Mark "Departed" / "Arrived"
+        Frontend->>RefCtrl: PUT /api/referrals/{id}/status (status=IN_TRANSIT / COMPLETED)
+        RefCtrl->>Repo: updateStatus()
+        RefCtrl-->>Frontend: 200 OK (Status Synchronized)
+    end
 ```
 
 ---
@@ -911,12 +948,38 @@ flowchart LR
 - [x] **Dijkstra Topology SVG Graph Restoration**: Star/orbit layout with live bed occupancy pills, ICU availability indicators, and travel time tags
 - [x] **Enterprise SEO Architecture**: `sitemap.ts`, `robots.ts`, `manifest.ts`, Schema.org JSON-LD (`WebApplication` + `GovernmentService`), OpenGraph, Twitter Cards
 - [x] **Root Document Optimization**: Font `display: 'swap'`, `preconnect` to Google Fonts, `dns-prefetch` to CDN tile servers, PWA capability meta tags
-### ✅ Phase 8 — 108 Ambulance Referral REST API & Dual-Mode Live/Simulation Sync (Complete — Aug 17, 2025)
+
+### ✅ Phase 8 — 108 Ambulance Referral REST API & Dual-Mode Live/Simulation Sync (Complete — Aug 17, 2026)
 - [x] **108 Referral REST Controller**: `ReferralController.java` with 4 endpoints (`POST /api/referrals`, `GET /api/referrals/active`, `PUT /api/referrals/{id}/status`, `GET /api/referrals/recommendation`) with RBAC `@PreAuthorize` security and unique `#JH-108-DISPATCH-XXXXXXXX` token generation
 - [x] **Full 21/21 Automated Backend Test Suite**: Unit & integration test coverage across all JPA repositories, algorithmic engines (Dijkstra, Hungarian, SeverityScorer), and REST controllers (100% pass rate)
 - [x] **Type-Safe Frontend REST Client**: Added complete referral, queue recomputation, and Hungarian resource assignment API methods with TypeScript interfaces in `api-client.ts`
 - [x] **Dual-Mode Live / Simulation Sync Engine**: Non-blocking `useBackendConnection()` hook in `dashboard.tsx` with live REST telemetry probe, visual status badge (`LIVE API` / `CONNECTING…` / `SIMULATED`), and automatic fallback
 - [x] **Clean Next.js 16 Production Build**: Verified full Next.js static prerendering across all 11 application routes with zero errors
+
+### ✅ Phase 8.1 — Security Audit & Defense-in-Depth Hardening (Complete — Aug 17, 2026)
+- [x] **Comprehensive 22-Vector Security Audit**: Analyzed entire attack surface across Auth, RBAC, Data Exposure, Infrastructure, and Supply Chain
+- [x] **Open-Source Hardening Infrastructure**: Created `.github/SECURITY.md`, `.github/ISSUE_TEMPLATE/security_issue.yml`, `.github/ISSUE_TEMPLATE/good_first_issue.yml`, and `.github/SECURITY_AUDIT_TRACKER.md`
+- [x] **Automated GitHub Issue Publisher**: Node.js script `scripts/create_github_issues.js` and 1-click URL generators for community contributors
+- [x] **CORS Centralization & Wildcard Purge (Fixes Issue #2)**: Replaced all controller-level `@CrossOrigin(origins = "*")` wildcard annotations with a centralized Spring Security `CorsConfigurationSource` restricting access to authorized frontend domains (`http://localhost:3000`, `https://*.vercel.app`, `https://triagenet.dev`)
+- [x] **Standard Security Headers**: Enabled `X-Frame-Options: DENY` and `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- [x] **Password Policy Hardening (Fixes Issue #4)**: Enforced `@Size(min = 8)` character validation in `RegisterRequest.java`
+- [x] **Full Test Suite & Static Prerender Verification**: 21/21 backend tests passing (BUILD SUCCESS), 11/11 Next.js static pages generated cleanly in 2.4s
+
+---
+
+## 🔮 Future Roadmap (Upcoming Phases)
+
+```mermaid
+flowchart LR
+    subgraph Upcoming["Upcoming Phases"]
+        direction TB
+        P8_2["Phase 8.2: Security Hardening (Next Day)<br/>• JWT Secret Env Fail-Fast<br/>• HttpOnly Cookie Migration<br/>• Bucket4j Rate Limiting<br/>• Method-Level RBAC Coverage"]
+        P9["Phase 9: Directorate Audit & Reports<br/>• District CMO PDF Audit Reports<br/>• State Capacity CSV Export<br/>• Golden Hour Compliance Matrix"]
+        P10["Phase 10: Production Cloud Deployment<br/>• Docker Compose Multi-Container<br/>• Vercel Edge Frontend + Render Backend<br/>• Automated GitHub Actions CI/CD"]
+    end
+
+    P8_2 --> P9 --> P10
+```
 
 ---
 
@@ -945,3 +1008,4 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 This project is released under the [MIT License](LICENSE). 
 
 Built by **Priyanshu Ghosh**, CSBS Batch 2027, Final Year Project (PG300604).
+

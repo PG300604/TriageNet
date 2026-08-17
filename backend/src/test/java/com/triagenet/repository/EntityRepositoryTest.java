@@ -12,6 +12,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@org.springframework.test.context.ContextConfiguration(classes = com.triagenet.TriageNetApplication.class)
 @ActiveProfiles("test")
 class EntityRepositoryTest {
 

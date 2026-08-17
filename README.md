@@ -911,8 +911,12 @@ flowchart LR
 - [x] **Dijkstra Topology SVG Graph Restoration**: Star/orbit layout with live bed occupancy pills, ICU availability indicators, and travel time tags
 - [x] **Enterprise SEO Architecture**: `sitemap.ts`, `robots.ts`, `manifest.ts`, Schema.org JSON-LD (`WebApplication` + `GovernmentService`), OpenGraph, Twitter Cards
 - [x] **Root Document Optimization**: Font `display: 'swap'`, `preconnect` to Google Fonts, `dns-prefetch` to CDN tile servers, PWA capability meta tags
-- [x] **Official TriageNet Logo Integration**: Deployed official brand logo (pin badge with white cross on walnut backdrop) across Landing Navbar, CTA Footer, Dashboard Sidebar, Login Portal Header, Browser Tab Favicon, Apple Touch Icon, and PWA Manifest
-- [x] **Seamless Logo Shade Matching**: Pixel-sampled exact background hex color `#491205` to eliminate all visible container outline mismatches
+### ✅ Phase 8 — 108 Ambulance Referral REST API & Dual-Mode Live/Simulation Sync (Complete — Aug 17, 2025)
+- [x] **108 Referral REST Controller**: `ReferralController.java` with 4 endpoints (`POST /api/referrals`, `GET /api/referrals/active`, `PUT /api/referrals/{id}/status`, `GET /api/referrals/recommendation`) with RBAC `@PreAuthorize` security and unique `#JH-108-DISPATCH-XXXXXXXX` token generation
+- [x] **Full 21/21 Automated Backend Test Suite**: Unit & integration test coverage across all JPA repositories, algorithmic engines (Dijkstra, Hungarian, SeverityScorer), and REST controllers (100% pass rate)
+- [x] **Type-Safe Frontend REST Client**: Added complete referral, queue recomputation, and Hungarian resource assignment API methods with TypeScript interfaces in `api-client.ts`
+- [x] **Dual-Mode Live / Simulation Sync Engine**: Non-blocking `useBackendConnection()` hook in `dashboard.tsx` with live REST telemetry probe, visual status badge (`LIVE API` / `CONNECTING…` / `SIMULATED`), and automatic fallback
+- [x] **Clean Next.js 16 Production Build**: Verified full Next.js static prerendering across all 11 application routes with zero errors
 
 ---
 

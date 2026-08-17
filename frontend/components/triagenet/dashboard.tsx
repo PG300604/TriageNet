@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import {
   HOSPITAL_IDS,
+  type Hospital,
   type Patient,
   type ReferralRecommendation,
   type ScenarioKey,
@@ -17,7 +18,7 @@ import {
   severityStatus,
   triggerBedRelease,
 } from '@/lib/triage-data'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CapacityView } from './capacity-view'
 import { RegionalNetworkView } from './regional-network-view'
 import { Sidebar, type ViewKey, ROLE_ALLOWED_VIEWS, ROLE_CONFIGS } from './sidebar'
@@ -33,7 +34,106 @@ import { DocsView } from './docs-view'
 import { SuppliesView } from './supplies-view'
 import { ReportsView } from './reports-view'
 import { CommsView } from './comms-view'
-import { Siren } from 'lucide-react'
+import { Siren, Wifi, WifiOff, Server } from 'lucide-react'
+import { ApiClient, type HospitalApiData, type StateOverviewData } from '@/lib/api-client'
+
+// ---------------------------------------------------------------------------
+// Data Source Mode: 'live' = Spring Boot API, 'simulated' = in-memory engine
+// ---------------------------------------------------------------------------
+type DataSourceMode = 'live' | 'simulated'
+
+/**
+ * Converts backend HospitalApiData to frontend Hospital shape.
+ * Maintains compatibility with the existing TriageState interface
+ * so all downstream components work without modification.
+ */
+function mapApiHospitalToLocal(h: HospitalApiData, idx: number, total: number): Hospital {
+  // Distribute hospitals in a radial layout for the Dijkstra SVG graph
+  const angle = (2 * Math.PI * idx) / Math.max(total, 1)
+  const radius = 30
+  const cx = 50, cy = 50
+  return {
+    id: h.id,
+    name: h.name,
+    short: h.shortCode || h.name.replace(/[^A-Z]/g, '').slice(0, 5) || h.name.slice(0, 8),
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle),
+    beds: { used: h.usedBeds, total: h.totalBeds },
+    icuBeds: {
+      used: (h.totalIcuBeds ?? 10) - (h.availableIcuBeds ?? 2),
+      total: h.totalIcuBeds ?? 10,
+    },
+    generalBeds: {
+      used: (h.totalGeneralBeds ?? h.totalBeds) - (h.availableGeneralBeds ?? (h.totalBeds - h.usedBeds)),
+      total: h.totalGeneralBeds ?? h.totalBeds,
+    },
+    ventilators: { used: h.usedVentilators, total: h.totalVentilators },
+    specialists: { used: h.usedSpecialists, total: h.totalSpecialists },
+    specialistRoster: {
+      pulmonologists: { total: 2, available: Math.max(0, 2 - Math.floor(h.usedSpecialists * 0.3)) },
+      cardiologists: { total: 2, available: Math.max(0, 2 - Math.floor(h.usedSpecialists * 0.2)) },
+      traumaSurgeons: { total: 2, available: h.hasTraumaSurgery ? 1 : 0 },
+      generalPhysicians: { total: 4, available: Math.max(0, 4 - Math.floor(h.usedSpecialists * 0.3)) },
+    },
+  }
+}
+
+/**
+ * Hook that attempts to fetch live data from the Spring Boot backend.
+ * Returns the data source mode and loading state. Non-blocking — if the
+ * backend is unreachable, silently falls back to simulation mode.
+ */
+function useBackendConnection(): {
+  mode: DataSourceMode
+  isChecking: boolean
+  stateOverview: StateOverviewData | null
+  liveHospitals: Hospital[]
+  retryConnection: () => void
+} {
+  const [mode, setMode] = useState<DataSourceMode>('simulated')
+  const [isChecking, setIsChecking] = useState(true)
+  const [stateOverview, setStateOverview] = useState<StateOverviewData | null>(null)
+  const [liveHospitals, setLiveHospitals] = useState<Hospital[]>([])
+  const retryRef = useRef(0)
+
+  const checkConnection = useCallback(async () => {
+    setIsChecking(true)
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 4000)
+
+      const [overview, apiHospitals] = await Promise.all([
+        ApiClient.getStateOverview(),
+        ApiClient.getHospitals(),
+      ])
+
+      clearTimeout(timeout)
+
+      const mapped = apiHospitals.map((h, i) => mapApiHospitalToLocal(h, i, apiHospitals.length))
+      setStateOverview(overview)
+      setLiveHospitals(mapped)
+      setMode('live')
+    } catch {
+      // Backend unreachable — fall back silently to simulation
+      setMode('simulated')
+      setStateOverview(null)
+      setLiveHospitals([])
+    } finally {
+      setIsChecking(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    checkConnection()
+  }, [checkConnection])
+
+  const retryConnection = useCallback(() => {
+    retryRef.current += 1
+    checkConnection()
+  }, [checkConnection])
+
+  return { mode, isChecking, stateOverview, liveHospitals, retryConnection }
+}
 
 const VIEW_TITLES: Record<string, string> = {
   capacity: 'Dashboard & Analytics',
@@ -121,6 +221,9 @@ export function Dashboard() {
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
   const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
 
+  // Live backend connection probe
+  const { mode: dataSourceMode, isChecking: isCheckingBackend, stateOverview, liveHospitals, retryConnection } = useBackendConnection()
+
   const initialDistrict = user?.districtName || 'Ranchi'
   const [selectedDistrict, setSelectedDistrict] = useState<string>(initialDistrict)
   const [view, setView] = useState<ViewKey>(allowedViews[0] || 'capacity')
@@ -130,6 +233,21 @@ export function Dashboard() {
   const [updatedIds, setUpdatedIds] = useState<Set<string>>(new Set())
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastEventMessage, setLastEventMessage] = useState<string | null>(null)
+
+  // When live backend becomes available, merge live hospital data into the state
+  useEffect(() => {
+    if (dataSourceMode === 'live' && liveHospitals.length > 0) {
+      setState((prev) => ({
+        ...prev,
+        hospitals: liveHospitals,
+      }))
+      if (liveHospitals.length > 0 && !liveHospitals.find((h) => h.id === selectedHospitalId)) {
+        setSelectedHospitalId(liveHospitals[0].id)
+      }
+    }
+  }, [dataSourceMode, liveHospitals])
+
+
 
   // Auto-redirect if current view is disallowed for the active role
   useEffect(() => {
@@ -317,6 +435,33 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 font-mono text-[10px]">
+                {/* Data Source Mode Indicator */}
+                <button
+                  onClick={dataSourceMode === 'simulated' ? retryConnection : undefined}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold transition-colors',
+                    dataSourceMode === 'live'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                      : isCheckingBackend
+                        ? 'bg-slate-50 border-slate-300 text-slate-500 animate-pulse'
+                        : 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 cursor-pointer',
+                  )}
+                  title={
+                    dataSourceMode === 'live'
+                      ? `Connected to Spring Boot API${stateOverview ? ` · ${stateOverview.totalHospitals} hospitals loaded` : ''}`
+                      : isCheckingBackend
+                        ? 'Probing backend connection…'
+                        : 'Backend unreachable — using in-memory simulation engine. Click to retry.'
+                  }
+                >
+                  {dataSourceMode === 'live' ? (
+                    <><Wifi className="size-3" /> LIVE API</>
+                  ) : isCheckingBackend ? (
+                    <><Server className="size-3" /> CONNECTING…</>
+                  ) : (
+                    <><WifiOff className="size-3" /> SIMULATED</>
+                  )}
+                </button>
                 <span className="bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#382416]/10 font-bold text-[#382416]">
                   ROLE PERMITTED VIEWS: {allowedViews.length} / 12
                 </span>

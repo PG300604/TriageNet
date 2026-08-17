@@ -1,0 +1,34 @@
+name: Good First Issue
+description: Propose a beginner-friendly contribution, refactor, or documentation task
+title: "[Good First Issue]: "
+labels: ["good first issue", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome open source contributors! This issue template is specifically designed for quick-win contributions and GitHub achievement badges.
+  - type: input
+    id: summary
+    attributes:
+      label: Task Summary
+      placeholder: E.g., Add password complexity validation in RegisterRequest.java
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Background Context
+      description: Explain why this change is helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Implementation Steps
+      description: Provide clear step-by-step guidance for the contributor.
+      placeholder: |
+        1. Open file `backend/src/main/java/...`
+        2. Add `@Pattern` annotation...
+        3. Run `./mvnw test` to verify...
+    validations:
+      required: true

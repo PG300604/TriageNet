@@ -217,7 +217,103 @@ export const ApiClient = {
 
   getDistrictDistanceMatrix: (districtName: string): Promise<any> =>
     apiFetch(`/routing/matrix/${encodeURIComponent(districtName)}`),
+
+  // 108 Ambulance Referrals & Transfers
+  createReferral: (req: {
+    patientId: string;
+    originHospitalId: string;
+    targetHospitalId: string;
+    reason: string;
+    resourceType: string;
+    urgencyLevel: string;
+  }): Promise<any> =>
+    apiFetch('/referrals', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  getActiveReferrals: (): Promise<any[]> =>
+    apiFetch('/referrals/active'),
+
+  updateReferralStatus: (id: string, statusUpdate: { status: string; notes?: string }): Promise<any> =>
+    apiFetch(`/referrals/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusUpdate),
+    }),
+
+  getReferralRecommendation: (): Promise<any> =>
+    apiFetch('/referrals/recommendation'),
+
+  // Triage Queue
+  getTriageQueue: (hospitalId: string): Promise<any[]> =>
+    apiFetch(`/triage-queue/hospital/${hospitalId}`),
+
+  recomputeQueue: (hospitalId: string): Promise<any> =>
+    apiFetch(`/triage-queue/recompute/${hospitalId}`, { method: 'POST' }),
+
+  // Resources & Hungarian Matcher
+  getHospitalResources: (hospitalId: string): Promise<any[]> =>
+    apiFetch(`/resources/hospital/${hospitalId}`),
+
+  runHungarianAssignment: (hospitalId: string): Promise<any> =>
+    apiFetch(`/resources/assign/${hospitalId}`, { method: 'POST' }),
 };
+
+// Referral & Transfer Interfaces
+export interface ReferralRequestData {
+  patientId: string;
+  originHospitalId: string;
+  targetHospitalId: string;
+  reason: string;
+  resourceType: 'ICU_BED' | 'VENTILATOR' | 'SPECIALIST' | 'OXYGEN_BED';
+  urgencyLevel: string;
+}
+
+export interface ReferralResponseData {
+  id: string;
+  patientId: string;
+  fromHospitalId: string;
+  toHospitalId: string;
+  dispatchToken: string;
+  status: 'PENDING' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED';
+  reason: string;
+  requestedAt: string;
+  updatedAt: string;
+}
+
+export interface ReferralRecommendationData {
+  fromHospitalId: string;
+  fromHospitalName: string;
+  toHospitalId: string;
+  toHospitalName: string;
+  patientId: string;
+  patientName: string;
+  patientSeverity: number;
+  travelMinutes: number;
+  reason: string;
+  matchReason: string;
+}
+
+export interface TriageQueueEntryData {
+  id: string;
+  patientId: string;
+  hospitalId: string;
+  baseSeverity: number;
+  decayLambda: number;
+  waitTimeMinutes: number;
+  effectivePriority: number;
+  enteredQueueAt: string;
+  lastRecomputedAt: string;
+}
+
+export interface ResourceData {
+  id: string;
+  hospitalId: string;
+  type: 'ICU_BED' | 'VENTILATOR' | 'SPECIALIST' | 'OXYGEN_BED';
+  subtype: string;
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
+  lastUpdated: string;
+}
 
 export const apiClient = ApiClient;
 

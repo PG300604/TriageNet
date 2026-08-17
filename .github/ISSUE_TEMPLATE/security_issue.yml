@@ -1,0 +1,54 @@
+name: Security Remediation / Hardening
+description: Report a security audit finding or propose a security hardening PR
+title: "[Security]: "
+labels: ["security", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to TriageNet security! Please review our [Security Policy](https://github.com/PG300604/TriageNet/blob/main/.github/SECURITY.md) before reporting sensitive zero-day issues.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      options:
+        - Critical (Deploy Blocker)
+        - High
+        - Medium
+        - Low (Defense-in-Depth)
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Affected Component
+      options:
+        - Backend (Spring Boot / Java)
+        - Frontend (Next.js / React)
+        - Database (PostgreSQL / H2)
+        - DevOps (Docker / CI/CD)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Vulnerability / Hardening Description
+      description: Clearly describe the security issue and its impact.
+      placeholder: E.g., The CORS configuration permits all origins via wildcard...
+    validations:
+      required: true
+  - type: textarea
+    id: affected_files
+    attributes:
+      label: Affected Files & Lines
+      description: List file paths and line references.
+      placeholder: E.g., backend/src/main/java/com/triagenet/config/SecurityConfig.java:57
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_fix
+    attributes:
+      label: Proposed Solution / Fix
+      description: Outline the code changes, configuration updates, or dependency migrations needed.
+    validations:
+      required: true

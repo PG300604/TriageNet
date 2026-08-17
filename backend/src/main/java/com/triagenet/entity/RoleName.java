@@ -3,5 +3,10 @@ package com.triagenet.entity;
 public enum RoleName {
     HOSPITAL_STAFF,
     HOSPITAL_ADMIN,
-    REGIONAL_COORDINATOR
+    REGIONAL_COORDINATOR,
+    TRIAGE_NURSE,
+    AMBULANCE_DISPATCH,
+    DISTRICT_CMO,
+    STATE_HEALTH_DEPT,
+    SUPER_ADMIN
 }

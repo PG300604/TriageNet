@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/routing")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class RoutingController {
 
     private final HospitalRepository hospitalRepository;

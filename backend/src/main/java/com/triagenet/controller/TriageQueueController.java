@@ -13,7 +13,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/triage-queue")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class TriageQueueController {
 
     private final TriageQueueService triageQueueService;

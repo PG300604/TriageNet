@@ -28,7 +28,7 @@ public class DijkstraRouter {
         private List<UUID> pathHospitalIds;
     }
 
-    private static class NodeDistance implements Comparable<NodeDistance> {
+    public static class NodeDistance implements Comparable<NodeDistance> {
         final UUID nodeId;
         final double distance;
 

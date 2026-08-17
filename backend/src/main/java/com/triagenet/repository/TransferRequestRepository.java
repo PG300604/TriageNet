@@ -13,4 +13,5 @@ public interface TransferRequestRepository extends JpaRepository<TransferRequest
     List<TransferRequest> findByFromHospitalId(UUID fromHospitalId);
     List<TransferRequest> findByToHospitalId(UUID toHospitalId);
     List<TransferRequest> findByStatus(TransferStatus status);
+    List<TransferRequest> findByStatusIn(List<TransferStatus> statuses);
 }

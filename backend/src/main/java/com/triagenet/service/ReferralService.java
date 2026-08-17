@@ -7,6 +7,7 @@ import com.triagenet.entity.Hospital;
 import com.triagenet.entity.HospitalEdge;
 import com.triagenet.entity.Patient;
 import com.triagenet.entity.PatientStatus;
+import com.triagenet.entity.ReferralStatus;
 import com.triagenet.entity.RoutingAlgorithm;
 import com.triagenet.entity.TransferRequest;
 import com.triagenet.entity.TransferStatus;
@@ -82,7 +83,6 @@ public class ReferralService {
 
                 SeverityScorer.SeverityResult sevResult = severityScorer.computeSeverityFromPatient(severeWaiting);
 
-                // Find candidate target hospital with open beds AND clinical resource compatibility
                 Hospital targetH = hospitals.stream()
                         .filter(h -> !h.getId().equals(fromH.getId()))
                         .filter(h -> (h.getBedsTotal() - h.getBedsUsed()) >= 2)
@@ -130,9 +130,30 @@ public class ReferralService {
                 .toHospitalId(toHospitalId)
                 .routingAlgorithm(RoutingAlgorithm.DIJKSTRA)
                 .computedCost(travelMinutes)
-                .status(TransferStatus.APPROVED)
+                .status(TransferStatus.PROPOSED)
                 .build();
 
+        return transferRequestRepository.save(request);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TransferRequest> getActiveReferrals() {
+        return transferRequestRepository.findByStatusIn(List.of(TransferStatus.PROPOSED, TransferStatus.APPROVED, TransferStatus.IN_TRANSIT));
+    }
+
+    @Transactional
+    public TransferRequest updateReferralStatus(UUID id, ReferralStatus newStatus) {
+        TransferRequest request = transferRequestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Referral not found: " + id));
+
+        TransferStatus mappedStatus = switch (newStatus) {
+            case PENDING -> TransferStatus.APPROVED;
+            case IN_TRANSIT -> TransferStatus.APPROVED;
+            case COMPLETED -> TransferStatus.COMPLETED;
+            case CANCELLED -> TransferStatus.REJECTED;
+        };
+
+        request.setStatus(mappedStatus);
         return transferRequestRepository.save(request);
     }
 }

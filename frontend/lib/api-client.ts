@@ -35,6 +35,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
@@ -166,6 +167,14 @@ export const ApiClient = {
       method: 'POST',
       body: JSON.stringify(userData),
     }),
+
+  logout: async (): Promise<{ message: string }> => {
+    try {
+      return await apiFetch<{ message: string }>('/auth/logout', { method: 'POST' });
+    } finally {
+      removeAuthToken();
+    }
+  },
 
   // Dashboard & Telemetry
   getStateOverview: (): Promise<StateOverviewData> =>

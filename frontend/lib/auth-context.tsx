@@ -148,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    ApiClient.logout().catch(() => {});
     removeAuthToken();
     setToken(null);
     setUser(null);

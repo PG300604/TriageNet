@@ -39,7 +39,7 @@ class AuthIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .name("Dr. Alice Smith")
                 .email("alice.smith@triagenet.org")
-                .password("securePassword123")
+                .password("SecurePassword123!")
                 .role(RoleName.HOSPITAL_ADMIN)
                 .build();
 
@@ -53,7 +53,7 @@ class AuthIntegrationTest {
         // 2. Login
         LoginRequest loginReq = LoginRequest.builder()
                 .email("alice.smith@triagenet.org")
-                .password("securePassword123")
+                .password("SecurePassword123!")
                 .build();
 
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")

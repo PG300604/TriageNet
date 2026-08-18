@@ -166,8 +166,79 @@ public class SecurityHardeningIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(shortPassRequest)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Validation Failed")));
+    }
+
+    @Test
+    @DisplayName("Password Complexity - Registration without uppercase letter should return 400 Validation Failed")
+    public void testPasswordMissingUppercaseRejected() throws Exception {
+        RegisterRequest req = RegisterRequest.builder()
+                .name("Nurse Test")
+                .email("nurse.noupper@triagenet.jh.gov.in")
+                .password("lowercase123!")
+                .role(RoleName.TRIAGE_NURSE)
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("Validation Failed")))
-                .andExpect(jsonPath("$.fieldErrors.password", containsString("at least 8 characters")));
+                .andExpect(jsonPath("$.fieldErrors.password", containsString("one uppercase letter")));
+    }
+
+    @Test
+    @DisplayName("Password Complexity - Registration without lowercase letter should return 400 Validation Failed")
+    public void testPasswordMissingLowercaseRejected() throws Exception {
+        RegisterRequest req = RegisterRequest.builder()
+                .name("Nurse Test")
+                .email("nurse.nolower@triagenet.jh.gov.in")
+                .password("UPPERCASE123!")
+                .role(RoleName.TRIAGE_NURSE)
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Validation Failed")))
+                .andExpect(jsonPath("$.fieldErrors.password", containsString("one lowercase letter")));
+    }
+
+    @Test
+    @DisplayName("Password Complexity - Registration without digit should return 400 Validation Failed")
+    public void testPasswordMissingDigitRejected() throws Exception {
+        RegisterRequest req = RegisterRequest.builder()
+                .name("Nurse Test")
+                .email("nurse.nodigit@triagenet.jh.gov.in")
+                .password("SecurePassword!")
+                .role(RoleName.TRIAGE_NURSE)
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Validation Failed")))
+                .andExpect(jsonPath("$.fieldErrors.password", containsString("one digit")));
+    }
+
+    @Test
+    @DisplayName("Password Complexity - Registration without special character should return 400 Validation Failed")
+    public void testPasswordMissingSpecialCharRejected() throws Exception {
+        RegisterRequest req = RegisterRequest.builder()
+                .name("Nurse Test")
+                .email("nurse.nospecial@triagenet.jh.gov.in")
+                .password("SecurePassword123")
+                .role(RoleName.TRIAGE_NURSE)
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Validation Failed")))
+                .andExpect(jsonPath("$.fieldErrors.password", containsString("one special character")));
     }
 
     @Test

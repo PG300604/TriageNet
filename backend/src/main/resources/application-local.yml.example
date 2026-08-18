@@ -1,3 +1,7 @@
+# Example local development configuration template
+# Copy to application-local.yml and customize for local developer overrides.
+# NOTE: application-local.yml is excluded from git version control.
+
 spring:
   datasource:
     url: jdbc:h2:mem:triagenet_local;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
@@ -17,5 +21,6 @@ spring:
       path: /h2-console
 
 jwt:
+  # Generate a 256-bit or 512-bit secure hex key for local development
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   expiration-ms: 86400000

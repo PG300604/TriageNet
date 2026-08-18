@@ -21,6 +21,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import jakarta.servlet.http.Cookie;
+import org.springframework.http.HttpHeaders;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
@@ -263,5 +265,62 @@ public class SecurityHardeningIntegrationTest {
         // Verify target locked account is still blocked and protected
         org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser));
         loginAttemptService.loginSucceeded(targetLockedUser);
+    }
+
+    @Test
+    @DisplayName("Cookie Auth - Login should set HttpOnly SameSite=Lax JWT cookie")
+    public void testLoginSetsHttpOnlySameSiteCookie() throws Exception {
+        LoginRequest validRequest = LoginRequest.builder()
+                .email(TEST_USER_EMAIL)
+                .password(TEST_USER_PASS)
+                .build();
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, allOf(
+                        containsString("triagenet_jwt="),
+                        containsString("HttpOnly"),
+                        containsString("Path=/"),
+                        containsString("SameSite=Lax")
+                )));
+    }
+
+    @Test
+    @DisplayName("Cookie Auth - Logout should clear triagenet_jwt cookie with Max-Age=0")
+    public void testLogoutClearsCookie() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", is("Logged out successfully")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, allOf(
+                        containsString("triagenet_jwt="),
+                        containsString("Max-Age=0")
+                )));
+    }
+
+    @Test
+    @DisplayName("Cookie Auth - Request with valid triagenet_jwt Cookie authenticates successfully without Authorization header")
+    public void testCookieBasedAuthenticationToProtectedEndpoint() throws Exception {
+        LoginRequest validRequest = LoginRequest.builder()
+                .email(TEST_USER_EMAIL)
+                .password(TEST_USER_PASS)
+                .build();
+
+        String responseStr = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseStr);
+        String jwtToken = root.get("token").asText();
+
+        // Perform GET /api/auth/me passing ONLY cookie (no Authorization header)
+        mockMvc.perform(get("/api/auth/me")
+                        .cookie(new Cookie("triagenet_jwt", jwtToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email", is(TEST_USER_EMAIL)))
+                .andExpect(jsonPath("$.name", is("Dr. Hardened Admin")));
     }
 }

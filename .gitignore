@@ -95,5 +95,6 @@ test-results/
 dist/
 build/
 
-# ──── Security Audit Reports ────
+# ──── Security Audit Reports & Local Overrides ────
 SECURITY_AUDIT_REPORT.md
+backend/src/main/resources/application-local.yml

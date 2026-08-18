@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,11 +33,13 @@ public class ResourceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'DISTRICT_CMO', 'STATE_HEALTH_DEPT', 'SUPER_ADMIN', 'REGIONAL_COORDINATOR')")
     public ResponseEntity<List<Resource>> getAllResources() {
         return ResponseEntity.ok(resourceRepository.findAll());
     }
 
     @PostMapping("/transfer")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'DISTRICT_CMO', 'SUPER_ADMIN', 'REGIONAL_COORDINATOR')")
     public ResponseEntity<String> transferSupply(@RequestBody TransferSupplyRequest request) {
         String msg = String.format("Successfully transferred %d %s from hospital %s to hospital %s.",
                 request.getQuantity(), request.getResourceType(), request.getFromHospitalId(), request.getToHospitalId());

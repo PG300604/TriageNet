@@ -56,6 +56,7 @@ public class RoutingControllerTest {
 
     @Test
     @DisplayName("GET /api/routing/matrix/Ranchi - Should return spatial distance matrix for Ranchi hospitals")
+    @org.springframework.security.test.context.support.WithMockUser(roles = {"DISTRICT_CMO"})
     public void testGetDistrictMatrix() throws Exception {
         mockMvc.perform(get("/api/routing/matrix/Ranchi"))
                 .andExpect(status().isOk())

@@ -78,13 +78,22 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
-                .frameOptions(frame -> frame.deny())
+                .frameOptions(frame -> frame.sameOrigin())
                 .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/dashboard/**", "/api/routing/**", "/api/hospitals/**", "/api/patients/**", "/api/triage-queue/**", "/api/resources/**", "/api/referrals/**", "/h2-console/**", "/error").permitAll()
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/patients/score-vitals",
+                    "/api/dashboard/**",
+                    "/api/hospitals",
+                    "/api/hospitals/**",
+                    "/api/routing/optimal",
+                    "/h2-console/**",
+                    "/error"
+                ).permitAll()
                 .anyRequest().authenticated()
             );
 

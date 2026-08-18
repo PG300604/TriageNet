@@ -3,6 +3,7 @@ package com.triagenet.controller;
 import com.triagenet.entity.Hospital;
 import com.triagenet.service.HospitalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,7 @@ public class HospitalController {
     }
 
     @PostMapping("/seed")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<Hospital>> seedHospitals() {
         return ResponseEntity.ok(hospitalService.seedHospitalNetwork());
     }

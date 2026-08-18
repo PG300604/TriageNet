@@ -90,40 +90,40 @@ public class ReferralControllerTest {
         RegisterRequest dispatchReg = RegisterRequest.builder()
                 .name("Dispatch Officer")
                 .email("dispatch@triagenet.org")
-                .password("dispatchPass123")
+                .password("DispatchPass123!")
                 .role(RoleName.AMBULANCE_DISPATCH)
                 .build();
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dispatchReg)))
                 .andExpect(status().isCreated());
-        ambulanceToken = login("dispatch@triagenet.org", "dispatchPass123");
+        ambulanceToken = login("dispatch@triagenet.org", "DispatchPass123!");
 
         // Register & login HOSPITAL_ADMIN user
         RegisterRequest adminReg = RegisterRequest.builder()
                 .name("Hospital Admin")
                 .email("admin@triagenet.org")
-                .password("adminPass123")
+                .password("AdminPass123!")
                 .role(RoleName.HOSPITAL_ADMIN)
                 .build();
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(adminReg)))
                 .andExpect(status().isCreated());
-        hospitalAdminToken = login("admin@triagenet.org", "adminPass123");
+        hospitalAdminToken = login("admin@triagenet.org", "AdminPass123!");
 
         // Register & login TRIAGE_NURSE user (unauthorized for referrals)
         RegisterRequest nurseReg = RegisterRequest.builder()
                 .name("Triage Nurse")
                 .email("nurse@triagenet.org")
-                .password("nursePass123")
+                .password("NursePass123!")
                 .role(RoleName.TRIAGE_NURSE)
                 .build();
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(nurseReg)))
                 .andExpect(status().isCreated());
-        unauthorizedToken = login("nurse@triagenet.org", "nursePass123");
+        unauthorizedToken = login("nurse@triagenet.org", "NursePass123!");
     }
 
     @Test

@@ -18,6 +18,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+
 @Component
 @Slf4j
 public class JwtUtil {
@@ -30,8 +33,11 @@ public class JwtUtil {
     @Value("${jwt.expiration-ms:86400000}")
     private long expirationMs;
 
-    @Value("${spring.profiles.active:dev}")
-    private String activeProfile;
+    private final Environment environment;
+
+    public JwtUtil(Environment environment) {
+        this.environment = environment;
+    }
 
     @PostConstruct
     public void validateJwtConfiguration() {
@@ -39,12 +45,12 @@ public class JwtUtil {
             throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT Secret must be at least 256 bits (32 bytes) long!");
         }
 
-        if ("prod".equalsIgnoreCase(activeProfile) || "production".equalsIgnoreCase(activeProfile)) {
+        if (environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"))) {
             if (DEFAULT_DEV_SECRET.equals(secret.trim())) {
                 throw new IllegalStateException("CRITICAL SECURITY ERROR: Production profile cannot use the hardcoded default JWT secret! Set JWT_SECRET in environment variables.");
             }
         }
-        log.info("JWT Secret successfully validated for profile [{}] with {} bits of entropy.", activeProfile, secret.getBytes(StandardCharsets.UTF_8).length * 8);
+        log.info("JWT Secret successfully validated with {} bits of entropy.", secret.getBytes(StandardCharsets.UTF_8).length * 8);
     }
 
     private SecretKey getSigningKey() {

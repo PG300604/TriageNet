@@ -63,8 +63,12 @@ public class AuthService {
             );
             loginAttemptService.loginSucceeded(email);
         } catch (AuthenticationException e) {
-            loginAttemptService.loginFailed(email);
+            boolean isNowLocked = loginAttemptService.loginFailed(email);
             securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, email, "/api/auth/login", e.getMessage());
+            if (isNowLocked) {
+                securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
+                        "Account locked after reaching max failed login attempts");
+            }
             throw e;
         }
 

@@ -4,6 +4,8 @@ import com.triagenet.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -31,6 +33,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
+    private final Environment environment;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -73,29 +76,37 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        boolean isDevOrTest = environment.acceptsProfiles(Profiles.of("dev", "test", "local"));
+
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(headers -> headers
-                .frameOptions(frame -> frame.sameOrigin())
-                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
-            )
+            .headers(headers -> {
+                if (isDevOrTest) {
+                    headers.frameOptions(frame -> frame.sameOrigin());
+                } else {
+                    headers.frameOptions(frame -> frame.deny());
+                }
+                headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
+            })
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
+            .authorizeHttpRequests(auth -> {
+                if (isDevOrTest) {
+                    auth.requestMatchers("/h2-console/**").permitAll();
+                }
+                auth.requestMatchers(
                     "/api/auth/**",
                     "/api/patients/score-vitals",
                     "/api/dashboard/**",
                     "/api/hospitals",
                     "/api/hospitals/**",
                     "/api/routing/optimal",
-                    "/h2-console/**",
                     "/error"
                 ).permitAll()
-                .anyRequest().authenticated()
-            );
+                .anyRequest().authenticated();
+            });
 
         return http.build();
     }

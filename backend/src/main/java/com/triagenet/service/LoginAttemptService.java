@@ -13,6 +13,7 @@ public class LoginAttemptService {
 
     public static final int MAX_ATTEMPTS = 5;
     public static final long LOCK_TIME_DURATION_MILLIS = 15 * 60 * 1000; // 15 minutes
+    public static final int MAX_CACHE_SIZE = 10000;
 
     private static class AttemptData {
         int attempts;
@@ -28,15 +29,31 @@ public class LoginAttemptService {
 
     private final Map<String, AttemptData> attemptsCache = new ConcurrentHashMap<>();
 
+    private void evictExpiredEntries() {
+        if (attemptsCache.size() > MAX_CACHE_SIZE) {
+            Instant now = Instant.now();
+            attemptsCache.entrySet().removeIf(entry -> {
+                AttemptData data = entry.getValue();
+                if (data.lockExpirationTime != null) {
+                    return now.isAfter(data.lockExpirationTime);
+                }
+                return now.isAfter(data.lastAttemptTime.plusMillis(LOCK_TIME_DURATION_MILLIS));
+            });
+        }
+    }
+
     public void loginSucceeded(String key) {
         if (key != null) {
             attemptsCache.remove(key.toLowerCase().trim());
         }
     }
 
-    public void loginFailed(String key) {
-        if (key == null) return;
+    public boolean loginFailed(String key) {
+        if (key == null) return false;
         String normalizedKey = key.toLowerCase().trim();
+        evictExpiredEntries();
+
+        final boolean[] transitionedToLocked = new boolean[]{false};
 
         attemptsCache.compute(normalizedKey, (k, existing) -> {
             Instant now = Instant.now();
@@ -54,11 +71,16 @@ public class LoginAttemptService {
 
             if (newAttempts >= MAX_ATTEMPTS) {
                 updated.lockExpirationTime = now.plusMillis(LOCK_TIME_DURATION_MILLIS);
-                log.warn("SECURITY ALERT: Account [{}] locked due to {} consecutive failed login attempts until {}",
-                        normalizedKey, newAttempts, updated.lockExpirationTime);
+                if (existing.lockExpirationTime == null) {
+                    transitionedToLocked[0] = true;
+                    log.warn("SECURITY ALERT: Account [{}] locked due to {} consecutive failed login attempts until {}",
+                            normalizedKey, newAttempts, updated.lockExpirationTime);
+                }
             }
             return updated;
         });
+
+        return transitionedToLocked[0];
     }
 
     public boolean isBlocked(String key) {

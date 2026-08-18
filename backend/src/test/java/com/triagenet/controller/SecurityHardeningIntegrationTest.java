@@ -110,6 +110,20 @@ public class SecurityHardeningIntegrationTest {
     @Test
     @DisplayName("Successful Login - Should return valid JWT and reset failed login counter")
     public void testSuccessfulLoginResetsCounter() throws Exception {
+        LoginRequest badRequest = LoginRequest.builder()
+                .email(TEST_USER_EMAIL)
+                .password("WrongPass123!")
+                .build();
+
+        // 4 failed attempts before login
+        for (int i = 1; i <= 4; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(badRequest)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Valid login request
         LoginRequest validRequest = LoginRequest.builder()
                 .email(TEST_USER_EMAIL)
                 .password(TEST_USER_PASS)
@@ -122,6 +136,18 @@ public class SecurityHardeningIntegrationTest {
                 .andExpect(jsonPath("$.token", notNullValue()))
                 .andExpect(jsonPath("$.type", is("Bearer")))
                 .andExpect(jsonPath("$.email", is(TEST_USER_EMAIL)));
+
+        // 4 failed attempts after valid login (should still be 401 Unauthorized, not 423 Locked)
+        for (int i = 1; i <= 4; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(badRequest)))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.error", is("Unauthorized")));
+        }
+
+        // Clean up
+        loginAttemptService.loginSucceeded(TEST_USER_EMAIL);
     }
 
     @Test
@@ -160,7 +186,49 @@ public class SecurityHardeningIntegrationTest {
     }
 
     @Test
-    @DisplayName("RBAC Protection - Resource transfer requires appropriate admin role")
+    @DisplayName("RBAC Protection - Hospital staff cannot access GET /api/resources (403 Forbidden)")
+    @WithMockUser(username = "staff@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
+    public void testHospitalStaffCannotGetAllResources() throws Exception {
+        mockMvc.perform(get("/api/resources"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", is("Forbidden")));
+    }
+
+    @Test
+    @DisplayName("RBAC Protection - Hospital staff cannot access GET /api/routing/matrix/Ranchi (403 Forbidden)")
+    @WithMockUser(username = "staff@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
+    public void testHospitalStaffCannotGetDistrictMatrix() throws Exception {
+        mockMvc.perform(get("/api/routing/matrix/Ranchi"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", is("Forbidden")));
+    }
+
+    @Test
+    @DisplayName("RBAC Protection - Hospital staff cannot step simulation time (403 Forbidden)")
+    @WithMockUser(username = "staff@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
+    public void testHospitalStaffCannotStepSimulationTime() throws Exception {
+        mockMvc.perform(post("/api/triage-queue/" + UUID.randomUUID() + "/step-time?minutes=5.0"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("RBAC Protection - Hospital staff cannot access referral recommendations (403 Forbidden)")
+    @WithMockUser(username = "staff@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
+    public void testHospitalStaffCannotGetReferralRecommendation() throws Exception {
+        mockMvc.perform(get("/api/triage-queue/referral-recommendation"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("RBAC Protection - Hospital staff cannot execute referrals (403 Forbidden)")
+    @WithMockUser(username = "staff@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
+    public void testHospitalStaffCannotExecuteReferral() throws Exception {
+        mockMvc.perform(post("/api/triage-queue/execute-referral?patientId=" + UUID.randomUUID() + "&toHospitalId=" + UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("RBAC Protection - Resource transfer requires appropriate admin role (403 Forbidden)")
     @WithMockUser(username = "guest@triagenet.gov.in", roles = {"HOSPITAL_STAFF"})
     public void testHospitalStaffCannotTransferSupplies() throws Exception {
         ResourceController.TransferSupplyRequest req = ResourceController.TransferSupplyRequest.builder()

@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -88,6 +89,7 @@ public class RoutingController {
     }
 
     @GetMapping("/matrix/{districtName}")
+    @PreAuthorize("hasAnyRole('AMBULANCE_DISPATCH', 'TRIAGE_NURSE', 'HOSPITAL_ADMIN', 'DISTRICT_CMO', 'STATE_HEALTH_DEPT', 'SUPER_ADMIN', 'REGIONAL_COORDINATOR')")
     public ResponseEntity<?> getDistrictDistanceMatrix(@PathVariable String districtName) {
         List<Hospital> dHospitals = hospitalRepository.findAll().stream()
                 .filter(h -> districtName.equalsIgnoreCase(h.getDistrictName()))

@@ -4,6 +4,7 @@ import com.triagenet.entity.TransferRequest;
 import com.triagenet.service.ReferralService;
 import com.triagenet.service.TriageQueueService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +20,13 @@ public class TriageQueueController {
     private final ReferralService referralService;
 
     @GetMapping("/{hospitalId}")
+    @PreAuthorize("hasAnyRole('TRIAGE_NURSE', 'HOSPITAL_STAFF', 'HOSPITAL_ADMIN', 'DISTRICT_CMO', 'STATE_HEALTH_DEPT', 'SUPER_ADMIN')")
     public ResponseEntity<List<TriageQueueService.QueueItemDto>> getQueueForHospital(@PathVariable UUID hospitalId) {
         return ResponseEntity.ok(triageQueueService.getQueueForHospital(hospitalId));
     }
 
     @PostMapping("/{hospitalId}/step-time")
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<List<TriageQueueService.QueueItemDto>> stepSimulationTime(
             @PathVariable UUID hospitalId,
             @RequestParam(defaultValue = "7.0") double minutes) {
@@ -31,6 +34,7 @@ public class TriageQueueController {
     }
 
     @GetMapping("/referral-recommendation")
+    @PreAuthorize("hasAnyRole('TRIAGE_NURSE', 'HOSPITAL_ADMIN', 'AMBULANCE_DISPATCH', 'DISTRICT_CMO', 'SUPER_ADMIN')")
     public ResponseEntity<ReferralService.ReferralRecommendationDto> getReferralRecommendation() {
         ReferralService.ReferralRecommendationDto recommendation = referralService.calculateRecommendation();
         if (recommendation == null) {
@@ -40,6 +44,7 @@ public class TriageQueueController {
     }
 
     @PostMapping("/execute-referral")
+    @PreAuthorize("hasAnyRole('TRIAGE_NURSE', 'HOSPITAL_ADMIN', 'AMBULANCE_DISPATCH', 'SUPER_ADMIN')")
     public ResponseEntity<TransferRequest> executeReferral(
             @RequestParam UUID patientId,
             @RequestParam UUID toHospitalId,

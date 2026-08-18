@@ -94,3 +94,6 @@ test-results/
 *.orig
 dist/
 build/
+
+# ──── Security Audit Reports ────
+SECURITY_AUDIT_REPORT.md

@@ -243,4 +243,25 @@ public class SecurityHardeningIntegrationTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @DisplayName("Lockout Preservation - Active account lockout must survive eviction of un-locked failed attempt records")
+    public void testLockedAccountPreservedDuringEviction() throws Exception {
+        String targetLockedUser = "dr.lockout.preserve@triagenet.gov.in";
+
+        // Trigger 5 failed attempts to lock target user
+        for (int i = 0; i < 5; i++) {
+            loginAttemptService.loginFailed(targetLockedUser);
+        }
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser));
+
+        // Generate un-locked failed attempts from other users
+        for (int i = 0; i < 10; i++) {
+            loginAttemptService.loginFailed("random.user." + i + "@triagenet.gov.in");
+        }
+
+        // Verify target locked account is still blocked and protected
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser));
+        loginAttemptService.loginSucceeded(targetLockedUser);
+    }
 }

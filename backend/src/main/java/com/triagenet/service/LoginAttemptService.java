@@ -29,9 +29,11 @@ public class LoginAttemptService {
 
     private final Map<String, AttemptData> attemptsCache = new ConcurrentHashMap<>();
 
-    private void evictExpiredEntries() {
-        if (attemptsCache.size() > MAX_CACHE_SIZE) {
+    private void ensureCapacityFor(String normalizedKey) {
+        if (!attemptsCache.containsKey(normalizedKey) && attemptsCache.size() >= MAX_CACHE_SIZE) {
             Instant now = Instant.now();
+
+            // Phase 1: Evict expired records (expired locks or stale failed attempts)
             attemptsCache.entrySet().removeIf(entry -> {
                 AttemptData data = entry.getValue();
                 if (data.lockExpirationTime != null) {
@@ -40,9 +42,22 @@ public class LoginAttemptService {
                 return now.isAfter(data.lastAttemptTime.plusMillis(LOCK_TIME_DURATION_MILLIS));
             });
 
-            if (attemptsCache.size() > MAX_CACHE_SIZE) {
+            // Phase 2: If still at/above capacity, evict un-locked failed attempt records first (preserving active lockouts)
+            if (attemptsCache.size() >= MAX_CACHE_SIZE) {
+                java.util.Iterator<Map.Entry<String, AttemptData>> iterator = attemptsCache.entrySet().iterator();
+                while (iterator.hasNext() && attemptsCache.size() >= MAX_CACHE_SIZE) {
+                    Map.Entry<String, AttemptData> entry = iterator.next();
+                    AttemptData data = entry.getValue();
+                    if (data.lockExpirationTime == null || now.isAfter(data.lockExpirationTime)) {
+                        iterator.remove();
+                    }
+                }
+            }
+
+            // Phase 3: Fallback if cache is saturated with active locks, evict oldest entries
+            if (attemptsCache.size() >= MAX_CACHE_SIZE) {
                 java.util.Iterator<String> iterator = attemptsCache.keySet().iterator();
-                while (iterator.hasNext() && attemptsCache.size() > MAX_CACHE_SIZE) {
+                while (iterator.hasNext() && attemptsCache.size() >= MAX_CACHE_SIZE) {
                     iterator.next();
                     iterator.remove();
                 }
@@ -59,7 +74,7 @@ public class LoginAttemptService {
     public boolean loginFailed(String key) {
         if (key == null) return false;
         String normalizedKey = key.toLowerCase().trim();
-        evictExpiredEntries();
+        ensureCapacityFor(normalizedKey);
 
         final boolean[] transitionedToLocked = new boolean[]{false};
 

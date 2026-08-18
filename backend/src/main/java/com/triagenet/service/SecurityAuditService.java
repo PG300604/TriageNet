@@ -41,8 +41,10 @@ public class SecurityAuditService {
         if (input == null || input.isBlank()) {
             return defaultValue;
         }
-        // Remove CR/LF and control characters to prevent log injection (CWE-117)
-        return input.replaceAll("[\\r\\n\\t]", "_")
+        // Escape backslashes and double quotes, and remove CR/LF/control characters to prevent log forging (CWE-117)
+        return input.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replaceAll("[\\r\\n\\t]", "_")
                 .replaceAll("[^\\x20-\\x7E]", "?");
     }
 

@@ -39,6 +39,14 @@ public class LoginAttemptService {
                 }
                 return now.isAfter(data.lastAttemptTime.plusMillis(LOCK_TIME_DURATION_MILLIS));
             });
+
+            if (attemptsCache.size() > MAX_CACHE_SIZE) {
+                java.util.Iterator<String> iterator = attemptsCache.keySet().iterator();
+                while (iterator.hasNext() && attemptsCache.size() > MAX_CACHE_SIZE) {
+                    iterator.next();
+                    iterator.remove();
+                }
+            }
         }
     }
 

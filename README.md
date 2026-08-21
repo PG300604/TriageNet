@@ -956,20 +956,21 @@ flowchart LR
 - [x] **Dual-Mode Live / Simulation Sync Engine**: Non-blocking `useBackendConnection()` hook in `dashboard.tsx` with live REST telemetry probe, visual status badge (`LIVE API` / `CONNECTING…` / `SIMULATED`), and automatic fallback
 - [x] **Clean Next.js 16 Production Build**: Verified full Next.js static prerendering across all 11 application routes with zero errors
 
-### ✅ Phase 8.1 — Comprehensive Security Remediation & RBAC Hardening (Complete — Aug 18, 2026)
-- [x] **Comprehensive 22-Vector Security Audit**: Analyzed entire attack surface across Auth, RBAC, Data Exposure, Infrastructure, and Supply Chain
+### ✅ Phase 8.1 — Comprehensive Security Remediation & RBAC Hardening (Complete — Aug 21, 2026)
+- [x] **Comprehensive 22-Vector Security Audit**: Analyzed entire attack surface across Auth, RBAC, Data Exposure, Infrastructure, and Supply Chain (`SECURITY_AUDIT_REPORT.md`)
 - [x] **Open-Source Hardening Infrastructure**: Created `.github/SECURITY.md`, `.github/ISSUE_TEMPLATE/security_issue.yml`, `.github/ISSUE_TEMPLATE/good_first_issue.yml`, and `.github/SECURITY_AUDIT_TRACKER.md`
-- [x] **Automated GitHub Issue Publisher**: Node.js script `scripts/create_github_issues.js` and 1-click URL generators for community contributors
+- [x] **Automated GitHub Issue Publisher & Closer**: Node.js scripts `scripts/create_audit_report_issues.js` and `scripts/close_fixed_issues.js` for community contributor issue lifecycles
 - [x] **CORS Centralization & Wildcard Purge (Fixes Issue #2)**: Replaced all controller-level `@CrossOrigin(origins = "*")` wildcard annotations with a centralized Spring Security `CorsConfigurationSource` restricting access to authorized frontend domains (`http://localhost:3000`, `https://*.vercel.app`, `https://triagenet.dev`)
 - [x] **Standard Security Headers**: Enabled `X-Frame-Options: DENY` (and `sameOrigin` only in explicit dev profiles) and `Strict-Transport-Security: max-age=31536000; includeSubDomains`
-- [x] **Password Policy Hardening (Fixes Issue #4)**: Enforced `@Size(min = 8)` character validation in `RegisterRequest.java`
+- [x] **Password Complexity Regex Validation (Fixes Issue #4 / A4)**: Enforced strict `@Pattern` validation on `RegisterRequest.java` requiring minimum 8 characters, uppercase, lowercase, digit, and special character symbols
 - [x] **Method-Level RBAC Enforcement (Fixes Issue #3)**: Added granular `@PreAuthorize` role protections across all REST controllers (`PatientController`, `ResourceController`, `RoutingController`, `TriageQueueController`, `HospitalController`, and `ReferralController`)
 - [x] **Brute-Force Protection & Lockout Cache (Fixes Issue #6)**: Implemented in-memory `LoginAttemptService` with 5-attempt sliding threshold, 15-minute lockouts, `423 Locked` responses, and strict 10k capacity enforcement
 - [x] **Structured Security Audit Logging (Fixes Issue #8 & #9)**: Implemented `SecurityAuditService` emitting audit logs for auth events, transfers, and dispatches with CRLF/control-character sanitization, quote escaping, and email PII masking
-- [x] **Fail-Fast JWT Startup Entropy Validation (Fixes Issue #1)**: `@PostConstruct` validation in `JwtUtil` requiring $\ge 256$ bits of entropy and aborting production startup if the default dev secret is detected (supporting composite profile strings)
-- [x] **Secure HttpOnly SameSite Cookie Authentication (Fixes Issue #5)**: Backend sets `triagenet_jwt` cookie on login with `HttpOnly`, `Path=/`, `SameSite=Lax`, and `Secure` (in prod); `JwtAuthenticationFilter` supports dual-engine Bearer/Cookie extraction; added `/api/auth/logout` endpoint; frontend `api-client.ts` uses `credentials: 'include'`
+- [x] **Hardcoded Secret Purge & Fail-Fast JWT Validation (Fixes Issue #1 / A1)**: Removed hardcoded default secret fallbacks from `JwtUtil.java`, `application.yml`, and `docker-compose.yml`; `@PostConstruct` validation in `JwtUtil` requires $\ge 256$ bits of entropy and fails fast on startup if `JWT_SECRET` is unset
+- [x] **Pure HttpOnly SameSite Cookie Migration (Fixes Issue #5 / A3)**: Backend sets `triagenet_jwt` cookie on login (`HttpOnly`, `Path=/`, `SameSite=Lax`); `JwtAuthenticationFilter` supports dual-engine Bearer/Cookie extraction; removed all frontend `localStorage` JWT token access in `api-client.ts` and `auth-context.tsx` in favor of pure browser cookie transport (`credentials: 'include'`)
+- [x] **Dev/Local Profile Hardening (Fixes Issue A5)**: Untracked `application-local.yml` from version control, added to `.gitignore`, and provided `application-local.yml.example` template
 - [x] **Dependency Upgrades & Hardened Non-Root Container (Fixes Issue #7)**: Upgraded backend to **Spring Boot 3.3.2** with **JJWT 0.12.5**; hardened `backend/Dockerfile` with non-root user `USER 1001:1001`
-- [x] **Full 36/36 Automated Test Suite & Next.js Build**: 36/36 backend tests passing (100% BUILD SUCCESS), 11/11 Next.js static pages generated cleanly in 2.3s
+- [x] **Full 40/40 Automated Test Suite & Next.js Build**: **40/40 backend tests passing (100% BUILD SUCCESS)**, 11/11 Next.js static pages generated cleanly in 3.1s
 
 ---
 

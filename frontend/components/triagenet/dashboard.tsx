@@ -19,6 +19,12 @@ import {
   triggerBedRelease,
 } from '@/lib/triage-data'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  getHospitalsForDistrict,
+  convertFacilityToHospital,
+  generateInterconnectivityEdges,
+  JHARKHAND_24_DISTRICTS,
+} from '@/lib/jharkhand-data'
 import { CapacityView } from './capacity-view'
 import { RegionalNetworkView } from './regional-network-view'
 import { Sidebar, type ViewKey, ROLE_ALLOWED_VIEWS, ROLE_CONFIGS } from './sidebar'
@@ -149,13 +155,6 @@ const VIEW_TITLES: Record<string, string> = {
   reports: 'Reports & Risk Telemetry Analytics',
   comms: 'Regional Emergency Communications',
 }
-
-import {
-  getHospitalsForDistrict,
-  convertFacilityToHospital,
-  generateInterconnectivityEdges,
-  JHARKHAND_24_DISTRICTS,
-} from '@/lib/jharkhand-data'
 
 function buildDistrictState(districtName: string, scenarioKey: ScenarioKey = 'steady'): TriageState {
   const facilities = getHospitalsForDistrict(districtName)

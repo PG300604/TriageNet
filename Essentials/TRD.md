@@ -109,7 +109,7 @@
 
 ### 3.7 Authentic Jharkhand Healthcare Infrastructure Seeder
 - **Service**: [`HospitalSeedService.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/service/HospitalSeedService.java).
-- **Data Footprint**: 79 facilities across all 24 districts of Jharkhand (Medical Colleges, District Hospitals, CHCs) with exact GPS coordinates and default capacity metrics.
+- **Data Footprint**: 111 facilities across all 24 districts of Jharkhand (Medical Colleges, District Hospitals, Community Health Centres) with exact GPS coordinates, tier ratings, blood bank, oxygen generation, trauma surgery flags, and default capacity metrics.
 
 ---
 
@@ -117,8 +117,9 @@
 
 | Method | Endpoint | Description & Access Scope |
 |---|---|---|
-| `POST` | `/api/auth/login` | Authenticate user, return JWT and role scope |
-| `POST` | `/api/auth/register` | Register new user account (Admin only) |
+| `POST` | `/api/auth/login` | Authenticate user, issue `triagenet_jwt` HttpOnly cookie & Bearer token |
+| `POST` | `/api/auth/logout` | Clear `triagenet_jwt` HttpOnly cookie (`Max-Age=0`) |
+| `POST` | `/api/auth/register` | Register new user account (Password complexity enforced) |
 | `GET` | `/api/hospitals` | List all hospitals (supports district filtering) |
 | `GET` | `/api/hospitals/{id}` | Get hospital details and live resource capacity |
 | `GET` | `/api/hospitals/districts` | Get summary of all 24 Jharkhand districts |
@@ -137,8 +138,36 @@
 
 ---
 
-## 5. Non-Functional Specifications
+## 5. Non-Functional & Security Specifications
 
 - **Latency**: ML scoring $< 5\text{ ms}$, Hungarian assignment $< 30\text{ ms}$, Dijkstra routing $< 40\text{ ms}$.
-- **Security**: JWT validation on all protected endpoints, strict CORS policy, password BCrypt hashing (strength 12).
+- **Security**:
+  - JWT authentication with dual-engine extraction (HttpOnly `triagenet_jwt` cookie + `Authorization: Bearer` header).
+  - Method-level RBAC enforcement (`@PreAuthorize("hasRole(...)")`) across all 7 REST controllers.
+  - Brute-force lockout (`LoginAttemptService` — 5 attempts $\to$ 15-minute lock with strict 10k capacity bound).
+  - Centralized CORS configuration without wildcards.
+  - Fail-fast JWT startup entropy guard ($\ge 256$ bits) rejecting default secrets in production.
+  - Security audit logging with CRLF/control-character sanitization, quote escaping, and email PII masking.
+  - Non-root container execution (`USER 1001:1001`) in Dockerfiles.
 - **Explainability**: Every API response for scoring, queue ranking, resource matching, and spatial routing includes human-readable factor attributes.
+
+---
+
+## 6. Frontend Architecture & Enterprise SEO / PWA Stack
+
+- **Framework**: Next.js 16.2.6 (App Router + Turbopack) & React 19.
+- **Enterprise SEO & Structured Data (JSON-LD)**:
+  - Schema.org graphs for `GovernmentOrganization` (Department of Health Jharkhand), `WebApplication` (TriageNet), `GovernmentService` (108 Emergency Dispatch), and `SoftwareApplication`.
+  - Multi-lingual emergency contact schemas (`Hindi, English, Santhali, Ho, Mundari`) with 108 and 104 helplines.
+  - Dynamic OpenGraph and Twitter Cards (`summary_large_image`) across landing, command dashboard, and login routes.
+  - Robots configuration (`robots.ts`) with crawler directives protecting `/api/`, `/dashboard/`, and `/login/`.
+  - Dynamic XML sitemap generation (`sitemap.ts`).
+- **HTTP Security Headers (`next.config.mjs`)**:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: SAMEORIGIN`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(self)`
+- **PWA & Performance Capabilities**:
+  - Web App Manifest (`manifest.ts`) with shortcuts, medical categories, icons, and display modes.
+  - Preconnect & DNS-prefetching for CartoCDN map tiles (`basemaps.cartocdn.com`) and Leaflet CDNs.
+  - Modern image optimization formats (`image/avif`, `image/webp`).

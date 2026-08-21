@@ -13,14 +13,14 @@ Without automated state-wide coordination:
 2. **Suboptimal Resource Allocation**: Scarce ICU beds, ventilators, and specialists are assigned on a First-Come-First-Served (FCFS) basis rather than matching patient urgency and medical compatibility.
 3. **Uncoordinated Patient Overflow Transfers**: Ambulances transfer critical patients blindly without real-time bed pre-booking or road-distance spatial shortest-path calculation.
 
-**TriageNet** solves this problem by uniting **real-world Jharkhand public health infrastructure (79 facilities across 24 districts)** with four production algorithmic engines: multi-dataset ML vital sign scoring, dynamic priority queues with wait-time decay, Hungarian bipartite matching, and Dijkstra spatial road routing.
+**TriageNet** solves this problem by uniting **real-world Jharkhand public health infrastructure (111 facilities across 24 districts)** with four production algorithmic engines: multi-dataset ML vital sign scoring, dynamic priority queues with wait-time decay, Hungarian bipartite matching, and Dijkstra spatial road routing.
 
 ---
 
 ## 2. System Scope & Non-Goals
 
 ### A. Goals & Core Deliverables
-- **State-Wide Healthcare Mapping**: Model 79 authentic Jharkhand facilities across 24 districts and 3 infrastructure tiers (Tertiary Medical Colleges, District Hospitals, Community Health Centres).
+- **State-Wide Healthcare Mapping**: Model 111 authentic Jharkhand facilities across 24 districts and 3 infrastructure tiers (Tertiary Medical Colleges, District Hospitals, Community Health Centres).
 - **4 Real Algorithmic Engines**:
   1. Multi-factor ML severity scoring (Logistic Regression trained offline across 4 public triage datasets, 98.88% emergency recall).
   2. Custom priority queue with continuous wait-time decay (`effectivePriority = baseSeverity + λ * waitTimeMinutes`).
@@ -28,6 +28,7 @@ Without automated state-wide coordination:
   4. Dijkstra graph shortest path spatial routing across Jharkhand road network matrices (OpenRouteService).
 - **6-Role Enterprise RBAC System**: Role-tailored dashboards and permission controls for state directors, district CMOs, hospital administrators, triage nurses, and 108 ambulance dispatchers.
 - **108 Ambulance Tactical Command Console**: Real-time bed pre-booking, multi-criteria hospital matching, and in-flight fleet telemetry tracking.
+- **Enterprise SEO & PWA Platform**: Schema.org JSON-LD structured data with multi-lingual emergency schemas (`Hindi, English, Santhali, Ho, Mundari`), OpenGraph/Twitter social cards, crawler access rules, and offline-capable PWA manifest.
 - **Scenario Simulator**: Live interactive testing engine simulating steady-state admissions, mass casualty events, and monsoon surge spikes.
 
 ### B. Non-Goals

@@ -23,15 +23,15 @@ This file serves as the standing, persistent context for the AI coding agent (**
 
 ## 3. Key Operational Systems & Real Data Integration
 
-### A. Authentic Jharkhand Healthcare Infrastructure (79 Facilities across 24 Districts)
+### A. Authentic Jharkhand Healthcare Infrastructure (111 Facilities across 24 Districts)
 - **Real-World Scraped Dataset**: TriageNet uses 100% authentic public health infrastructure data from Jharkhand, India across 3 tiers:
-  - **Tier 1 — Tertiary Medical Colleges**: RIMS Ranchi, MGM Medical College Jamshedpur, SNMMCH Dhanbad, Phulo Jhano Medical College Dumka, Medinirai Medical College Palamu.
-  - **Tier 2 — District Hospitals**: 24 District Hospitals (DH Ranchi, DH Hazaribagh, DH Bokaro, DH Giridih, DH Chaibasa, etc.).
-  - **Tier 3 — Community Health Centres (CHCs)**: 50+ CHC block-level facilities across Jharkhand (CHC Kanke, CHC Ormanjhi, CHC Namkum, etc.).
+  - **Tier 1 — Tertiary Medical Colleges**: RIMS Ranchi, MGM Medical College Jamshedpur, SNMMCH Dhanbad, Phulo Jhano Medical College Dumka, Medinirai Medical College Palamu, Sheikh Bhikhari Medical College Hazaribagh.
+  - **Tier 2 — District Hospitals**: 24 District Hospitals (DH Ranchi, DH Hazaribagh, DH Bokaro, DH Giridih, DH Chaibasa, DH Dhanbad, etc.).
+  - **Tier 3 — Community Health Centres (CHCs)**: 80+ CHC block-level facilities across Jharkhand (CHC Kanke, CHC Ormanjhi, CHC Namkum, etc.).
 - Data generation/scraping pipeline: [`scrape_jharkhand_hospitals.py`](file:///p:/TriageNet/scripts/scrape_jharkhand_hospitals.py) + [`build_real_jharkhand_dataset.js`](file:///p:/TriageNet/scripts/build_real_jharkhand_dataset.js). Seeded into Spring Boot via [`HospitalSeedService.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/service/HospitalSeedService.java).
 
 ### B. Spatial Routing Engine & Interactive Leaflet Maps
-- Real-world geospatial coordinate mapping for all 79 facilities.
+- Real-world geospatial coordinate mapping for all 111 facilities.
 - Distance & travel time matrix generated via self-hosted **OpenRouteService (ORS)** over Geofabrik Jharkhand OpenStreetMap data.
 - **Dijkstra Topology Graph View** ([`regional-network-view.tsx`](file:///p:/TriageNet/frontend/components/triagenet/regional-network-view.tsx)) featuring spaced layout, bed occupancy pills, highway travel time tags, and pre-booking transfer controls.
 
@@ -48,9 +48,9 @@ This file serves as the standing, persistent context for the AI coding agent (**
 - Production model: Logistic Regression with explainable vital sign weights (Heart Rate, Systolic BP, SpO2, Temp, Glasgow Coma Scale, Respiratory Rate, Age, Comorbidities).
 - Implemented in backend ([`SeverityScorer.java`](file:///p:/TriageNet/backend/src/main/java/com/triagenet/engine/SeverityScorer.java)) and frontend ([`ml-severity-scorer.ts`](file:///p:/TriageNet/frontend/lib/ml-severity-scorer.ts)).
 
-### E. Panacea Healthcare SaaS Design System
+### E. Panacea Healthcare SaaS Design System & Enterprise SEO Architecture
 - Visual design language: `Walnut Shadow` palette, `#491205` brand accent, official TriageNet logo and favicons, crisp cards, zero generic emojis.
-- Full Enterprise SEO architecture, PWA capabilities, and font display swap optimizations.
+- Full Enterprise SEO architecture: Schema.org JSON-LD structured data (`GovernmentOrganization`, `WebApplication`, `GovernmentService`, `SoftwareApplication`), multi-lingual emergency contact schemas (`Hindi, English, Santhali, Ho, Mundari`), OpenGraph/Twitter Cards, Next.js HTTP security headers (`nosniff`, `SAMEORIGIN`, `strict-origin-when-cross-origin`), CartoCDN tile prefetching, and PWA capabilities.
 
 ---
 
@@ -62,8 +62,8 @@ This file serves as the standing, persistent context for the AI coding agent (**
    - `HungarianMatcher.java` — $O(n^3)$ Kuhn-Munkres bipartite matching for optimal patient-resource allocation.
    - `DijkstraRouter.java` — Shortest path spatial graph routing over Jharkhand road network graph.
 2. **Explainability**: Every score, queue re-ranking, resource assignment, and spatial routing decision must return a clear, human-readable breakdown of contributing factors.
-3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints.
-4. **Deployability & Parity**: Maintain Docker container parity for Spring Boot backend and Next.js frontend deployment.
+3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints with method-level `@PreAuthorize`.
+4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.2 backend and Next.js 16.2.6 frontend deployment.
 
 ---
 
@@ -72,21 +72,21 @@ This file serves as the standing, persistent context for the AI coding agent (**
 ```
 TriageNet/
 ├── Essentials/               # Source-of-truth project documentation (PRD, TRD, ERD, brain, instructions)
-├── backend/                  # Java 17 + Spring Boot 3.x backend
+├── backend/                  # Java 17 + Spring Boot 3.3.2 backend (JJWT 0.12.5, non-root Docker UID 1001)
 │   └── src/main/java/com/triagenet/
-│       ├── config/           # SecurityConfig, JwtAuthenticationFilter, CustomUserDetails
+│       ├── config/           # SecurityConfig (CORS, HSTS, frameOptions), JwtAuthenticationFilter (HttpOnly cookie), CustomUserDetails
 │       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard
-│       ├── dto/              # Login, Register, User, Response DTOs
+│       ├── dto/              # Login, Register (with password complexity), User, Response DTOs
 │       ├── engine/           # SeverityScorer, HungarianMatcher, DijkstraRouter
 │       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, etc.
 │       ├── repository/       # Spring Data JPA Repositories
-│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed services
-├── frontend/                 # React 19 + Next.js 15 (App Router) + Tailwind CSS + Lucide icons + Leaflet
-│   ├── app/                  # Route handlers, login portal, state dashboard
+│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed, LoginAttempt (lockout), SecurityAudit services
+├── frontend/                 # React 19 + Next.js 16.2 (App Router) + Tailwind CSS + Lucide icons + Leaflet + PWA
+│   ├── app/                  # Route handlers, login portal, state dashboard, robots.ts, sitemap.ts, manifest.ts
 │   ├── components/triagenet/ # Capacity, Queue, Regional Network, ED Intake, 108 Command, SEO, TopBar, Sidebar
-│   └── lib/                  # api-client, auth-context, jharkhand-data, ml-severity-scorer, triage-data
+│   └── lib/                  # api-client (HttpOnly cookie credentials), auth-context, jharkhand-data, ml-severity-scorer, triage-data
 ├── ml/                       # Python ML training & 4-dataset benchmarking scripts
-├── scripts/                  # Scraping pipeline & Jharkhand JSON/TS data builders
+├── scripts/                  # Scraping pipeline & Jharkhand JSON/TS data builders, issue lifecycle scripts
 └── graphify-out/             # Knowledge Graph index & AST relationship network
 ```
 
@@ -95,6 +95,6 @@ TriageNet/
 ## 6. What Should NOT Change Without Explicit Decision
 
 - The 4 core algorithm implementations in `com.triagenet.engine`.
-- The 79 authentic Jharkhand facilities across 24 districts.
+- The 111 authentic Jharkhand facilities across 24 districts.
 - The 6 RBAC user roles and their security permission model.
 - The Panacea SaaS design aesthetic and `#491205` brand palette.

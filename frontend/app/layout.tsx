@@ -58,7 +58,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://triagenet.gov.in',
     siteName: 'TriageNet — Government of Jharkhand Emergency Healthcare Network',
     title: 'TriageNet — Intelligent Healthcare Resource & 108 Ambulance Dispatch',
     description:
@@ -116,8 +115,31 @@ const jsonLdStructuredData = {
   '@context': 'https://schema.org',
   '@graph': [
     {
+      '@type': 'GovernmentOrganization',
+      '@id': '#organization',
+      name: 'Department of Health, Medical Education & Family Welfare, Government of Jharkhand',
+      alternateName: ['NHM Jharkhand', 'Jharkhand Health Department'],
+      url: '/',
+      logo: '/triagenet-logo.png',
+      contactPoint: [
+        {
+          '@type': 'ContactPoint',
+          telephone: '108',
+          contactType: 'Emergency Ambulance & Triage Dispatch',
+          areaServed: 'IN-JH',
+          availableLanguage: ['Hindi', 'English', 'Santhali', 'Ho', 'Mundari'],
+        },
+        {
+          '@type': 'ContactPoint',
+          telephone: '104',
+          contactType: 'Jharkhand State Health Helpline',
+          areaServed: 'IN-JH',
+        },
+      ],
+    },
+    {
       '@type': 'WebApplication',
-      '@id': 'https://triagenet.gov.in/#app',
+      '@id': '#app',
       name: 'TriageNet',
       applicationCategory: 'HealthApplication',
       operatingSystem: 'Any',
@@ -128,16 +150,17 @@ const jsonLdStructuredData = {
       },
       description:
         'State-wide intelligent healthcare resource allocation and 108 emergency ambulance dispatch network for Jharkhand.',
+      provider: {
+        '@id': '#organization',
+      },
     },
     {
       '@type': 'GovernmentService',
-      '@id': 'https://triagenet.gov.in/#service',
+      '@id': '#service',
       name: 'Jharkhand Emergency Triage & 108 Dispatch Network',
       serviceType: 'Emergency Healthcare Resource Coordination',
       provider: {
-        '@type': 'GovernmentOrganization',
-        name: 'Department of Health & Family Welfare, Government of Jharkhand',
-        url: 'https://triagenet.gov.in',
+        '@id': '#organization',
       },
       areaServed: {
         '@type': 'AdministrativeArea',
@@ -159,17 +182,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>
-        {/* Favicon and Apple Touch Icons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/triagenet-logo.png" />
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/triagenet-logo.png" />
-
-        {/* Resource Hints: Preconnect & DNS-Prefetch for Fast CDN and Map Tile Loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Resource Hints: Preconnect & DNS-Prefetch for Map Tiles & External CDNs */}
+        <link rel="preconnect" href="https://basemaps.cartocdn.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
         <link rel="dns-prefetch" href="https://unpkg.com" />
-
 
         {/* PWA & Mobile Web Capabilities */}
         <meta name="application-name" content="TriageNet" />
@@ -178,6 +194,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="TriageNet" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
+        {/* Theme Color for Mobile Browsers */}
+        <meta name="theme-color" content="#FAF6F0" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#100904" media="(prefers-color-scheme: dark)" />
 
         {/* Structured Data (Schema.org JSON-LD) */}
         <script
@@ -194,6 +214,7 @@ export default function RootLayout({
     </html>
   )
 }
+
 
 
 

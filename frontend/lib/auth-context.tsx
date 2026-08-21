@@ -96,13 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load persisted user & token from localStorage
-    const existingToken = getAuthToken();
+    // Load persisted user display metadata from localStorage
     const storedUser = localStorage.getItem('triagenet_user');
 
-    if (existingToken && storedUser) {
+    if (storedUser) {
       try {
-        setToken(existingToken);
         setUser(JSON.parse(storedUser));
       } catch {
         setUser(DEMO_PRESET_USERS.SUPER_ADMIN);
@@ -127,8 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hospitalId: resp.hospitalId,
       };
 
-      setAuthToken(resp.token);
-      setToken(resp.token);
+      setToken(resp.token || null);
       setUser(profile);
       localStorage.setItem('triagenet_user', JSON.stringify(profile));
     } catch (err) {
@@ -140,9 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAsDemoRole = (role: UserRole) => {
     const profile = DEMO_PRESET_USERS[role];
-    const mockJwtToken = `mock-jwt-token-${role.toLowerCase()}-${Date.now()}`;
-    setAuthToken(mockJwtToken);
-    setToken(mockJwtToken);
+    setToken(null);
     setUser(profile);
     localStorage.setItem('triagenet_user', JSON.stringify(profile));
   };

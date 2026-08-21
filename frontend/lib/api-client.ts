@@ -2,16 +2,13 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
 
-// Auth Token Helper
+// Auth Helper (State metadata stored in localStorage, JWT stored purely in HttpOnly SameSite cookie)
 export const getAuthToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('triagenet_jwt_token');
+  return null;
 };
 
-export const setAuthToken = (token: string): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('triagenet_jwt_token', token);
-  }
+export const setAuthToken = (_token: string): void => {
+  // Pure HttpOnly cookie authentication — token is managed securely by the browser via Set-Cookie
 };
 
 export const removeAuthToken = (): void => {
@@ -21,17 +18,12 @@ export const removeAuthToken = (): void => {
   }
 };
 
-// Generic API Fetch Wrapper
+// Generic API Fetch Wrapper (relying on credentials: 'include' for HttpOnly cookie transport)
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,

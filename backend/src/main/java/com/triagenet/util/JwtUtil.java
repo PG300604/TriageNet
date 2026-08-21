@@ -27,7 +27,7 @@ public class JwtUtil {
 
     private static final String DEFAULT_DEV_SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
 
-    @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${jwt.secret:}")
     private String secret;
 
     @Value("${jwt.expiration-ms:86400000}")

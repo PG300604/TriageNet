@@ -15,7 +15,10 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      # SECURITY (V11): Default to 'validate' in base configuration so missing env var
+      # prevents unintended automatic DDL mutations against production schemas.
+      # Environment-specific overrides: application-dev.yml uses 'create-drop'.
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:

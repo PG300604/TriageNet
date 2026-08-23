@@ -3,8 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // BUG (B8): was `ignoreBuildErrors: true` — type errors shipped to prod
+  // silently. Type-checking is now enforced at build time.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     formats: ['image/avif', 'image/webp'],

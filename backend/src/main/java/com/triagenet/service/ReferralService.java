@@ -155,16 +155,17 @@ public class ReferralService {
         UUID fromId = patient.getHospitalId();
 
         double estimatedMinutes = 30.0; // conservative fallback
+        Hospital to = hospitalService.getAllHospitals().stream()
+                .filter(h -> h.getId().equals(toHospitalId)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Target hospital not found: " + toHospitalId));
         if (fromId != null) {
             Hospital from = hospitalService.getAllHospitals().stream()
                     .filter(h -> h.getId().equals(fromId)).findFirst().orElse(null);
-            Hospital to = hospitalService.getAllHospitals().stream()
-                    .filter(h -> h.getId().equals(toHospitalId)).findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Target hospital not found: " + toHospitalId));
-            if (from != null && from.getLat() != null && to.getLat() != null) {
+            if (from != null && from.getLat() != null && from.getLng() != null
+                    && to.getLat() != null && to.getLng() != null) {
                 double km = Math.acos(Math.min(1.0,
                         Math.sin(Math.toRadians(from.getLat())) * Math.sin(Math.toRadians(to.getLat()))
-                                + Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
+                                 Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
                                         * Math.cos(Math.toRadians(to.getLng() - from.getLng())))) * 6371.0;
                 estimatedMinutes = Math.max(5.0, km / 0.6); // ~36 km/h urban average
             }

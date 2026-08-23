@@ -54,4 +54,30 @@ class SeverityScorerTest {
         assertTrue(result.isSepsisWarning(), "Sepsis alert should trigger for SpO2 < 90 & HR > 110");
         assertTrue(result.getTopFactor().contains("SpO2"), "Top factor should identify SpO2 Drop");
     }
+
+    @Test
+    void testSanitizedVitalsClampsImpossibleValues() {
+        SeverityScorer.ClinicalVitals absurd = SeverityScorer.ClinicalVitals.builder()
+                .spo2(-500.0)
+                .heartRate(99999.0)
+                .systolicBp(-10.0)
+                .diastolicBp(1000.0)
+                .temperature(15.0)
+                .respRate(300.0)
+                .age(999)
+                .build();
+
+        SeverityScorer.ClinicalVitals clean = absurd.sanitized();
+        assertEquals(SeverityScorer.ClinicalVitals.SPO2_MIN, clean.getSpo2());
+        assertEquals(SeverityScorer.ClinicalVitals.HR_MAX, clean.getHeartRate());
+        assertEquals(SeverityScorer.ClinicalVitals.SBP_MIN, clean.getSystolicBp());
+        assertEquals(SeverityScorer.ClinicalVitals.DBP_MAX, clean.getDiastolicBp());
+        assertEquals(SeverityScorer.ClinicalVitals.TEMP_MIN, clean.getTemperature());
+        assertEquals(SeverityScorer.ClinicalVitals.RESP_MAX, clean.getRespRate());
+        assertEquals(SeverityScorer.ClinicalVitals.AGE_MAX, clean.getAge());
+
+        SeverityScorer.SeverityResult result = scorer.computeSeverity(absurd);
+        assertNotNull(result);
+        assertTrue(result.getScore() <= 100.0 && result.getScore() >= 10.0, "Score should remain bounded [10, 100]");
+    }
 }

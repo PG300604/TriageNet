@@ -32,6 +32,15 @@ public class SeverityScorer {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ClinicalVitals {
+        /** Physiologically plausible bounds — reject/clamp impossible input (BUG B3). */
+        public static final double SPO2_MIN = 50.0, SPO2_MAX = 100.0;
+        public static final double HR_MIN = 20.0, HR_MAX = 260.0;
+        public static final double SBP_MIN = 40.0, SBP_MAX = 300.0;
+        public static final double DBP_MIN = 20.0, DBP_MAX = 200.0;
+        public static final double TEMP_MIN = 30.0, TEMP_MAX = 45.0;
+        public static final double RESP_MIN = 4.0, RESP_MAX = 80.0;
+        public static final int AGE_MIN = 0, AGE_MAX = 120;
+
         @Builder.Default
         private double spo2 = 98.0;
         @Builder.Default
@@ -46,6 +55,27 @@ public class SeverityScorer {
         private double respRate = 16.0;
         @Builder.Default
         private int age = 45;
+
+        /**
+         * Clamps every vital into a physiologically plausible range instead
+         * of letting absurd values (e.g. spo2=-500, heartRate=99999) corrupt data.
+         */
+        public ClinicalVitals sanitized() {
+            return ClinicalVitals.builder()
+                    .spo2(clamp(this.spo2, SPO2_MIN, SPO2_MAX))
+                    .heartRate(clamp(this.heartRate, HR_MIN, HR_MAX))
+                    .systolicBp(clamp(this.systolicBp, SBP_MIN, SBP_MAX))
+                    .diastolicBp(clamp(this.diastolicBp, DBP_MIN, DBP_MAX))
+                    .temperature(clamp(this.temperature, TEMP_MIN, TEMP_MAX))
+                    .respRate(clamp(this.respRate, RESP_MIN, RESP_MAX))
+                    .age((int) clamp(this.age, AGE_MIN, AGE_MAX))
+                    .build();
+        }
+
+        private static double clamp(double v, double min, double max) {
+            if (Double.isNaN(v)) return min;
+            return Math.min(max, Math.max(min, v));
+        }
     }
 
     @Data
@@ -60,7 +90,8 @@ public class SeverityScorer {
         private Map<String, Double> factorContributions;
     }
 
-    public SeverityResult computeSeverity(ClinicalVitals vitals) {
+    public SeverityResult computeSeverity(ClinicalVitals rawVitals) {
+        ClinicalVitals vitals = rawVitals != null ? rawVitals.sanitized() : ClinicalVitals.builder().build().sanitized();
         double spo2Dev = Math.max(0, (98.0 - vitals.getSpo2()) * 1.5);
         double hrDev = Math.abs(vitals.getHeartRate() - 75.0) * 0.8;
         double tempDev = Math.abs(vitals.getTemperature() - 37.0) * 10.0;

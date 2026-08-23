@@ -40,10 +40,24 @@ public class PatientService {
             patient.setStatus(PatientStatus.WAITING);
         }
 
+        // Sanitize vitals before persisting to ensure values stay within physiological bounds
+        SeverityScorer.ClinicalVitals vitals = SeverityScorer.ClinicalVitals.builder()
+                .spo2(patient.getSpo2() != null ? patient.getSpo2() : 98.0)
+                .heartRate(patient.getHeartRate() != null ? patient.getHeartRate() : 75.0)
+                .systolicBp(patient.getSystolicBp() != null ? patient.getSystolicBp() : 120.0)
+                .age(patient.getAge() != null ? patient.getAge() : 45)
+                .build()
+                .sanitized();
+
+        patient.setSpo2(vitals.getSpo2());
+        patient.setHeartRate(vitals.getHeartRate());
+        patient.setSystolicBp(vitals.getSystolicBp());
+        patient.setAge(vitals.getAge());
+
         Patient saved = patientRepository.save(patient);
 
-        // Compute initial ML severity score
-        SeverityScorer.SeverityResult result = severityScorer.computeSeverityFromPatient(saved);
+        // Compute initial ML severity score from sanitized vitals
+        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(vitals);
 
         SeverityScore scoreEntity = SeverityScore.builder()
                 .patientId(saved.getId())
@@ -59,12 +73,14 @@ public class PatientService {
     public SeverityScorer.SeverityResult evaluateVitals(UUID patientId, SeverityScorer.ClinicalVitals vitals) {
         Patient patient = getPatientById(patientId);
 
-        patient.setSpo2(vitals.getSpo2());
-        patient.setHeartRate(vitals.getHeartRate());
-        patient.setSystolicBp(vitals.getSystolicBp());
+        SeverityScorer.ClinicalVitals clean = vitals != null ? vitals.sanitized() : SeverityScorer.ClinicalVitals.builder().build().sanitized();
+
+        patient.setSpo2(clean.getSpo2());
+        patient.setHeartRate(clean.getHeartRate());
+        patient.setSystolicBp(clean.getSystolicBp());
         patientRepository.save(patient);
 
-        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(vitals);
+        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(clean);
 
         SeverityScore scoreEntity = SeverityScore.builder()
                 .patientId(patientId)

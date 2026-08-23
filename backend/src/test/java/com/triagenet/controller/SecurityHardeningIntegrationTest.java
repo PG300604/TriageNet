@@ -459,4 +459,27 @@ public class SecurityHardeningIntegrationTest {
                 .andExpect(header().string(HttpHeaders.PRAGMA, is("no-cache")))
                 .andExpect(header().string(HttpHeaders.EXPIRES, is("0")));
     }
+
+    @Autowired
+    private com.triagenet.service.AuthService authService;
+
+    @Test
+    @DisplayName("Trusted Proxy - clientIpOf extracts X-Forwarded-For only for trusted proxy remoteAddr")
+    public void testTrustedProxyIpExtraction() {
+        org.springframework.mock.web.MockHttpServletRequest trustedRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        trustedRequest.setRemoteAddr("127.0.0.1");
+        trustedRequest.addHeader("X-Forwarded-For", "203.0.113.195, 10.0.0.1");
+
+        String extractedIp = authService.clientIpOf(trustedRequest);
+        org.junit.jupiter.api.Assertions.assertEquals("203.0.113.195", extractedIp,
+                "Must extract real client IP from X-Forwarded-For when request originates from trusted proxy");
+
+        org.springframework.mock.web.MockHttpServletRequest untrustedRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        untrustedRequest.setRemoteAddr("198.51.100.22");
+        untrustedRequest.addHeader("X-Forwarded-For", "1.2.3.4");
+
+        String untrustedExtractedIp = authService.clientIpOf(untrustedRequest);
+        org.junit.jupiter.api.Assertions.assertEquals("198.51.100.22", untrustedExtractedIp,
+                "Must ignore forged X-Forwarded-For header when request originates from untrusted remote address");
+    }
 }

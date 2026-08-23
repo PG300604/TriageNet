@@ -29,8 +29,11 @@ public class AuthController {
     private final Environment environment;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        LoginResponse loginResponse = authService.login(request);
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            HttpServletResponse response) {
+        LoginResponse loginResponse = authService.login(request, httpRequest);
         boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
 
         ResponseCookie cookie = ResponseCookie.from("triagenet_jwt", loginResponse.getToken())

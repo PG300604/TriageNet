@@ -23,6 +23,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -45,15 +47,62 @@ public class AuthService {
         }
     }
 
+    @org.springframework.beans.factory.annotation.Value("${security.trusted-proxies:127.0.0.1,::1,0:0:0:0:0:0:0:1,localhost}")
+    private List<String> trustedProxies = List.of("127.0.0.1", "::1", "0:0:0:0:0:0:0:1", "localhost");
+
+    public boolean isTrustedProxy(String remoteAddr) {
+        if (remoteAddr == null || remoteAddr.isBlank()) return false;
+        String trimmed = remoteAddr.trim();
+        if (trustedProxies != null && (trustedProxies.contains(trimmed) || trustedProxies.contains("*"))) {
+            return true;
+        }
+        return trimmed.equals("127.0.0.1") || trimmed.equals("0:0:0:0:0:0:0:1") || trimmed.equals("::1")
+                || trimmed.startsWith("10.") || trimmed.startsWith("192.168.")
+                || (trimmed.startsWith("172.") && is172Private(trimmed));
+    }
+
+    private boolean is172Private(String ip) {
+        try {
+            String[] parts = ip.split("\\.");
+            if (parts.length >= 2) {
+                int second = Integer.parseInt(parts[1]);
+                return second >= 16 && second <= 31;
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
+    /**
+     * Extracts client IP. Uses X-Forwarded-For ONLY when request.getRemoteAddr()
+     * belongs to the trusted proxy allowlist; otherwise returns getRemoteAddr().
+     */
+    public String clientIpOf(jakarta.servlet.http.HttpServletRequest request) {
+        if (request == null) return null;
+        String remoteAddr = request.getRemoteAddr();
+        if (remoteAddr != null && isTrustedProxy(remoteAddr)) {
+            String xff = request.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                return xff.split(",")[0].trim();
+            }
+        }
+        return remoteAddr;
+    }
+
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        return login(request, null);
+    }
 
-        if (loginAttemptService.isBlocked(email)) {
-            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(email);
+    @Transactional
+    public LoginResponse login(LoginRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        String clientIp = clientIpOf(httpRequest);
+
+        if (loginAttemptService.isBlocked(email, clientIp)) {
+            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(email, clientIp);
             securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
                     "Attempt blocked. Lock remaining: " + remainingMins + " mins");
-            throw new LockedException("Account is temporarily locked due to 5 consecutive failed login attempts. Please try again after " + remainingMins + " minutes.");
+            throw new LockedException("Account is temporarily locked due to consecutive failed login attempts. Please try again after " + remainingMins + " minutes.");
         }
 
         Authentication authentication;
@@ -61,9 +110,9 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.getPassword())
             );
-            loginAttemptService.loginSucceeded(email);
+            loginAttemptService.loginSucceeded(email, clientIp);
         } catch (AuthenticationException e) {
-            boolean isNowLocked = loginAttemptService.loginFailed(email);
+            boolean isNowLocked = loginAttemptService.loginFailed(email, clientIp);
             securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, email, "/api/auth/login", e.getMessage());
             if (isNowLocked) {
                 securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",

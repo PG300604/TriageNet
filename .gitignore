@@ -44,6 +44,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
+*.tsbuildinfo
 
 # ──── Java / Spring Boot Backend ────
 backend/target/

@@ -71,12 +71,35 @@ public class ReferralControllerTest {
         // Clean up from previous test method
         transferRequestRepository.deleteAll();
         patientRepository.deleteAll();
+        hospitalRepository.deleteAll();
         staffUserRepository.deleteAll();
         roleRepository.deleteAll();
 
-        // Create a real patient in DB
+        // B5 fix: Seed a real source hospital first, then assign the patient to it
+        com.triagenet.entity.Hospital fromHospital = hospitalRepository.save(
+                com.triagenet.entity.Hospital.builder()
+                        .name("Test Source Hospital")
+                        .shortCode("TSH")
+                        .region("North Chotanagpur")
+                        .lat(23.3600)
+                        .lng(85.3300)
+                        .districtName("Ranchi")
+                        .facilityTier("DISTRICT")
+                        .totalBeds(40)
+                        .totalGeneralBeds(25)
+                        .availableGeneralBeds(10)
+                        .totalIcuBeds(8)
+                        .availableIcuBeds(2)
+                        .totalVentilators(4)
+                        .usedVentilators(3)
+                        .totalSpecialists(6)
+                        .usedSpecialists(4)
+                        .build());
+        fromHospitalId = fromHospital.getId();
+
+        // Create a real patient in DB assigned to the source hospital
         com.triagenet.entity.Patient savedPatient = patientRepository.save(com.triagenet.entity.Patient.builder()
-                .hospitalId(UUID.randomUUID())
+                .hospitalId(fromHospitalId)
                 .name("Ramesh Kumar")
                 .age(45)
                 .presentingComplaint("Acute Respiratory Distress")
@@ -89,7 +112,6 @@ public class ReferralControllerTest {
                 .build());
 
         patientId = savedPatient.getId();
-        fromHospitalId = savedPatient.getHospitalId();
         // B5 fix: referrals now validate the target hospital exists, so the test
         // seeds a real receiving hospital instead of a random UUID.
         com.triagenet.entity.Hospital toHospital = hospitalRepository.save(
@@ -338,6 +360,84 @@ public class ReferralControllerTest {
      * provision elevated-role users directly via the repository (mirroring what
      * an admin workflow would do in production).
      */
+    @Test
+    @DisplayName("POST /api/referrals - Reject patient with null source hospital (B5)")
+    void testCreateReferralNullSourceHospital() throws Exception {
+        // Create a patient with no assigned hospital
+        com.triagenet.entity.Patient patientNoHospital = patientRepository.save(
+                com.triagenet.entity.Patient.builder()
+                        .hospitalId(null)
+                        .name("Test Patient")
+                        .age(30)
+                        .presentingComplaint("Test")
+                        .status(com.triagenet.entity.PatientStatus.WAITING)
+                        .build());
+
+        ReferralRequest request = ReferralRequest.builder()
+                .patientId(patientNoHospital.getId())
+                .originHospitalId(null)
+                .targetHospitalId(toHospitalId)
+                .reason("Transfer required")
+                .resourceType(ResourceType.BED)
+                .urgencyLevel("HIGH")
+                .build();
+
+        mockMvc.perform(post("/api/referrals")
+                        .header("Authorization", "Bearer " + ambulanceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/referrals - Reject nonexistent source hospital (B5)")
+    void testCreateReferralNonexistentSourceHospital() throws Exception {
+        // Create a patient with a non-existent hospital ID
+        UUID fakeHospitalId = UUID.randomUUID();
+        com.triagenet.entity.Patient patientFakeHospital = patientRepository.save(
+                com.triagenet.entity.Patient.builder()
+                        .hospitalId(fakeHospitalId)
+                        .name("Test Patient 2")
+                        .age(35)
+                        .presentingComplaint("Test 2")
+                        .status(com.triagenet.entity.PatientStatus.WAITING)
+                        .build());
+
+        ReferralRequest request = ReferralRequest.builder()
+                .patientId(patientFakeHospital.getId())
+                .originHospitalId(fakeHospitalId)
+                .targetHospitalId(toHospitalId)
+                .reason("Transfer required")
+                .resourceType(ResourceType.BED)
+                .urgencyLevel("HIGH")
+                .build();
+
+        mockMvc.perform(post("/api/referrals")
+                        .header("Authorization", "Bearer " + ambulanceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/referrals - Reject same-hospital transfer (B5)")
+    void testCreateReferralSameHospital() throws Exception {
+        ReferralRequest request = ReferralRequest.builder()
+                .patientId(patientId)
+                .originHospitalId(fromHospitalId)
+                .targetHospitalId(fromHospitalId)  // Same as origin
+                .reason("Transfer to same hospital")
+                .resourceType(ResourceType.BED)
+                .urgencyLevel("HIGH")
+                .build();
+
+        mockMvc.perform(post("/api/referrals")
+                        .header("Authorization", "Bearer " + ambulanceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
     private void registerUserWithRole(String name, String email, String password,
                                       RoleName roleName) throws Exception {
         com.triagenet.entity.Role role = roleRepository.findByName(roleName)

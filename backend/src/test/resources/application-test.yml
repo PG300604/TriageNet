@@ -13,5 +13,9 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  # SECURITY (V3): Test-only CSPRNG-generated secret for automated testing.
+  # This is acceptable ONLY for automated tests and must NEVER be used in production.
+  # Generated with: openssl rand -hex 32
+  # Production and staging environments MUST set JWT_SECRET via environment variable.
+  secret: 7a3f8d9c2e1b4a6f5c8e7d3a9b2f1c4e6a8d3b7f9e2c5a1d4f8b6e9c3a7d2b5f1
   expiration-ms: 86400000

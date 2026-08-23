@@ -120,6 +120,22 @@ public class ReferralService {
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found: " + patientId));
 
         UUID fromId = patient.getHospitalId();
+
+        // SECURITY (B5): Validate source hospital exists and is persisted
+        if (fromId == null) {
+            throw new IllegalArgumentException("Patient has no source hospital assigned");
+        }
+
+        Hospital sourceHospital = hospitalService.getAllHospitals().stream()
+                .filter(h -> h.getId().equals(fromId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Source hospital not found: " + fromId));
+
+        // SECURITY (B5): Reject same-hospital transfers
+        if (fromId.equals(toHospitalId)) {
+            throw new IllegalArgumentException("Cannot transfer patient to the same hospital (fromId == toId)");
+        }
+
         patient.setHospitalId(toHospitalId);
         patient.setStatus(PatientStatus.TRANSFERRED);
         patientRepository.save(patient);
@@ -154,21 +170,32 @@ public class ReferralService {
 
         UUID fromId = patient.getHospitalId();
 
+        // SECURITY (B5): Validate source hospital exists and is persisted
+        if (fromId == null) {
+            throw new IllegalArgumentException("Patient has no source hospital assigned");
+        }
+
+        // SECURITY (B5): Reject same-hospital transfers early
+        if (fromId.equals(toHospitalId)) {
+            throw new IllegalArgumentException("Cannot transfer patient to the same hospital (fromId == toId)");
+        }
+
         double estimatedMinutes = 30.0; // conservative fallback
         Hospital to = hospitalService.getAllHospitals().stream()
                 .filter(h -> h.getId().equals(toHospitalId)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Target hospital not found: " + toHospitalId));
-        if (fromId != null) {
-            Hospital from = hospitalService.getAllHospitals().stream()
-                    .filter(h -> h.getId().equals(fromId)).findFirst().orElse(null);
-            if (from != null && from.getLat() != null && from.getLng() != null
-                    && to.getLat() != null && to.getLng() != null) {
-                double km = Math.acos(Math.min(1.0,
-                        Math.sin(Math.toRadians(from.getLat())) * Math.sin(Math.toRadians(to.getLat()))
-                                + Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
-                                        * Math.cos(Math.toRadians(to.getLng() - from.getLng())))) * 6371.0;
-                estimatedMinutes = Math.max(5.0, km / 0.6); // ~36 km/h urban average
-            }
+
+        Hospital from = hospitalService.getAllHospitals().stream()
+                .filter(h -> h.getId().equals(fromId)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Source hospital not found: " + fromId));
+
+        if (from.getLat() != null && from.getLng() != null
+                && to.getLat() != null && to.getLng() != null) {
+            double km = Math.acos(Math.min(1.0,
+                    Math.sin(Math.toRadians(from.getLat())) * Math.sin(Math.toRadians(to.getLat()))
+                            + Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
+                                    * Math.cos(Math.toRadians(to.getLng() - from.getLng())))) * 6371.0;
+            estimatedMinutes = Math.max(5.0, km / 0.6); // ~36 km/h urban average
         }
 
         return executeReferral(patientId, toHospitalId, estimatedMinutes);

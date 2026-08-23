@@ -22,7 +22,10 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  # SECURITY (V3): DO NOT commit JWT secrets to version control.
+  # Set JWT_SECRET environment variable instead.
+  # For local dev only, generate a random secret: openssl rand -hex 32
+  # secret: <set via JWT_SECRET env var>
   expiration-ms: 86400000
 
 logging:

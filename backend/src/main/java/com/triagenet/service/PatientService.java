@@ -36,6 +36,15 @@ public class PatientService {
 
     @Transactional
     public Patient registerPatient(Patient patient) {
+        // BUG (B1): hospitalId is a NOT NULL DB column; validate up front so the
+        // caller gets a clear 400 instead of a 500 from a constraint violation.
+        if (patient.getHospitalId() == null) {
+            throw new IllegalArgumentException("hospitalId is required when registering a patient");
+        }
+        if (patient.getName() == null || patient.getName().isBlank()) {
+            throw new IllegalArgumentException("name is required when registering a patient");
+        }
+
         if (patient.getStatus() == null) {
             patient.setStatus(PatientStatus.WAITING);
         }

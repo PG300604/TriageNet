@@ -48,7 +48,9 @@ class AuthIntegrationTest {
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("alice.smith@triagenet.org"))
-                .andExpect(jsonPath("$.role").value("HOSPITAL_ADMIN"));
+                // V1 fix: public registration always yields HOSPITAL_STAFF,
+                // regardless of any requested role.
+                .andExpect(jsonPath("$.role").value("HOSPITAL_STAFF"));
 
         // 2. Login
         LoginRequest loginReq = LoginRequest.builder()
@@ -76,7 +78,8 @@ class AuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("alice.smith@triagenet.org"))
                 .andExpect(jsonPath("$.name").value("Dr. Alice Smith"))
-                .andExpect(jsonPath("$.role").value("HOSPITAL_ADMIN"));
+                // V1 fix: role self-assignment blocked, so account is HOSPITAL_STAFF.
+                .andExpect(jsonPath("$.role").value("HOSPITAL_STAFF"));
     }
 
     @Test

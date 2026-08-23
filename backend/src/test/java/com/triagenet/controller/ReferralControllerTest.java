@@ -58,7 +58,13 @@ public class ReferralControllerTest {
     private com.triagenet.repository.PatientRepository patientRepository;
 
     @Autowired
+    private com.triagenet.repository.HospitalRepository hospitalRepository;
+
+    @Autowired
     private com.triagenet.repository.TransferRequestRepository transferRequestRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -84,45 +90,41 @@ public class ReferralControllerTest {
 
         patientId = savedPatient.getId();
         fromHospitalId = savedPatient.getHospitalId();
-        toHospitalId = UUID.randomUUID();
+        // B5 fix: referrals now validate the target hospital exists, so the test
+        // seeds a real receiving hospital instead of a random UUID.
+        com.triagenet.entity.Hospital toHospital = hospitalRepository.save(
+                com.triagenet.entity.Hospital.builder()
+                        .name("Test Receiving Hospital")
+                        .shortCode("TRH")
+                        .region("South Chotanagpur")
+                        .lat(23.3441)
+                        .lng(85.3096)
+                        .districtName("Ranchi")
+                        .facilityTier("DISTRICT")
+                        .totalBeds(50)
+                        .totalGeneralBeds(30)
+                        .availableGeneralBeds(20)
+                        .totalIcuBeds(10)
+                        .availableIcuBeds(5)
+                        .totalVentilators(6)
+                        .usedVentilators(1)
+                        .totalSpecialists(8)
+                        .usedSpecialists(2)
+                        .build());
+        toHospitalId = toHospital.getId();
 
-        // Register & login AMBULANCE_DISPATCH user
-        RegisterRequest dispatchReg = RegisterRequest.builder()
-                .name("Dispatch Officer")
-                .email("dispatch@triagenet.org")
-                .password("DispatchPass123!")
-                .role(RoleName.AMBULANCE_DISPATCH)
-                .build();
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dispatchReg)))
-                .andExpect(status().isCreated());
+        // V1 fix: privileged roles are provisioned directly (as an admin
+        // workflow would), not via public registration.
+        registerUserWithRole("Dispatch Officer", "dispatch@triagenet.org",
+                "DispatchPass123!", RoleName.AMBULANCE_DISPATCH);
         ambulanceToken = login("dispatch@triagenet.org", "DispatchPass123!");
 
-        // Register & login HOSPITAL_ADMIN user
-        RegisterRequest adminReg = RegisterRequest.builder()
-                .name("Hospital Admin")
-                .email("admin@triagenet.org")
-                .password("AdminPass123!")
-                .role(RoleName.HOSPITAL_ADMIN)
-                .build();
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(adminReg)))
-                .andExpect(status().isCreated());
+        registerUserWithRole("Hospital Admin", "admin@triagenet.org",
+                "AdminPass123!", RoleName.HOSPITAL_ADMIN);
         hospitalAdminToken = login("admin@triagenet.org", "AdminPass123!");
 
-        // Register & login TRIAGE_NURSE user (unauthorized for referrals)
-        RegisterRequest nurseReg = RegisterRequest.builder()
-                .name("Triage Nurse")
-                .email("nurse@triagenet.org")
-                .password("NursePass123!")
-                .role(RoleName.TRIAGE_NURSE)
-                .build();
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(nurseReg)))
-                .andExpect(status().isCreated());
+        registerUserWithRole("Triage Nurse", "nurse@triagenet.org",
+                "NursePass123!", RoleName.TRIAGE_NURSE);
         unauthorizedToken = login("nurse@triagenet.org", "NursePass123!");
     }
 
@@ -330,4 +332,22 @@ public class ReferralControllerTest {
         LoginResponse loginResponse = objectMapper.readValue(responseStr, LoginResponse.class);
         return loginResponse.getToken();
     }
-}
+
+    /**
+     * V1 fix: public registration no longer grants privileged roles, so tests
+     * provision elevated-role users directly via the repository (mirroring what
+     * an admin workflow would do in production).
+     */
+    private void registerUserWithRole(String name, String email, String password,
+                                      RoleName roleName) throws Exception {
+        com.triagenet.entity.Role role = roleRepository.findByName(roleName)
+                .orElseGet(() -> roleRepository.save(com.triagenet.entity.Role.builder().name(roleName).build()));
+        staffUserRepository.save(com.triagenet.entity.StaffUser.builder()
+                .name(name)
+                .email(email)
+                .passwordHash(passwordEncoder.encode(password))
+                .role(role)
+                .build());
+    }
+
+    }

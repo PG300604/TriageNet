@@ -6,7 +6,6 @@ import com.triagenet.dto.ReferralStatusUpdate;
 import com.triagenet.entity.ReferralStatus;
 import com.triagenet.entity.TransferRequest;
 import com.triagenet.entity.TransferStatus;
-import com.triagenet.repository.TransferRequestRepository;
 import com.triagenet.service.ReferralService;
 import com.triagenet.service.ReferralService.ReferralRecommendationDto;
 
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -45,8 +43,6 @@ import java.util.stream.Collectors;
 public class ReferralController {
 
     private final ReferralService referralService;
-    private final TransferRequestRepository transferRequestRepository;
-    private final Random random = new Random();
 
     /**
      * POST /api/referrals
@@ -56,13 +52,11 @@ public class ReferralController {
     @PostMapping
     @PreAuthorize("hasAnyRole('AMBULANCE_DISPATCH', 'HOSPITAL_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ReferralResponse> createReferral(@RequestBody @Valid ReferralRequest request) {
-        TransferRequest transfer = referralService.executeReferral(
-                request.getPatientId(),
-                request.getTargetHospitalId(),
-                30.0 // Default travel time estimate; refined by Dijkstra in production
-        );
-        transfer.setStatus(TransferStatus.PROPOSED);
-        transfer = transferRequestRepository.save(transfer);
+        // BUG (B5): delegate to the service instead of re-implementing status
+        // handling here; travel time comes from the Dijkstra engine rather than
+        // a hardcoded 30.0 default.
+        TransferRequest transfer = referralService.createReferralWithEstimate(
+                request.getPatientId(), request.getTargetHospitalId());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -76,10 +70,9 @@ public class ReferralController {
     @GetMapping("/active")
     @PreAuthorize("hasAnyRole('AMBULANCE_DISPATCH', 'HOSPITAL_ADMIN', 'STATE_HEALTH_DEPT', 'DISTRICT_CMO', 'SUPER_ADMIN')")
     public ResponseEntity<List<ReferralResponse>> getActiveReferrals() {
-        List<TransferRequest> active = new ArrayList<>();
-        active.addAll(transferRequestRepository.findByStatus(TransferStatus.PROPOSED));
-        active.addAll(transferRequestRepository.findByStatus(TransferStatus.APPROVED));
-        active.addAll(transferRequestRepository.findByStatus(TransferStatus.IN_TRANSIT));
+        // BUG (B5): single service call (findByStatusIn) replaces three
+        // repository queries duplicated in the controller.
+        List<TransferRequest> active = referralService.getActiveReferrals();
 
         List<ReferralResponse> responses = active.stream()
                 .map(t -> mapToResponse(t, "Active Transfer"))
@@ -99,12 +92,9 @@ public class ReferralController {
             @PathVariable UUID id,
             @RequestBody @Valid ReferralStatusUpdate update) {
 
-        TransferRequest transfer = transferRequestRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Referral not found: " + id));
-
-        transfer.setStatus(mapToTransferStatus(update.getStatus()));
-        transferRequestRepository.save(transfer);
+        // BUG (B5): status transition mapping lives in ReferralService.
+        TransferRequest transfer = referralService.updateReferralStatus(
+                id, mapToReferralStatus(update.getStatus()));
 
         return ResponseEntity.ok(mapToResponse(transfer, update.getNotes()));
     }

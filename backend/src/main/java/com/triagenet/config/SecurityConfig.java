@@ -56,13 +56,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:8080",
-                "https://*.vercel.app",
-                "https://triagenet.dev"
-        ));
+        boolean isDevOrTest = environment.acceptsProfiles(Profiles.of("dev", "test", "local"));
+
+        if (isDevOrTest) {
+            config.setAllowedOriginPatterns(List.of(
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                    "http://localhost:8080"
+            ));
+        } else {
+            config.setAllowedOriginPatterns(List.of(
+                    "https://triagenet.vercel.app",
+                    "https://triagenet.dev",
+                    "https://triagenet.gov.in"
+            ));
+        }
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization"));

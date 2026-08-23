@@ -60,7 +60,10 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
                 "http://localhost:8080",
-                "https://*.vercel.app",
+                // SECURITY (V6): wildcard *.vercel.app + allowCredentials let ANY
+                // attacker preview deployment make credentialed calls. Exact
+                // production origins only — add your real deployed domain here.
+                "https://triagenet.vercel.app",
                 "https://triagenet.dev"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -89,6 +92,9 @@ public class SecurityConfig {
                     headers.frameOptions(frame -> frame.deny());
                 }
                 headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
+                // SECURITY (V7): patient/clinical data must never be cached by
+                // browsers or intermediate proxies.
+                headers.cacheControl(cache -> cache.noStore());
             })
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

@@ -1,6 +1,7 @@
 package com.triagenet.controller;
 
 import com.triagenet.entity.Hospital;
+import com.triagenet.entity.Resource;
 import com.triagenet.repository.ResourceRepository;
 import com.triagenet.repository.HospitalRepository;
 import lombok.AllArgsConstructor;

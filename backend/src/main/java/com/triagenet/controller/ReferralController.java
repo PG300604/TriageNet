@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
 public class ReferralController {
 
     private final ReferralService referralService;
+    private final com.triagenet.repository.TransferRequestRepository transferRequestRepository;
 
     /**
      * POST /api/referrals
@@ -91,8 +94,11 @@ public class ReferralController {
             @RequestBody @Valid ReferralStatusUpdate update) {
 
         // BUG (B5): status transition mapping lives in ReferralService.
-        TransferRequest transfer = referralService.updateReferralStatus(
-                id, mapToReferralStatus(update.getStatus()));
+        TransferRequest transfer = transferRequestRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Referral not found: " + id));
+        transfer.setStatus(mapToTransferStatus(update.getStatus()));
+        transferRequestRepository.save(transfer);
 
         return ResponseEntity.ok(mapToResponse(transfer, update.getNotes()));
     }
@@ -167,7 +173,7 @@ public class ReferralController {
             return String.format("#JH-108-DISPATCH-%s",
                     id.toString().replace("-", "").substring(0, 8).toUpperCase());
         }
-        int tokenNum = 1000 + random.nextInt(9000);
-        return "#JH-108-DISPATCH-" + tokenNum;
+        // Fallback for null ids: deterministic placeholder token.
+        return "#JH-108-DISPATCH-PENDING";
     }
 }

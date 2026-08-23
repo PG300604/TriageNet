@@ -63,8 +63,8 @@ public class DashboardController {
         // BUG (B6): missing ICU capacity used to be fabricated as 10 total / 2
         // available per hospital. Unknown values now count as 0 (reported as such)
         // so state-level ICU statistics reflect real data only.
-        long totalIcu = hospitals.stream().mapToLong(h -> h.getTotalIcuBeds() != null ? h.getTotalIcuBeds() : 0L).sum();
-        long availIcu = hospitals.stream().mapToLong(h -> h.getAvailableIcuBeds() != null ? h.getAvailableIcuBeds() : 0L).sum();
+        long totalIcu = hospitals.stream().mapToLong(h -> h.getTotalIcuBeds() != null ? h.getTotalIcuBeds().intValue() : 0).sum();
+        long availIcu = hospitals.stream().mapToLong(h -> h.getAvailableIcuBeds() != null ? h.getAvailableIcuBeds().intValue() : 0).sum();
         long totalVents = hospitals.stream().mapToLong(Hospital::getVentsTotal).sum();
 
         double avgUtil = hospitals.isEmpty() ? 0.0 :
@@ -78,8 +78,8 @@ public class DashboardController {
             int hCount = dHospitals.size();
             int tBeds = dHospitals.stream().mapToInt(Hospital::getBedsTotal).sum();
             int aBeds = dHospitals.stream().mapToInt(h -> h.getAvailableGeneralBeds() != null ? h.getAvailableGeneralBeds() : (h.getBedsTotal() - h.getBedsUsed())).sum();
-            int tIcu = dHospitals.stream().mapToInt(h -> h.getTotalIcuBeds() != null ? h.getTotalIcuBeds() : 0L).sum();
-            int aIcu = dHospitals.stream().mapToInt(h -> h.getAvailableIcuBeds() != null ? h.getAvailableIcuBeds() : 0L).sum();
+            int tIcu = dHospitals.stream().mapToInt(h -> h.getTotalIcuBeds() != null ? h.getTotalIcuBeds().intValue() : 0).sum();
+            int aIcu = dHospitals.stream().mapToInt(h -> h.getAvailableIcuBeds() != null ? h.getAvailableIcuBeds().intValue() : 0).sum();
 
             return DistrictSummaryDto.builder()
                     .id(d.getId())

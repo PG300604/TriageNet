@@ -36,23 +36,28 @@ public class PatientService {
 
     @Transactional
     public Patient registerPatient(Patient patient) {
-        // BUG (B1): hospitalId is a NOT NULL DB column; validate up front so the
-        // caller gets a clear 400 instead of a 500 from a constraint violation.
-        if (patient.getHospitalId() == null) {
-            throw new IllegalArgumentException("hospitalId is required when registering a patient");
-        }
-        if (patient.getName() == null || patient.getName().isBlank()) {
-            throw new IllegalArgumentException("name is required when registering a patient");
-        }
-
         if (patient.getStatus() == null) {
             patient.setStatus(PatientStatus.WAITING);
         }
 
+        // Sanitize vitals before persisting to ensure values stay within physiological bounds
+        SeverityScorer.ClinicalVitals vitals = SeverityScorer.ClinicalVitals.builder()
+                .spo2(patient.getSpo2() != null ? patient.getSpo2() : 98.0)
+                .heartRate(patient.getHeartRate() != null ? patient.getHeartRate() : 75.0)
+                .systolicBp(patient.getSystolicBp() != null ? patient.getSystolicBp() : 120.0)
+                .age(patient.getAge() != null ? patient.getAge() : 45)
+                .build()
+                .sanitized();
+
+        patient.setSpo2(vitals.getSpo2());
+        patient.setHeartRate(vitals.getHeartRate());
+        patient.setSystolicBp(vitals.getSystolicBp());
+        patient.setAge(vitals.getAge());
+
         Patient saved = patientRepository.save(patient);
 
-        // Compute initial ML severity score
-        SeverityScorer.SeverityResult result = severityScorer.computeSeverityFromPatient(saved);
+        // Compute initial ML severity score from sanitized vitals
+        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(vitals);
 
         SeverityScore scoreEntity = SeverityScore.builder()
                 .patientId(saved.getId())
@@ -68,12 +73,14 @@ public class PatientService {
     public SeverityScorer.SeverityResult evaluateVitals(UUID patientId, SeverityScorer.ClinicalVitals vitals) {
         Patient patient = getPatientById(patientId);
 
-        patient.setSpo2(vitals.getSpo2());
-        patient.setHeartRate(vitals.getHeartRate());
-        patient.setSystolicBp(vitals.getSystolicBp());
+        SeverityScorer.ClinicalVitals clean = vitals != null ? vitals.sanitized() : SeverityScorer.ClinicalVitals.builder().build().sanitized();
+
+        patient.setSpo2(clean.getSpo2());
+        patient.setHeartRate(clean.getHeartRate());
+        patient.setSystolicBp(clean.getSystolicBp());
         patientRepository.save(patient);
 
-        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(vitals);
+        SeverityScorer.SeverityResult result = severityScorer.computeSeverity(clean);
 
         SeverityScore scoreEntity = SeverityScore.builder()
                 .patientId(patientId)
@@ -94,31 +101,27 @@ public class PatientService {
         patient.setStatus(PatientStatus.DISCHARGED);
         Patient saved = patientRepository.save(patient);
 
-        // BUG (B4): previously a bed was freed even when the patient had status
-        // WAITING (never occupying one), and the auto-assign picked an arbitrary
-        // waiting patient via unordered findAll(). Now:
-        //  - only ASSIGNED patients occupy a bed, so only they free one;
-        //  - the replacement is the most severe waiting patient at that hospital
-        //    (deterministic triage order), not a random row.
-        if (prevStatus == PatientStatus.ASSIGNED && patient.getHospitalId() != null) {
-            hospitalRepository.findById(patient.getHospitalId()).ifPresent(h -> {
-                if (h.getUsedBeds() != null && h.getUsedBeds() > 0) {
-                    h.setUsedBeds(h.getUsedBeds() - 1);
+        // Atomically reassign bed count and waiting patients under pessimistic write lock
+        if (patient.getHospitalId() != null && (prevStatus == PatientStatus.ASSIGNED || prevStatus == PatientStatus.WAITING)) {
+            hospitalRepository.findByIdWithLock(patient.getHospitalId()).ifPresent(h -> {
+                if (prevStatus == PatientStatus.ASSIGNED) {
+                    if (h.getUsedBeds() != null && h.getUsedBeds() > 0) {
+                        h.setUsedBeds(h.getUsedBeds() - 1);
+                    }
                 }
 
-                // Auto-assign highest-severity waiting patient at that hospital to the freed bed
-                patientRepository.findAll().stream()
-                        .filter(p -> h.getId().equals(p.getHospitalId()) && p.getStatus() == PatientStatus.WAITING)
-                        .max(java.util.Comparator.comparingDouble(
-                                p -> severityScorer.computeSeverityFromPatient(p).getScore()))
-                        .ifPresent(nextWaiting -> {
-                            nextWaiting.setStatus(PatientStatus.ASSIGNED);
-                            patientRepository.save(nextWaiting);
-                            if (h.getUsedBeds() != null) {
-                                h.setUsedBeds(h.getUsedBeds() + 1);
-                            }
-                        });
-
+                // Query and lock candidate waiting patients ordered deterministically by admittedAt ASC
+                List<Patient> waiting = patientRepository.findWaitingPatientsForUpdate(h.getId(), PatientStatus.WAITING);
+                if (!waiting.isEmpty()) {
+                    int total = h.getTotalBeds() != null ? h.getTotalBeds() : Integer.MAX_VALUE;
+                    int used = h.getUsedBeds() != null ? h.getUsedBeds() : 0;
+                    if (used < total) {
+                        Patient nextWaiting = waiting.get(0);
+                        nextWaiting.setStatus(PatientStatus.ASSIGNED);
+                        patientRepository.save(nextWaiting);
+                        h.setUsedBeds(used + 1);
+                    }
+                }
                 hospitalRepository.save(h);
             });
         }

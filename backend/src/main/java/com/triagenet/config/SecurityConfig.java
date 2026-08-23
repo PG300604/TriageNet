@@ -9,6 +9,7 @@ import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -56,16 +57,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:8080",
-                // SECURITY (V6): wildcard *.vercel.app + allowCredentials let ANY
-                // attacker preview deployment make credentialed calls. Exact
-                // production origins only — add your real deployed domain here.
-                "https://triagenet.vercel.app",
-                "https://triagenet.dev"
-        ));
+        boolean isDevOrTest = environment.acceptsProfiles(Profiles.of("dev", "test", "local"));
+
+        if (isDevOrTest) {
+            config.setAllowedOriginPatterns(List.of(
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                    "http://localhost:8080"
+            ));
+        } else {
+            config.setAllowedOriginPatterns(List.of(
+                    "https://triagenet.vercel.app",
+                    "https://triagenet.dev",
+                    "https://triagenet.gov.in"
+            ));
+        }
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization"));
@@ -92,9 +99,7 @@ public class SecurityConfig {
                     headers.frameOptions(frame -> frame.deny());
                 }
                 headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
-                // SECURITY (V7): patient/clinical data must never be cached by
-                // browsers or intermediate proxies.
-                headers.cacheControl(cache -> cache.disable());
+                headers.cacheControl(Customizer.withDefaults());
             })
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

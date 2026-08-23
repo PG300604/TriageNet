@@ -32,7 +32,7 @@ public class SeverityScorer {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ClinicalVitals {
-        /** Physiologically plausible bounds — reject impossible input (BUG B3). */
+        /** Physiologically plausible bounds — reject/clamp impossible input (BUG B3). */
         public static final double SPO2_MIN = 50.0, SPO2_MAX = 100.0;
         public static final double HR_MIN = 20.0, HR_MAX = 260.0;
         public static final double SBP_MIN = 40.0, SBP_MAX = 300.0;
@@ -57,9 +57,8 @@ public class SeverityScorer {
         private int age = 45;
 
         /**
-         * SECURITY/BUG fix (B3): clamps every vital into a physiologically
-         * plausible range instead of letting absurd values (e.g. spo2=-500,
-         * heartRate=99999) poison the severity model.
+         * Clamps every vital into a physiologically plausible range instead
+         * of letting absurd values (e.g. spo2=-500, heartRate=99999) corrupt data.
          */
         public ClinicalVitals sanitized() {
             return ClinicalVitals.builder()
@@ -92,8 +91,7 @@ public class SeverityScorer {
     }
 
     public SeverityResult computeSeverity(ClinicalVitals rawVitals) {
-        // BUG (B3): always operate on sanitized, physiologically plausible vitals.
-        ClinicalVitals vitals = rawVitals.sanitized();
+        ClinicalVitals vitals = rawVitals != null ? rawVitals.sanitized() : ClinicalVitals.builder().build().sanitized();
         double spo2Dev = Math.max(0, (98.0 - vitals.getSpo2()) * 1.5);
         double hrDev = Math.abs(vitals.getHeartRate() - 75.0) * 0.8;
         double tempDev = Math.abs(vitals.getTemperature() - 37.0) * 10.0;

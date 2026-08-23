@@ -15,10 +15,10 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      # SECURITY (V11): 'update' causes silent schema drift in shared envs.
-      # Override per environment: dev keeps update, staging/prod must set
-      # SPRING_JPA_HIBERNATE_DDL_AUTO=validate and manage migrations explicitly.
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      # SECURITY (V11): Default to 'validate' in base configuration so missing env var
+      # prevents unintended automatic DDL mutations against production schemas.
+      # Environment-specific overrides: application-dev.yml uses 'create-drop'.
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:

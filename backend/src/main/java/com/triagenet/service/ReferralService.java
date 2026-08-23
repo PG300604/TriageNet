@@ -165,7 +165,7 @@ public class ReferralService {
                     && to.getLat() != null && to.getLng() != null) {
                 double km = Math.acos(Math.min(1.0,
                         Math.sin(Math.toRadians(from.getLat())) * Math.sin(Math.toRadians(to.getLat()))
-                                 Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
+                                + Math.cos(Math.toRadians(from.getLat())) * Math.cos(Math.toRadians(to.getLat()))
                                         * Math.cos(Math.toRadians(to.getLng() - from.getLng())))) * 6371.0;
                 estimatedMinutes = Math.max(5.0, km / 0.6); // ~36 km/h urban average
             }

@@ -126,6 +126,7 @@ public class LoginAttemptService {
         if (email != null) {
             String norm = email.toLowerCase().trim();
             attemptsCache.remove(emailKey(norm));
+            attemptsCache.remove(norm);
             try {
                 loginAttemptRepository.deleteByEmailIgnoreCase(norm);
             } catch (Exception e) {
@@ -206,7 +207,7 @@ public class LoginAttemptService {
     }
 
     public boolean isBlocked(String email, String clientIp) {
-        if (email != null && checkBlockedKey(emailKey(email))) {
+        if (email != null && (checkBlockedKey(emailKey(email)) || checkBlockedKey(email.toLowerCase().trim()))) {
             return true;
         }
         if (clientIp != null && checkBlockedKey(ipKey(clientIp))) {
@@ -259,6 +260,9 @@ public class LoginAttemptService {
 
     public long getRemainingLockTimeMinutes(String email, String clientIp) {
         Instant expEmail = getExpirationFor(email != null ? emailKey(email) : null);
+        if (expEmail == null && email != null) {
+            expEmail = getExpirationFor(email.toLowerCase().trim());
+        }
         Instant expIp = getExpirationFor(clientIp != null ? ipKey(clientIp) : null);
 
         Instant maxExp = expEmail;

@@ -45,10 +45,18 @@ public class JwtUtil {
             throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT Secret must be at least 256 bits (32 bytes) long!");
         }
 
-        if (environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"))) {
-            if (DEFAULT_DEV_SECRET.equals(secret.trim())) {
+        // SECURITY (V3): reject known-weak secrets in every profile, not just prod.
+        if (DEFAULT_DEV_SECRET.equals(secret.trim())) {
+            if (environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"))) {
                 throw new IllegalStateException("CRITICAL SECURITY ERROR: Production profile cannot use the hardcoded default JWT secret! Set JWT_SECRET in environment variables.");
             }
+            log.warn("SECURITY WARNING: Using the publicly-known default dev JWT secret. Anyone can forge valid tokens. Set JWT_SECRET before any shared/staging deployment.");
+        }
+
+        // SECURITY (V3): reject low-entropy secrets (e.g. repeated characters).
+        String compact = secret.trim();
+        if (compact.chars().distinct().count() < 16) {
+            throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT secret has too little entropy (<16 distinct characters). Generate it with a CSPRNG, e.g. `openssl rand -hex 32`.");
         }
         log.info("JWT Secret successfully validated with {} bits of entropy.", secret.getBytes(StandardCharsets.UTF_8).length * 8);
     }

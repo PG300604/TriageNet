@@ -94,24 +94,32 @@ public class PatientService {
         patient.setStatus(PatientStatus.DISCHARGED);
         Patient saved = patientRepository.save(patient);
 
-        // Free up bed count at patient's hospital if patient was assigned
-        if (prevStatus == PatientStatus.ASSIGNED || prevStatus == PatientStatus.WAITING) {
+        // BUG (B4): previously a bed was freed even when the patient had status
+        // WAITING (never occupying one), and the auto-assign picked an arbitrary
+        // waiting patient via unordered findAll(). Now:
+        //  - only ASSIGNED patients occupy a bed, so only they free one;
+        //  - the replacement is the most severe waiting patient at that hospital
+        //    (deterministic triage order), not a random row.
+        if (prevStatus == PatientStatus.ASSIGNED && patient.getHospitalId() != null) {
             hospitalRepository.findById(patient.getHospitalId()).ifPresent(h -> {
                 if (h.getUsedBeds() != null && h.getUsedBeds() > 0) {
                     h.setUsedBeds(h.getUsedBeds() - 1);
-                    hospitalRepository.save(h);
                 }
 
-                // Auto-assign top waiting patient at that hospital to newly freed bed
+                // Auto-assign highest-severity waiting patient at that hospital to the freed bed
                 patientRepository.findAll().stream()
-                        .filter(p -> p.getHospitalId().equals(h.getId()) && p.getStatus() == PatientStatus.WAITING)
-                        .findFirst()
+                        .filter(p -> h.getId().equals(p.getHospitalId()) && p.getStatus() == PatientStatus.WAITING)
+                        .max(java.util.Comparator.comparingDouble(
+                                p -> severityScorer.computeSeverityFromPatient(p).getScore()))
                         .ifPresent(nextWaiting -> {
                             nextWaiting.setStatus(PatientStatus.ASSIGNED);
                             patientRepository.save(nextWaiting);
-                            h.setUsedBeds(h.getUsedBeds() + 1);
-                            hospitalRepository.save(h);
+                            if (h.getUsedBeds() != null) {
+                                h.setUsedBeds(h.getUsedBeds() + 1);
+                            }
                         });
+
+                hospitalRepository.save(h);
             });
         }
 

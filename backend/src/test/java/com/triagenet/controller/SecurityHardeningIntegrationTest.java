@@ -428,4 +428,35 @@ public class SecurityHardeningIntegrationTest {
                 .andExpect(jsonPath("$.email", is(TEST_USER_EMAIL)))
                 .andExpect(jsonPath("$.name", is("Dr. Hardened Admin")));
     }
+
+    @Test
+    @DisplayName("Cache-Control - Authenticated patient endpoint response must include Cache-Control no-store headers")
+    public void testAuthenticatedPatientResponseIncludesCacheControlNoStore() throws Exception {
+        LoginRequest validRequest = LoginRequest.builder()
+                .email(TEST_USER_EMAIL)
+                .password(TEST_USER_PASS)
+                .build();
+
+        String responseStr = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(responseStr);
+        String jwtToken = root.get("token").asText();
+
+        // Perform GET /api/patients with valid authentication
+        mockMvc.perform(get("/api/patients")
+                        .cookie(new Cookie("triagenet_jwt", jwtToken)))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, allOf(
+                        containsString("no-cache"),
+                        containsString("no-store"),
+                        containsString("max-age=0"),
+                        containsString("must-revalidate")
+                )))
+                .andExpect(header().string(HttpHeaders.PRAGMA, is("no-cache")))
+                .andExpect(header().string(HttpHeaders.EXPIRES, is("0")));
+    }
 }

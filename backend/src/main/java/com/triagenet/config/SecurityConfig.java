@@ -94,7 +94,7 @@ public class SecurityConfig {
                 headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
                 // SECURITY (V7): patient/clinical data must never be cached by
                 // browsers or intermediate proxies.
-                headers.cacheControl(cache -> cache.noStore());
+                headers.cacheControl(cache -> cache.disable());
             })
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

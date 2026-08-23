@@ -171,9 +171,11 @@ erDiagram
 - Links a patient to an allocated resource.
 - `algorithm_run_id`: Groups all allocations executed in a single Hungarian algorithm invocation for auditability.
 
-### 2.6 `HOSPITAL_EDGE` & `TRANSFER_REQUEST`
-- Directed edges representing real road interconnectivity across Jharkhand.
-- `TRANSFER_REQUEST`: Orchestrates 108 ambulance transfer workflows and bed pre-booking.
+### 2.7 `LOGIN_ATTEMPT`
+- Tracks failed login attempts and account lockout expiration for brute-force prevention.
+- `email`: Normalized email string (UK).
+- `attempt_count`: Integer failure counter.
+- `lock_expires_at`: Timestamp indicating when temporary account lock expires.
 
 ---
 
@@ -194,4 +196,8 @@ CREATE INDEX idx_hospital_edge_src ON hospital_edge (from_hospital_id);
 
 -- District hospital search
 CREATE INDEX idx_hospital_district ON hospital (district_id, facility_tier);
+
+-- Persistent account lockout lookups
+CREATE INDEX idx_login_attempts_email ON login_attempts (email);
+CREATE INDEX idx_login_attempts_lock_expires ON login_attempts (lock_expires_at);
 ```

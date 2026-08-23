@@ -53,6 +53,9 @@ public class SecurityHardeningIntegrationTest {
     @Autowired
     private LoginAttemptService loginAttemptService;
 
+    @Autowired
+    private com.triagenet.repository.LoginAttemptRepository loginAttemptRepository;
+
     private static final String TEST_USER_EMAIL = "doctor.hardening@triagenet.jh.gov.in";
     private static final String TEST_USER_PASS = "SecureAdminPass123!";
 
@@ -75,14 +78,14 @@ public class SecurityHardeningIntegrationTest {
     }
 
     @Test
-    @DisplayName("Brute Force Lockout - Should return 423 LOCKED after 5 consecutive failed login attempts")
+    @DisplayName("Brute Force Lockout - Should return 423 LOCKED after 5 consecutive failed login attempts & persist to DB")
     public void testBruteForceAccountLockout() throws Exception {
         LoginRequest badRequest = LoginRequest.builder()
                 .email(TEST_USER_EMAIL)
-                .password("WrongPassword123!")
+                .password("WrongPass123!")
                 .build();
 
-        // 4 failed attempts should return 401 Unauthorized
+        // 4 failed attempts should return 401 UNAUTHORIZED
         for (int i = 1; i <= 4; i++) {
             mockMvc.perform(post("/api/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -105,8 +108,39 @@ public class SecurityHardeningIntegrationTest {
                 .andExpect(jsonPath("$.error", is("Account Locked")))
                 .andExpect(jsonPath("$.message", containsString("temporarily locked")));
 
+        // Verify Database Persistence
+        var persistedLock = loginAttemptRepository.findByEmailIgnoreCase(TEST_USER_EMAIL);
+        org.junit.jupiter.api.Assertions.assertTrue(persistedLock.isPresent(), "Lockout record must be persisted in database");
+        org.junit.jupiter.api.Assertions.assertTrue(persistedLock.get().getAttemptCount() >= 5);
+        org.junit.jupiter.api.Assertions.assertNotNull(persistedLock.get().getLockExpiresAt());
+
         // Reset lock for subsequent tests
         loginAttemptService.loginSucceeded(TEST_USER_EMAIL);
+    }
+
+    @Test
+    @DisplayName("Database Lockout Recovery - isBlocked should recover lockout state directly from database on cache miss")
+    public void testDatabaseLockoutRecovery() throws Exception {
+        String testEmail = "db.lockout@triagenet.jh.gov.in";
+        loginAttemptService.loginSucceeded(testEmail);
+
+        // Record 5 failed attempts
+        for (int i = 0; i < 5; i++) {
+            loginAttemptService.loginFailed(testEmail);
+        }
+
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(testEmail));
+
+        // Re-initialize service (simulating application restart)
+        loginAttemptService.init();
+
+        // Lockout must persist across restart
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(testEmail),
+                "Lockout must persist across service restart via database repository");
+
+        // Successful login clears DB record
+        loginAttemptService.loginSucceeded(testEmail);
+        org.junit.jupiter.api.Assertions.assertFalse(loginAttemptRepository.findByEmailIgnoreCase(testEmail).isPresent());
     }
 
     @Test

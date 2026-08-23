@@ -482,4 +482,78 @@ public class SecurityHardeningIntegrationTest {
         org.junit.jupiter.api.Assertions.assertEquals("198.51.100.22", untrustedExtractedIp,
                 "Must ignore forged X-Forwarded-For header when request originates from untrusted remote address");
     }
+
+    @Autowired
+    private com.triagenet.service.PatientService patientService;
+
+    @Autowired
+    private com.triagenet.repository.HospitalRepository hospitalRepository;
+
+    @Autowired
+    private com.triagenet.repository.PatientRepository patientRepository;
+
+    @Test
+    @DisplayName("Discharge Flow - Atomic bed reassignment and deterministic waiting patient promotion")
+    public void testAtomicDischargeAndWaitingPatientPromotion() {
+        com.triagenet.entity.Hospital hospital = hospitalRepository.save(com.triagenet.entity.Hospital.builder()
+                .name("Atomic Test Hospital")
+                .districtName("Ranchi")
+                .facilityTier("DH")
+                .region("Central")
+                .lat(23.3441)
+                .lng(85.3096)
+                .totalBeds(10)
+                .usedBeds(10)
+                .totalVentilators(5)
+                .usedVentilators(2)
+                .totalSpecialists(8)
+                .usedSpecialists(4)
+                .build());
+
+        com.triagenet.entity.Patient assignedPatient = patientRepository.save(com.triagenet.entity.Patient.builder()
+                .name("Assigned Patient")
+                .hospitalId(hospital.getId())
+                .age(45)
+                .presentingComplaint("Chest Pain")
+                .status(com.triagenet.entity.PatientStatus.ASSIGNED)
+                .admittedAt(java.time.LocalDateTime.now().minusHours(5))
+                .build());
+
+        com.triagenet.entity.Patient waitingPatient1 = patientRepository.save(com.triagenet.entity.Patient.builder()
+                .name("First Waiting Patient")
+                .hospitalId(hospital.getId())
+                .age(32)
+                .presentingComplaint("Severe Asthma")
+                .status(com.triagenet.entity.PatientStatus.WAITING)
+                .admittedAt(java.time.LocalDateTime.now().minusHours(3))
+                .build());
+
+        com.triagenet.entity.Patient waitingPatient2 = patientRepository.save(com.triagenet.entity.Patient.builder()
+                .name("Second Waiting Patient")
+                .hospitalId(hospital.getId())
+                .age(28)
+                .presentingComplaint("Fever")
+                .status(com.triagenet.entity.PatientStatus.WAITING)
+                .admittedAt(java.time.LocalDateTime.now().minusHours(1))
+                .build());
+
+        // Discharge assigned patient
+        com.triagenet.entity.Patient discharged = patientService.dischargePatient(assignedPatient.getId(), "Recovered");
+        org.junit.jupiter.api.Assertions.assertEquals(com.triagenet.entity.PatientStatus.DISCHARGED, discharged.getStatus());
+
+        // Verify first waiting patient was atomically promoted to ASSIGNED
+        com.triagenet.entity.Patient updatedWaiting1 = patientRepository.findById(waitingPatient1.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(com.triagenet.entity.PatientStatus.ASSIGNED, updatedWaiting1.getStatus(),
+                "Oldest waiting patient must be transitioned to ASSIGNED");
+
+        // Verify second waiting patient remains WAITING
+        com.triagenet.entity.Patient updatedWaiting2 = patientRepository.findById(waitingPatient2.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(com.triagenet.entity.PatientStatus.WAITING, updatedWaiting2.getStatus(),
+                "Second waiting patient must remain WAITING");
+
+        // Verify hospital usedBeds is accurately 10 (10 - 1 + 1 = 10)
+        com.triagenet.entity.Hospital updatedHospital = hospitalRepository.findById(hospital.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(10, updatedHospital.getUsedBeds(),
+                "Used beds must remain accurately accounted");
+    }
 }

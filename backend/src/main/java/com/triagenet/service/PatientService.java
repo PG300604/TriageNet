@@ -101,24 +101,28 @@ public class PatientService {
         patient.setStatus(PatientStatus.DISCHARGED);
         Patient saved = patientRepository.save(patient);
 
-        // Free up bed count at patient's hospital if patient was assigned
-        if (prevStatus == PatientStatus.ASSIGNED || prevStatus == PatientStatus.WAITING) {
-            hospitalRepository.findById(patient.getHospitalId()).ifPresent(h -> {
-                if (h.getUsedBeds() != null && h.getUsedBeds() > 0) {
-                    h.setUsedBeds(h.getUsedBeds() - 1);
-                    hospitalRepository.save(h);
+        // Atomically reassign bed count and waiting patients under pessimistic write lock
+        if (patient.getHospitalId() != null && (prevStatus == PatientStatus.ASSIGNED || prevStatus == PatientStatus.WAITING)) {
+            hospitalRepository.findByIdWithLock(patient.getHospitalId()).ifPresent(h -> {
+                if (prevStatus == PatientStatus.ASSIGNED) {
+                    if (h.getUsedBeds() != null && h.getUsedBeds() > 0) {
+                        h.setUsedBeds(h.getUsedBeds() - 1);
+                    }
                 }
 
-                // Auto-assign top waiting patient at that hospital to newly freed bed
-                patientRepository.findAll().stream()
-                        .filter(p -> p.getHospitalId().equals(h.getId()) && p.getStatus() == PatientStatus.WAITING)
-                        .findFirst()
-                        .ifPresent(nextWaiting -> {
-                            nextWaiting.setStatus(PatientStatus.ASSIGNED);
-                            patientRepository.save(nextWaiting);
-                            h.setUsedBeds(h.getUsedBeds() + 1);
-                            hospitalRepository.save(h);
-                        });
+                // Query and lock candidate waiting patients ordered deterministically by admittedAt ASC
+                List<Patient> waiting = patientRepository.findWaitingPatientsForUpdate(h.getId(), PatientStatus.WAITING);
+                if (!waiting.isEmpty()) {
+                    int total = h.getTotalBeds() != null ? h.getTotalBeds() : Integer.MAX_VALUE;
+                    int used = h.getUsedBeds() != null ? h.getUsedBeds() : 0;
+                    if (used < total) {
+                        Patient nextWaiting = waiting.get(0);
+                        nextWaiting.setStatus(PatientStatus.ASSIGNED);
+                        patientRepository.save(nextWaiting);
+                        h.setUsedBeds(used + 1);
+                    }
+                }
+                hospitalRepository.save(h);
             });
         }
 

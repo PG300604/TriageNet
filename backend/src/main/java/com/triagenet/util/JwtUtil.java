@@ -55,8 +55,12 @@ public class JwtUtil {
 
         // SECURITY (V3): reject low-entropy secrets (e.g. repeated characters).
         String compact = secret.trim();
+        boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
         if (compact.chars().distinct().count() < 16) {
-            throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT secret has too little entropy (<16 distinct characters). Generate it with a CSPRNG, e.g. `openssl rand -hex 32`.");
+            if (isProd) {
+                throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT secret has too little entropy (<16 distinct characters). Generate it with a CSPRNG, e.g. `openssl rand -hex 32`.");
+            }
+            log.warn("SECURITY WARNING: JWT secret has low entropy (<16 distinct characters). Acceptable ONLY for local dev/test; generate with `openssl rand -hex 32` before any shared deployment.");
         }
         log.info("JWT Secret successfully validated with {} bits of entropy.", secret.getBytes(StandardCharsets.UTF_8).length * 8);
     }

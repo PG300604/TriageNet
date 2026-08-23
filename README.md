@@ -972,6 +972,17 @@ flowchart LR
 - [x] **Dependency Upgrades & Hardened Non-Root Container (Fixes Issue #7)**: Upgraded backend to **Spring Boot 3.3.2** with **JJWT 0.12.5**; hardened `backend/Dockerfile` with non-root user `USER 1001:1001`
 - [x] **Full 40/40 Automated Test Suite & Next.js Build**: **40/40 backend tests passing (100% BUILD SUCCESS)**, 11/11 Next.js static pages generated cleanly in 3.1s
 
+### ✅ Phase 8.2 — Security Hardening Code-Review Audit (Complete — Aug 23, 2026)
+- [x] **Profile-Aware CORS Origin Selection**: `SecurityConfig.corsConfigurationSource()` dynamically selects allowed origins by active Spring profile — dev/test/local allows `localhost:3000`, `127.0.0.1:3000`, `localhost:8080`; production enforces exact domains only (`triagenet.vercel.app`, `triagenet.dev`, `triagenet.gov.in`) with zero wildcards
+- [x] **Default Cache-Control Security Headers**: Replaced `cache.disable()` with `Customizer.withDefaults()` in Spring Security headers configuration, ensuring all protected API responses include `Cache-Control: no-cache, no-store, max-age=0, must-revalidate`, `Pragma: no-cache`, and `Expires: 0` to prevent PHI proxy-caching
+- [x] **Clinical Vitals Physiological Boundary Sanitization**: Added compile-time constants for physiological bounds (`SpO₂` 50–100, `HR` 20–260, `SBP` 40–300, `DBP` 20–200, `Temp` 30–45°C, `Resp` 4–80, `Age` 0–120) with `ClinicalVitals.sanitized()` clamping in `SeverityScorer.java`; applied at entity write boundaries in `PatientService.registerPatient()` and `evaluateVitals()` before persistence
+- [x] **Trusted Proxy X-Forwarded-For Validation**: `AuthService.clientIpOf()` now validates `request.getRemoteAddr()` against a trusted proxy allowlist (RFC 1918 private subnets, loopback) before reading `X-Forwarded-For`; direct non-proxy clients always return `getRemoteAddr()` to prevent IP spoofing of rate-limit bypasses
+- [x] **Atomic Discharge & Waiting Patient Promotion**: Rewrote `PatientService.dischargePatient()` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` on both hospital and candidate waiting patients (`SELECT ... FOR UPDATE`); decrements `usedBeds`, promotes exactly one `WAITING → ASSIGNED` patient atomically within a single `@Transactional` boundary, preventing race conditions in concurrent discharges
+- [x] **Hibernate DDL-Auto Production Safety**: Changed base `application.yml` default from `update` to `${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}` — missing env var now fails schema validation instead of silently mutating production DDL; dev profile overrides preserved (`create-drop`)
+- [x] **Frontend Dependency Hardening**: Updated `hono` override from `4.12.25` to `4.12.34` in `package.json` (both `pnpm.overrides` and root `overrides`); regenerated `pnpm-lock.yaml` with zero residual `4.12.25` resolutions
+- [x] **PR #27 Merge Conflict Resolution**: Synchronized `fix/security-hardening-audit-2026-08` branch with `main`, resolving all 7 conflicting files and restoring the V1 critical privilege-escalation block in `AuthService.register()`; fixed missing `+` operator in Haversine formula introduced by CodeRabbit co-authored commit
+- [x] **Full 45/45 Automated Test Suite & Builds**: **45/45 backend tests passing (100% BUILD SUCCESS)** including new integration tests for cache-control headers, trusted proxy IP extraction, atomic discharge promotion, and vitals clamping; **11/11 Next.js static pages** generated cleanly
+
 ---
 
 ## 🔮 Future Roadmap (Upcoming Phases)

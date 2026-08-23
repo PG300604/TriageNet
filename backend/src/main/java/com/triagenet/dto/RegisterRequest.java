@@ -33,5 +33,12 @@ public class RegisterRequest {
 
     private UUID hospitalId;
 
+    /**
+     * SECURITY (V1, critical): clients must never choose their own role.
+     * This field is ignored by AuthService.register(); new accounts are always
+     * created as HOSPITAL_STAFF and roles are granted only via an admin flow.
+     * Kept solely for request-compatibility; scheduled for removal in the API v2.
+     */
+    @Deprecated
     private RoleName role;
 }

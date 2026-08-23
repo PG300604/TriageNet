@@ -98,7 +98,15 @@ public class AuthService {
             throw new IllegalArgumentException("Email is already registered: " + request.getEmail());
         }
 
-        RoleName roleName = request.getRole() != null ? request.getRole() : RoleName.HOSPITAL_STAFF;
+        // SECURITY (V1, critical): ignore any client-supplied role — public
+        // registration must only ever create least-privileged HOSPITAL_STAFF
+        // accounts. Privileged roles are granted exclusively through an
+        // authenticated admin workflow, never via this endpoint.
+        RoleName roleName = RoleName.HOSPITAL_STAFF;
+        if (request.getRole() != null && request.getRole() != RoleName.HOSPITAL_STAFF) {
+            securityAuditService.logEvent(SecurityEventType.ACCESS_DENIED, request.getEmail(), "/api/auth/register",
+                    "Blocked attempt to self-assign elevated role: " + request.getRole());
+        }
         Role role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
 

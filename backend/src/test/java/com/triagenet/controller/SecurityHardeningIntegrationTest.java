@@ -61,7 +61,7 @@ public class SecurityHardeningIntegrationTest {
 
     @BeforeEach
     public void setup() {
-        loginAttemptService.loginSucceeded(TEST_USER_EMAIL);
+        loginAttemptService.loginSucceeded(TEST_USER_EMAIL, "127.0.0.1");
 
         if (!staffUserRepository.existsByEmail(TEST_USER_EMAIL)) {
             Role role = roleRepository.findByName(RoleName.HOSPITAL_ADMIN)
@@ -115,7 +115,7 @@ public class SecurityHardeningIntegrationTest {
         org.junit.jupiter.api.Assertions.assertNotNull(persistedLock.get().getLockExpiresAt());
 
         // Reset lock for subsequent tests
-        loginAttemptService.loginSucceeded(TEST_USER_EMAIL);
+        loginAttemptService.loginSucceeded(TEST_USER_EMAIL, "127.0.0.1");
     }
 
     @Test
@@ -183,7 +183,7 @@ public class SecurityHardeningIntegrationTest {
         }
 
         // Clean up
-        loginAttemptService.loginSucceeded(TEST_USER_EMAIL);
+        loginAttemptService.loginSucceeded(TEST_USER_EMAIL, "127.0.0.1");
     }
 
     @Test
@@ -358,18 +358,18 @@ public class SecurityHardeningIntegrationTest {
 
         // Trigger 5 failed attempts to lock target user
         for (int i = 0; i < 5; i++) {
-            loginAttemptService.loginFailed(targetLockedUser);
+            loginAttemptService.loginFailed(targetLockedUser, null);
         }
-        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser));
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser, null));
 
         // Generate un-locked failed attempts from other users
         for (int i = 0; i < 10; i++) {
-            loginAttemptService.loginFailed("random.user." + i + "@triagenet.gov.in");
+            loginAttemptService.loginFailed("random.user." + i + "@triagenet.gov.in", "198.51.100." + i);
         }
 
         // Verify target locked account is still blocked and protected
-        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser));
-        loginAttemptService.loginSucceeded(targetLockedUser);
+        org.junit.jupiter.api.Assertions.assertTrue(loginAttemptService.isBlocked(targetLockedUser, null));
+        loginAttemptService.loginSucceeded(targetLockedUser, "127.0.0.1");
     }
 
     @Test

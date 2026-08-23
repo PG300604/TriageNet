@@ -46,11 +46,13 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
         String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        // SECURITY (V5): derive client IP (X-Forwarded-For first hop when behind a proxy)
+        String clientIp = clientIpOf(httpRequest);
 
-        if (loginAttemptService.isBlocked(email)) {
-            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(email);
+        if (loginAttemptService.isBlocked(email, clientIp)) {
+            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(email, clientIp);
             securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
                     "Attempt blocked. Lock remaining: " + remainingMins + " mins");
             throw new LockedException("Account is temporarily locked due to 5 consecutive failed login attempts. Please try again after " + remainingMins + " minutes.");
@@ -61,9 +63,9 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.getPassword())
             );
-            loginAttemptService.loginSucceeded(email);
+            loginAttemptService.loginSucceeded(email, clientIp);
         } catch (AuthenticationException e) {
-            boolean isNowLocked = loginAttemptService.loginFailed(email);
+            boolean isNowLocked = loginAttemptService.loginFailed(email, clientIp);
             securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, email, "/api/auth/login", e.getMessage());
             if (isNowLocked) {
                 securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
@@ -90,6 +92,21 @@ public class AuthService {
                 .role(user.getRole().getName())
                 .hospitalId(user.getHospitalId())
                 .build();
+    }
+
+    /**
+     * SECURITY (V5): best-effort client IP extraction. Prefers the first
+     * X-Forwarded-For entry when running behind a trusted reverse proxy;
+     * callers must not treat this as attacker-proof for authorization
+     * decisions — it is used only for rate-limit bucketing.
+     */
+    private String clientIpOf(jakarta.servlet.http.HttpServletRequest request) {
+        if (request == null) return null;
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @Transactional

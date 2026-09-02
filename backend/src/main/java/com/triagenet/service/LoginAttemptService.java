@@ -133,9 +133,11 @@ public class LoginAttemptService {
                 log.warn("Failed to delete login attempts for user [{}] from database: {}", norm, e.getMessage());
             }
         }
-        if (clientIp != null) {
-            attemptsCache.remove(ipKey(clientIp));
-        }
+        // SECURITY (A2): Do not remove IP throttle on successful login.
+        // IP-level rate limiting enforces a fixed window to prevent distributed
+        // brute-force attacks that spray attempts across many accounts from the
+        // same IP. Clearing the IP bucket would allow attackers to bypass this
+        // protection by succeeding on one account and continuing attacks on others.
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

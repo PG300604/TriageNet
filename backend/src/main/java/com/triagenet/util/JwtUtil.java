@@ -53,16 +53,57 @@ public class JwtUtil {
             log.warn("SECURITY WARNING: Using the publicly-known default dev JWT secret. Anyone can forge valid tokens. Set JWT_SECRET before any shared/staging deployment.");
         }
 
-        // SECURITY (V3): reject low-entropy secrets (e.g. repeated characters).
+        // SECURITY (V3): Validate cryptographic randomness using Shannon entropy estimation.
+        // A CSPRNG-generated secret (e.g., `openssl rand -hex 32`) should have high entropy.
+        // Weak secrets like repeated characters or simple patterns will have low entropy.
         String compact = secret.trim();
         boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
-        if (compact.chars().distinct().count() < 16) {
+
+        // Calculate Shannon entropy of the secret
+        double entropy = calculateShannonEntropy(compact);
+        // For a 64-char hex string (32 bytes), expect ~4 bits/char (hex = 16 symbols).
+        // Require at least 3.5 bits/char to allow for some non-uniformity while rejecting weak patterns.
+        double minEntropyPerChar = 3.5;
+
+        if (entropy < minEntropyPerChar) {
             if (isProd) {
-                throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT secret has too little entropy (<16 distinct characters). Generate it with a CSPRNG, e.g. `openssl rand -hex 32`.");
+                throw new IllegalStateException(String.format(
+                    "CRITICAL SECURITY ERROR: JWT secret has insufficient entropy (%.2f bits/char, require >= %.1f). " +
+                    "Generate it with a CSPRNG: openssl rand -hex 32",
+                    entropy, minEntropyPerChar));
             }
-            log.warn("SECURITY WARNING: JWT secret has low entropy (<16 distinct characters). Acceptable ONLY for local dev/test; generate with `openssl rand -hex 32` before any shared deployment.");
+            log.warn("SECURITY WARNING: JWT secret has low entropy ({} bits/char). " +
+                    "Acceptable ONLY for local dev/test; generate with `openssl rand -hex 32` before any shared deployment.",
+                    String.format("%.2f", entropy));
         }
-        log.info("JWT Secret successfully validated with {} bits of entropy.", secret.getBytes(StandardCharsets.UTF_8).length * 8);
+        log.info("JWT Secret successfully validated ({} bytes, {} bits/char entropy).",
+                secret.getBytes(StandardCharsets.UTF_8).length, String.format("%.2f", entropy));
+    }
+
+    /**
+     * Calculate Shannon entropy (bits per character) to assess randomness quality.
+     * CSPRNG-generated secrets should have high entropy; weak patterns have low entropy.
+     */
+    private double calculateShannonEntropy(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0.0;
+        }
+
+        // Count frequency of each character
+        Map<Character, Integer> frequencies = new HashMap<>();
+        for (char c : text.toCharArray()) {
+            frequencies.put(c, frequencies.getOrDefault(c, 0) + 1);
+        }
+
+        // Calculate Shannon entropy: H = -Σ(p(x) * log2(p(x)))
+        double entropy = 0.0;
+        int length = text.length();
+        for (int count : frequencies.values()) {
+            double probability = (double) count / length;
+            entropy -= probability * (Math.log(probability) / Math.log(2));
+        }
+
+        return entropy;
     }
 
     private SecretKey getSigningKey() {

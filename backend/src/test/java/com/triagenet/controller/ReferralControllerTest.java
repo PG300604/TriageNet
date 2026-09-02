@@ -64,11 +64,15 @@ public class ReferralControllerTest {
     private com.triagenet.repository.TransferRequestRepository transferRequestRepository;
 
     @Autowired
+    private com.triagenet.repository.RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() throws Exception {
         // Clean up from previous test method
+        refreshTokenRepository.deleteAll();
         transferRequestRepository.deleteAll();
         patientRepository.deleteAll();
         hospitalRepository.deleteAll();

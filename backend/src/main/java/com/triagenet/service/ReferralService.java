@@ -73,9 +73,7 @@ public class ReferralService {
                 .filter(h -> authorizedHospitalsList.contains(h.getId()))
                 .toList();
         
-        List<Patient> allPatients = patientRepository.findAll().stream()
-                .filter(p -> authorizedHospitalsList.contains(p.getHospitalId()))
-                .toList();
+        List<Patient> allPatients = patientRepository.findByHospitalIdInAndStatus(authorizedHospitalsList, PatientStatus.WAITING);
 
         for (Hospital fromH : authorizedHospitals) {
             long severeCount = allPatients.stream()

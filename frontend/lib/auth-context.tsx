@@ -91,25 +91,41 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(DEMO_PRESET_USERS.SUPER_ADMIN);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load persisted user display metadata from localStorage
-    const storedUser = localStorage.getItem('triagenet_user');
-
-    if (storedUser) {
+    // SECURITY (B9): Authenticate with backend /api/auth/me using HttpOnly cookie
+    // Server-verified user identity replaces mutable localStorage profile
+    const initializeAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const resp = await ApiClient.getCurrentUser();
+        const profile: UserProfile = {
+          id: resp.id,
+          name: resp.name,
+          email: resp.email,
+          role: (resp.role as UserRole) || 'TRIAGE_NURSE',
+          roleTitle: resp.role || 'Hospital Staff',
+          hospitalId: resp.hospitalId,
+        };
+        setUser(profile);
       } catch {
-        setUser(DEMO_PRESET_USERS.SUPER_ADMIN);
+        // If unauthenticated on server, check if offline demo mode is chosen
+        const isDemo = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') : null;
+        if (isDemo) {
+          const demoRole = (localStorage.getItem('triagenet_demo_role') as UserRole) || 'SUPER_ADMIN';
+          setUser(DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN);
+        } else {
+          // Default preview fallback for demo UI
+          setUser(DEMO_PRESET_USERS.SUPER_ADMIN);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // Default to Super Admin demo profile
-      setUser(DEMO_PRESET_USERS.SUPER_ADMIN);
-    }
-    setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, pass: string) => {
@@ -127,7 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(resp.token || null);
       setUser(profile);
-      localStorage.setItem('triagenet_user', JSON.stringify(profile));
+      localStorage.removeItem('triagenet_demo_active');
+      localStorage.removeItem('triagenet_demo_role');
     } catch (err) {
       setIsLoading(false);
       throw err;
@@ -139,12 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const profile = DEMO_PRESET_USERS[role];
     setToken(null);
     setUser(profile);
-    localStorage.setItem('triagenet_user', JSON.stringify(profile));
+    localStorage.setItem('triagenet_demo_active', 'true');
+    localStorage.setItem('triagenet_demo_role', role);
   };
 
   const logout = () => {
     ApiClient.logout().catch(() => {});
     removeAuthToken();
+    localStorage.removeItem('triagenet_demo_active');
+    localStorage.removeItem('triagenet_demo_role');
     setToken(null);
     setUser(null);
   };

@@ -91,9 +91,7 @@ public class RoutingController {
     @GetMapping("/matrix/{districtName}")
     @PreAuthorize("hasAnyRole('AMBULANCE_DISPATCH', 'TRIAGE_NURSE', 'HOSPITAL_ADMIN', 'DISTRICT_CMO', 'STATE_HEALTH_DEPT', 'SUPER_ADMIN', 'REGIONAL_COORDINATOR')")
     public ResponseEntity<?> getDistrictDistanceMatrix(@PathVariable String districtName) {
-        List<Hospital> dHospitals = hospitalRepository.findAll().stream()
-                .filter(h -> districtName.equalsIgnoreCase(h.getDistrictName()))
-                .collect(Collectors.toList());
+        List<Hospital> dHospitals = hospitalRepository.findByDistrictOrRegionIgnoreCase(districtName);
 
         List<Map<String, Object>> matrix = new ArrayList<>();
         for (Hospital h1 : dHospitals) {

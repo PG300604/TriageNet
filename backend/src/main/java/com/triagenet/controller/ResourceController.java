@@ -48,9 +48,7 @@ public class ResourceController {
         if (authorizedHospitalIds.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
-        return ResponseEntity.ok(resourceRepository.findAll().stream()
-                .filter(r -> authorizedHospitalIds.contains(r.getHospitalId()))
-                .collect(Collectors.toList()));
+        return ResponseEntity.ok(resourceRepository.findByHospitalIdIn(authorizedHospitalIds));
     }
 
     @PostMapping("/transfer")

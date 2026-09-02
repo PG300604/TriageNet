@@ -9,7 +9,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "patients", indexes = {
-    @Index(name = "idx_patient_hosp_status", columnList = "hospital_id, status")
+    @Index(name = "idx_patient_hosp_status", columnList = "hospital_id, status"),
+    @Index(name = "idx_patient_status", columnList = "status")
 })
 @Getter
 @Setter

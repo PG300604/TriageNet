@@ -27,6 +27,19 @@ public class RoutingControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.triagenet.repository.HospitalRepository hospitalRepository;
+
+    @Autowired
+    private com.triagenet.service.HospitalSeedService hospitalSeedService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        if (hospitalRepository.count() == 0) {
+            hospitalSeedService.seedJharkhandData();
+        }
+    }
+
     @Test
     @DisplayName("POST /api/routing/optimal - Should return ranked hospital recommendations with travel time and suitability score")
     public void testFindOptimalHospital() throws Exception {

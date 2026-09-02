@@ -15,7 +15,9 @@ import java.util.UUID;
 @Repository
 public interface PatientRepository extends JpaRepository<Patient, UUID> {
     List<Patient> findByHospitalId(UUID hospitalId);
+    List<Patient> findByHospitalIdIn(java.util.Collection<UUID> hospitalIds);
     List<Patient> findByHospitalIdAndStatus(UUID hospitalId, PatientStatus status);
+    List<Patient> findByHospitalIdInAndStatus(java.util.Collection<UUID> hospitalIds, PatientStatus status);
     List<Patient> findByStatus(PatientStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

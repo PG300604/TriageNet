@@ -19,9 +19,10 @@ export const removeAuthToken = (): void => {
 };
 
 // Generic API Fetch Wrapper (relying on credentials: 'include' for HttpOnly cookie transport)
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry: boolean = false): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
     ...(options.headers as Record<string, string>),
   };
 
@@ -30,6 +31,25 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     credentials: 'include',
     headers,
   });
+
+  // Automatic token refresh on 401 (except for auth endpoints)
+  if (response.status === 401 && !isRetry && !endpoint.startsWith('/auth/')) {
+    try {
+      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      if (refreshResponse.ok) {
+        return apiFetch<T>(endpoint, options, true);
+      }
+    } catch {
+      // Refresh failed, fall through to error handling
+    }
+  }
 
   if (!response.ok) {
     let errorMessage = `API Error: ${response.status} ${response.statusText}`;
@@ -159,6 +179,12 @@ export const ApiClient = {
       method: 'POST',
       body: JSON.stringify(userData),
     }),
+
+  getCurrentUser: (): Promise<AuthResponse> =>
+    apiFetch<AuthResponse>('/auth/me'),
+
+  refreshToken: (): Promise<AuthResponse> =>
+    apiFetch<AuthResponse>('/auth/refresh', { method: 'POST' }),
 
   logout: async (): Promise<{ message: string }> => {
     try {

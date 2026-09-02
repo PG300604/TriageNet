@@ -36,30 +36,113 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(request, httpRequest);
         boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
 
-        ResponseCookie cookie = ResponseCookie.from("triagenet_jwt", loginResponse.getToken())
+        // Short-lived access token cookie (15 minutes)
+        ResponseCookie accessCookie = ResponseCookie.from("triagenet_jwt", loginResponse.getToken())
                 .httpOnly(true)
                 .secure(isProd)
                 .path("/")
-                .maxAge(86400) // 24 hours
+                .maxAge(900) // 15 minutes
                 .sameSite("Lax")
                 .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+
+        // Long-lived refresh token cookie (7 days)
+        if (loginResponse.getRefreshToken() != null) {
+            ResponseCookie refreshCookie = ResponseCookie.from("triagenet_refresh", loginResponse.getRefreshToken())
+                    .httpOnly(true)
+                    .secure(isProd)
+                    .path("/api/auth")
+                    .maxAge(604800) // 7 days
+                    .sameSite("Lax")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        }
+
+        return ResponseEntity.ok(loginResponse);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            HttpServletResponse response,
+            @RequestBody(required = false) Map<String, String> body) {
+        String refreshToken = null;
+        if (httpRequest.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie c : httpRequest.getCookies()) {
+                if ("triagenet_refresh".equals(c.getName())) {
+                    refreshToken = c.getValue();
+                    break;
+                }
+            }
+        }
+        if (refreshToken == null && body != null) {
+            refreshToken = body.get("refreshToken");
+        }
+
+        LoginResponse loginResponse = authService.refreshToken(refreshToken, httpRequest);
+        boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
+
+        ResponseCookie accessCookie = ResponseCookie.from("triagenet_jwt", loginResponse.getToken())
+                .httpOnly(true)
+                .secure(isProd)
+                .path("/")
+                .maxAge(900)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+
+        if (loginResponse.getRefreshToken() != null) {
+            ResponseCookie refreshCookie = ResponseCookie.from("triagenet_refresh", loginResponse.getRefreshToken())
+                    .httpOnly(true)
+                    .secure(isProd)
+                    .path("/api/auth")
+                    .maxAge(604800)
+                    .sameSite("Lax")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        }
 
         return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> logout(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            HttpServletResponse response,
+            @RequestBody(required = false) Map<String, String> body) {
+        String refreshToken = null;
+        if (httpRequest.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie c : httpRequest.getCookies()) {
+                if ("triagenet_refresh".equals(c.getName())) {
+                    refreshToken = c.getValue();
+                    break;
+                }
+            }
+        }
+        if (refreshToken == null && body != null) {
+            refreshToken = body.get("refreshToken");
+        }
+
+        authService.logout(refreshToken);
         boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod", "production"));
 
-        ResponseCookie cookie = ResponseCookie.from("triagenet_jwt", "")
+        ResponseCookie accessCookie = ResponseCookie.from("triagenet_jwt", "")
                 .httpOnly(true)
                 .secure(isProd)
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
                 .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        ResponseCookie refreshCookie = ResponseCookie.from("triagenet_refresh", "")
+                .httpOnly(true)
+                .secure(isProd)
+                .path("/api/auth")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }

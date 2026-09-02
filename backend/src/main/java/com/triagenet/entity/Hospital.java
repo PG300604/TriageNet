@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "hospitals")
+@Table(name = "hospitals", indexes = {
+    @Index(name = "idx_hosp_district", columnList = "district_name"),
+    @Index(name = "idx_hosp_region", columnList = "region")
+})
 @Getter
 @Setter
 @NoArgsConstructor

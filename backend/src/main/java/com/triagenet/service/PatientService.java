@@ -32,28 +32,28 @@ public class PatientService {
         if (authorizedHospitalIds.isEmpty()) {
             return List.of();
         }
-        return patientRepository.findAll().stream()
-                .filter(p -> authorizedHospitalIds.contains(p.getHospitalId()))
-                .toList();
+        return patientRepository.findByHospitalIdIn(authorizedHospitalIds);
     }
 
     @Transactional(readOnly = true)
     public Patient getPatientById(UUID id) {
         Patient patient = patientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found with id: " + id));
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Patient not found with id: " + id));
         hospitalAuthService.assertCanAccessHospital(patient.getHospitalId());
         return patient;
     }
 
     @Transactional
     public Patient registerPatient(Patient patient) {
-        if (patient.getStatus() == null) {
-            patient.setStatus(PatientStatus.WAITING);
+        if (patient.getHospitalId() == null) {
+            throw new IllegalArgumentException("Hospital ID is required for patient registration");
         }
 
         // Multi-tenant: verify user can register patients at this hospital
-        if (patient.getHospitalId() != null) {
-            hospitalAuthService.assertCanAccessHospital(patient.getHospitalId());
+        hospitalAuthService.assertCanAccessHospital(patient.getHospitalId());
+
+        if (patient.getStatus() == null) {
+            patient.setStatus(PatientStatus.WAITING);
         }
 
         // Sanitize vitals before persisting to ensure values stay within physiological bounds

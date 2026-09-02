@@ -19,4 +19,5 @@ public class LoginResponse {
     private String email;
     private RoleName role;
     private UUID hospitalId;
+    private String refreshToken;
 }

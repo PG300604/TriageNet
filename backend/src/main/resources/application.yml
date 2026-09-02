@@ -24,10 +24,17 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      # SECURITY (V2): H2 console disabled by default.
+      # Enabled ONLY in application-dev.yml for explicit local development.
+      enabled: false
 
 jwt:
   secret: ${JWT_SECRET:}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
+  expiration-ms: ${JWT_EXPIRATION_MS:900000} # 15 minutes default for access token
+  access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000} # 15 minutes
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000} # 7 days
 
 logging:
   level:

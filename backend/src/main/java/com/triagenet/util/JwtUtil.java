@@ -30,8 +30,22 @@ public class JwtUtil {
     @Value("${jwt.secret:}")
     private String secret;
 
-    @Value("${jwt.expiration-ms:86400000}")
+    @Value("${jwt.expiration-ms:900000}")
     private long expirationMs;
+
+    @Value("${jwt.access-expiration-ms:900000}")
+    private long accessExpirationMs;
+
+    @Value("${jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
+
+    public long getAccessExpirationMs() {
+        return accessExpirationMs > 0 ? accessExpirationMs : expirationMs;
+    }
+
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
+    }
 
     private final Environment environment;
 
@@ -124,9 +138,28 @@ public class JwtUtil {
         return createToken(claims, userDetails.getUsername());
     }
 
+    private static final java.security.SecureRandom SECURE_RANDOM = new java.security.SecureRandom();
+
+    public String generateRefreshToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return java.util.HexFormat.of().formatHex(bytes);
+    }
+
+    public String hashToken(String token) {
+        if (token == null) return null;
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(hash);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
+        }
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMs);
+        Date expiryDate = new Date(now.getTime() + getAccessExpirationMs());
 
         return Jwts.builder()
                 .claims(claims)

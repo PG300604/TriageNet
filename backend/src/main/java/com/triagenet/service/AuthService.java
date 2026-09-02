@@ -5,15 +5,18 @@ import com.triagenet.dto.LoginRequest;
 import com.triagenet.dto.LoginResponse;
 import com.triagenet.dto.RegisterRequest;
 import com.triagenet.dto.UserDto;
+import com.triagenet.entity.RefreshToken;
 import com.triagenet.entity.Role;
 import com.triagenet.entity.RoleName;
 import com.triagenet.entity.StaffUser;
+import com.triagenet.repository.RefreshTokenRepository;
 import com.triagenet.repository.RoleRepository;
 import com.triagenet.repository.StaffUserRepository;
 import com.triagenet.service.SecurityAuditService.SecurityEventType;
 import com.triagenet.util.JwtUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +34,7 @@ public class AuthService {
 
     private final StaffUserRepository staffUserRepository;
     private final RoleRepository roleRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -125,13 +129,23 @@ public class AuthService {
         String token = jwtUtil.generateToken(userDetails);
 
         StaffUser user = staffUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with email: " + email));
+
+        // SECURITY (V4): Generate cryptographically random refresh token and persist SHA-256 hash
+        String refreshToken = jwtUtil.generateRefreshToken();
+        RefreshToken rt = RefreshToken.builder()
+                .user(user)
+                .tokenHash(jwtUtil.hashToken(refreshToken))
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getRefreshExpirationMs() / 1000))
+                .build();
+        refreshTokenRepository.save(rt);
 
         securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/login",
                 "Role: " + user.getRole().getName());
 
         return LoginResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .type("Bearer")
                 .id(user.getId())
                 .name(user.getName())
@@ -176,7 +190,81 @@ public class AuthService {
 
     public UserDto getCurrentUser(CustomUserDetails userDetails) {
         StaffUser user = staffUserRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with id: " + userDetails.getId()));
         return UserDto.fromEntity(user);
+    }
+
+    /**
+     * SECURITY (V4): Rotate refresh token and issue new short-lived access token.
+     * Enforces rotation: the used refresh token is immediately revoked.
+     * If a revoked token is reused, all active tokens for that user are revoked (replay attack defense).
+     */
+    @Transactional
+    public LoginResponse refreshToken(String rawRefreshToken, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = clientIpOf(httpRequest);
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Refresh token is required");
+        }
+
+        String hash = jwtUtil.hashToken(rawRefreshToken);
+        RefreshToken rt = refreshTokenRepository.findByTokenHash(hash)
+                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid refresh token"));
+
+        if (rt.isRevoked()) {
+            // Replay attack detected: revoke all refresh tokens for this user
+            refreshTokenRepository.revokeAllForUser(rt.getUser(), LocalDateTime.now());
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, rt.getUser().getEmail(),
+                    "/api/auth/refresh", "Revoked refresh token reuse detected! All user tokens revoked.");
+            throw new org.springframework.security.authentication.BadCredentialsException("Revoked refresh token reused");
+        }
+
+        if (rt.isExpired()) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Refresh token has expired");
+        }
+
+        // Revoke the current refresh token (rotation)
+        rt.setRevokedAt(LocalDateTime.now());
+        refreshTokenRepository.save(rt);
+
+        // Generate new token pair
+        StaffUser user = rt.getUser();
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String newAccessToken = jwtUtil.generateToken(userDetails);
+        String newRefreshToken = jwtUtil.generateRefreshToken();
+
+        RefreshToken newRt = RefreshToken.builder()
+                .user(user)
+                .tokenHash(jwtUtil.hashToken(newRefreshToken))
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getRefreshExpirationMs() / 1000))
+                .build();
+        refreshTokenRepository.save(newRt);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(),
+                "/api/auth/refresh", "Token successfully rotated");
+
+        return LoginResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .type("Bearer")
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().getName())
+                .hospitalId(user.getHospitalId())
+                .build();
+    }
+
+    /**
+     * SECURITY (V4): Explicit logout revoking the refresh token.
+     */
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
+            String hash = jwtUtil.hashToken(rawRefreshToken);
+            refreshTokenRepository.findByTokenHash(hash).ifPresent(rt -> {
+                rt.setRevokedAt(LocalDateTime.now());
+                refreshTokenRepository.save(rt);
+            });
+        }
     }
 }

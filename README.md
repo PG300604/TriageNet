@@ -983,6 +983,20 @@ flowchart LR
 - [x] **PR #27 Merge Conflict Resolution**: Synchronized `fix/security-hardening-audit-2026-08` branch with `main`, resolving all 7 conflicting files and restoring the V1 critical privilege-escalation block in `AuthService.register()`; fixed missing `+` operator in Haversine formula introduced by CodeRabbit co-authored commit
 - [x] **Full 45/45 Automated Test Suite & Builds**: **45/45 backend tests passing (100% BUILD SUCCESS)** including new integration tests for cache-control headers, trusted proxy IP extraction, atomic discharge promotion, and vitals clamping; **11/11 Next.js static pages** generated cleanly
 
+### Phase 9: Production Hardening, Multi-Tenant Authorization & Security Remediation (Completed)
+- [x] **Multi-Tenant Scoping & IDOR Prevention (V10)**: Implemented `HospitalAuthorizationService` scoping access to hospital staff strictly to their assigned facilities, District CMOs to their respective districts, and statewide oversight roles. Integrated across `PatientService`, `TriageQueueService`, `ReferralService`, `DashboardController`, and `ResourceController`.
+- [x] **H2 Console Access Guard (V2)**: Disabled H2 console by default in `application.yml` (`spring.h2.console.enabled: false`) and restricted `/h2-console/**` access strictly to explicit `dev`/`local` profiles. Enforced `X-Frame-Options: DENY` on all non-dev profiles.
+- [x] **Cryptographic Randomness & Entropy Verification (V3)**: Integrated Shannon entropy check ($\ge 3.5$ bits/char) in `JwtUtil.java`, failing fast with `IllegalStateException` on startup in production if an insecure secret is supplied.
+- [x] **JWT Refresh Token Rotation & Revocation (V4)**: Reduced JWT access token lifespan to 15 minutes (`900,000 ms`). Implemented 7-day HttpOnly refresh token cookie rotation (`RefreshToken` entity, SHA-256 hash storage), `POST /api/auth/refresh` rotation, `POST /api/auth/logout` revocation, and replay attack defense (revokes all user tokens if a revoked refresh token is presented).
+- [x] **Strict Exact-Origin CORS Whitelist (V6)**: Replaced origin patterns with strict `setAllowedOrigins` in `SecurityConfig.java`, completely eliminating wildcard permissions for third-party subdomains.
+- [x] **PHI Cache-Control Headers (V7)**: Verified Spring Security default cache-control headers (`no-cache, no-store, max-age=0, must-revalidate`) on all authenticated patient and triage endpoints with integration test verification.
+- [x] **Next.js 16.3.4 Security Upgrade (V8)**: Upgraded frontend from `16.2.6` to `^16.3.4` (Turbopack) along with `postcss ^8.5.3` and dependency overrides (`nanoid`, `fast-uri`, `qs`), resolving all 9 advisories; `npm audit` reports **0 vulnerabilities**.
+- [x] **CSRF Guard for Cookie Authentication (V9)**: Added `CsrfGuardFilter` requiring custom `X-Requested-With` or `X-CSRF-TOKEN` headers on all state-changing endpoints (`POST`, `PUT`, `DELETE`, `PATCH`) authenticated via cookies.
+- [x] **Hot-Path Query Optimization & DB Indexing (B7)**: Replaced in-memory `.findAll().stream().filter(...)` pipelines with indexed repository queries (`findByHospitalIdIn`, `findByHospitalIdInAndStatus`, `findByDistrictOrRegionIgnoreCase`). Added DB indexes on `patients(status)` and `hospitals(district_name, region)`.
+- [x] **Elimination of Mutable `localStorage` User Profile (B9)**: Refactored `auth-context.tsx` to authenticate session directly with `GET /api/auth/me`, ensuring roles and tenant permissions are authoritatively verified by the server.
+- [x] **Standardized Error Taxonomy (B10)**: Created `ResourceNotFoundException`, mapped to 404 in `GlobalExceptionHandler` with consistent JSON error schema (`status`, `error`, `message`, `timestamp`).
+- [x] **Full 54/54 Automated Test Suite & Production Builds**: **54/54 backend tests passing (100% BUILD SUCCESS)**; **11/11 Next.js static pages** generated cleanly via Turbopack; Knowledge graph updated to 1,479 nodes and 105 communities.
+
 ---
 
 ## 🔮 Future Roadmap (Upcoming Phases)
@@ -991,11 +1005,11 @@ flowchart LR
 flowchart LR
     subgraph Upcoming["Upcoming Phases"]
         direction TB
-        P9["Phase 9: Enterprise Audit & Directorate Exports<br/>• District CMO PDF Audit Reports<br/>• State Capacity CSV Export<br/>• Golden Hour Compliance Matrix"]
         P10["Phase 10: Production Cloud Deployment<br/>• Multi-Container Docker Compose<br/>• Vercel Edge Frontend + Render Backend<br/>• Automated GitHub Actions CI/CD"]
+        P11["Phase 11: Enterprise Audit & Directorate Exports<br/>• District CMO PDF Audit Reports<br/>• State Capacity CSV Export<br/>• Golden Hour Compliance Matrix"]
     end
 
-    P9 --> P10
+    P10 --> P11
 ```
 
 ---

@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -22,22 +22,38 @@ public class PatientService {
     private final SeverityScoreRepository severityScoreRepository;
     @lombok.Getter
     private final SeverityScorer severityScorer;
+    private final HospitalAuthorizationService hospitalAuthService;
+    private final com.triagenet.repository.HospitalRepository hospitalRepository;
 
     @Transactional(readOnly = true)
     public List<Patient> getAllPatients() {
-        return patientRepository.findAll();
+        // Multi-tenant: only return patients from hospitals the user can access
+        Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
+        if (authorizedHospitalIds.isEmpty()) {
+            return List.of();
+        }
+        return patientRepository.findAll().stream()
+                .filter(p -> authorizedHospitalIds.contains(p.getHospitalId()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public Patient getPatientById(UUID id) {
-        return patientRepository.findById(id)
+        Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found with id: " + id));
+        hospitalAuthService.assertCanAccessHospital(patient.getHospitalId());
+        return patient;
     }
 
     @Transactional
     public Patient registerPatient(Patient patient) {
         if (patient.getStatus() == null) {
             patient.setStatus(PatientStatus.WAITING);
+        }
+
+        // Multi-tenant: verify user can register patients at this hospital
+        if (patient.getHospitalId() != null) {
+            hospitalAuthService.assertCanAccessHospital(patient.getHospitalId());
         }
 
         // Sanitize vitals before persisting to ensure values stay within physiological bounds
@@ -91,8 +107,6 @@ public class PatientService {
 
         return result;
     }
-
-    private final com.triagenet.repository.HospitalRepository hospitalRepository;
 
     @Transactional
     public Patient dischargePatient(UUID patientId, String reason) {

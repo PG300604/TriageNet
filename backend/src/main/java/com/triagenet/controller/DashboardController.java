@@ -5,6 +5,7 @@ import com.triagenet.entity.Hospital;
 import com.triagenet.repository.DistrictRepository;
 import com.triagenet.repository.HospitalRepository;
 import com.triagenet.repository.PatientRepository;
+import com.triagenet.service.HospitalAuthorizationService;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class DashboardController {
     private final HospitalRepository hospitalRepository;
     private final DistrictRepository districtRepository;
     private final PatientRepository patientRepository;
+    private final HospitalAuthorizationService hospitalAuthService;
 
     @Data
     @Builder
@@ -55,14 +57,18 @@ public class DashboardController {
 
     @GetMapping("/state-overview")
     public ResponseEntity<StateOverviewDto> getStateOverview() {
-        List<Hospital> hospitals = hospitalRepository.findAll();
-        List<District> districts = districtRepository.findAll();
+        // Multi-tenant: only show hospitals the user can access
+        Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
+        List<Hospital> hospitals = hospitalRepository.findAll().stream()
+                .filter(h -> authorizedHospitalIds.isEmpty() || authorizedHospitalIds.contains(h.getId()))
+                .toList();
+        
+        List<District> districts = districtRepository.findAll().stream()
+                .filter(d -> hospitals.stream().anyMatch(h -> d.getName().equalsIgnoreCase(h.getDistrictName()) || d.getName().equalsIgnoreCase(h.getRegion())))
+                .toList();
 
         long totalGen = hospitals.stream().mapToLong(h -> h.getTotalGeneralBeds() != null ? h.getTotalGeneralBeds() : h.getBedsTotal()).sum();
         long availGen = hospitals.stream().mapToLong(h -> h.getAvailableGeneralBeds() != null ? h.getAvailableGeneralBeds() : (h.getBedsTotal() - h.getBedsUsed())).sum();
-        // BUG (B6): missing ICU capacity used to be fabricated as 10 total / 2
-        // available per hospital. Unknown values now count as 0 (reported as such)
-        // so state-level ICU statistics reflect real data only.
         long totalIcu = hospitals.stream().mapToLong(h -> h.getTotalIcuBeds() != null ? h.getTotalIcuBeds().intValue() : 0).sum();
         long availIcu = hospitals.stream().mapToLong(h -> h.getAvailableIcuBeds() != null ? h.getAvailableIcuBeds().intValue() : 0).sum();
         long totalVents = hospitals.stream().mapToLong(Hospital::getVentsTotal).sum();
@@ -113,9 +119,28 @@ public class DashboardController {
 
     @GetMapping("/district/{districtName}")
     public ResponseEntity<?> getDistrictDetails(@PathVariable String districtName) {
+        // Multi-tenant: verify access to this district
         Optional<District> dOpt = districtRepository.findByName(districtName);
-        List<Hospital> dHospitals = hospitalRepository.findAll().stream()
-                .filter(h -> districtName.equalsIgnoreCase(h.getDistrictName()))
+        if (dOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Check if user has access to any hospital in this district
+        Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
+        List<Hospital> allDistrictHospitals = hospitalRepository.findAll().stream()
+                .filter(h -> districtName.equalsIgnoreCase(h.getDistrictName()) || districtName.equalsIgnoreCase(h.getRegion()))
+                .toList();
+
+        if (!authorizedHospitalIds.isEmpty() && !allDistrictHospitals.isEmpty()) {
+            boolean hasAccess = allDistrictHospitals.stream()
+                    .anyMatch(h -> authorizedHospitalIds.contains(h.getId()));
+            if (!hasAccess) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied: No hospitals in this district"));
+            }
+        }
+        
+        List<Hospital> dHospitals = allDistrictHospitals.stream()
+                .filter(h -> authorizedHospitalIds.isEmpty() || authorizedHospitalIds.contains(h.getId()))
                 .collect(Collectors.toList());
 
         Map<String, Object> resp = new HashMap<>();

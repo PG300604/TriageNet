@@ -28,6 +28,7 @@ public class TriageQueueService {
     private final PatientRepository patientRepository;
     private final SeverityScorer severityScorer;
     private final HungarianMatcher hungarianMatcher;
+    private final HospitalAuthorizationService hospitalAuthService;
 
     // Dynamic priority decay multiplier: E = S + lambda * W
     private static final double LAMBDA_WAIT_DECAY = 0.5;
@@ -54,9 +55,9 @@ public class TriageQueueService {
 
     @Transactional(readOnly = true)
     public List<QueueItemDto> getQueueForHospital(UUID hospitalId) {
-        List<Patient> patients = patientRepository.findAll().stream()
-                .filter(p -> p.getHospitalId().equals(hospitalId))
-                .collect(Collectors.toList());
+        hospitalAuthService.assertCanAccessHospital(hospitalId);
+        
+        List<Patient> patients = patientRepository.findByHospitalId(hospitalId);
 
         List<QueueItemDto> items = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -90,6 +91,7 @@ public class TriageQueueService {
 
     @Transactional
     public List<QueueItemDto> stepSimulationTime(UUID hospitalId, double addMinutes) {
+        hospitalAuthService.assertCanAccessHospital(hospitalId);
         List<QueueItemDto> queue = getQueueForHospital(hospitalId);
         for (QueueItemDto item : queue) {
             item.setWaitMinutes(item.getWaitMinutes() + (long) addMinutes);

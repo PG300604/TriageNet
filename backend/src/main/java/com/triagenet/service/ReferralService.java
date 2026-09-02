@@ -18,10 +18,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -34,6 +36,7 @@ public class ReferralService {
     private final DijkstraRouter dijkstraRouter;
     private final HungarianMatcher hungarianMatcher;
     private final SeverityScorer severityScorer;
+    private final HospitalAuthorizationService hospitalAuthService;
 
     @Data
     @Builder
@@ -56,9 +59,25 @@ public class ReferralService {
     public ReferralRecommendationDto calculateRecommendation() {
         List<Hospital> hospitals = hospitalService.getAllHospitals();
         List<HospitalEdge> edges = hospitalService.getAllEdges();
-        List<Patient> allPatients = patientRepository.findAll();
+        
+        // Multi-tenant: filter hospitals to only those the user can access
+        Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
+        if (authorizedHospitalIds.isEmpty()) {
+            return null;
+        }
+        
+        List<UUID> authorizedHospitalsList = List.copyOf(authorizedHospitalIds);
+        
+        // Filter hospitals to authorized ones
+        List<Hospital> authorizedHospitals = hospitals.stream()
+                .filter(h -> authorizedHospitalsList.contains(h.getId()))
+                .toList();
+        
+        List<Patient> allPatients = patientRepository.findAll().stream()
+                .filter(p -> authorizedHospitalsList.contains(p.getHospitalId()))
+                .toList();
 
-        for (Hospital fromH : hospitals) {
+        for (Hospital fromH : authorizedHospitals) {
             long severeCount = allPatients.stream()
                     .filter(p -> p.getHospitalId().equals(fromH.getId()) && p.getStatus() == PatientStatus.WAITING)
                     .map(p -> severityScorer.computeSeverityFromPatient(p))
@@ -83,7 +102,7 @@ public class ReferralService {
 
                 SeverityScorer.SeverityResult sevResult = severityScorer.computeSeverityFromPatient(severeWaiting);
 
-                Hospital targetH = hospitals.stream()
+                Hospital targetH = authorizedHospitals.stream()
                         .filter(h -> !h.getId().equals(fromH.getId()))
                         .filter(h -> (h.getBedsTotal() - h.getBedsUsed()) >= 2)
                         .filter(h -> hungarianMatcher.checkCompatibility(severeWaiting, sevResult.getScore(), h, List.of()).isCompatible())
@@ -126,6 +145,9 @@ public class ReferralService {
             throw new IllegalArgumentException("Patient has no source hospital assigned");
         }
 
+        // Multi-tenant: verify user can access the source hospital
+        hospitalAuthService.assertCanAccessHospital(fromId);
+
         Hospital sourceHospital = hospitalService.getAllHospitals().stream()
                 .filter(h -> h.getId().equals(fromId))
                 .findFirst()
@@ -154,7 +176,18 @@ public class ReferralService {
 
     @Transactional(readOnly = true)
     public List<TransferRequest> getActiveReferrals() {
-        return transferRequestRepository.findByStatusIn(List.of(TransferStatus.PROPOSED, TransferStatus.APPROVED, TransferStatus.IN_TRANSIT));
+        // Multi-tenant: filter active referrals to only those from/to authorized hospitals
+        Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
+        if (authorizedHospitalIds.isEmpty()) {
+            return List.of();
+        }
+        
+        List<TransferRequest> allActive = transferRequestRepository.findByStatusIn(
+                List.of(TransferStatus.PROPOSED, TransferStatus.APPROVED, TransferStatus.IN_TRANSIT));
+        
+        return allActive.stream()
+                .filter(t -> authorizedHospitalIds.contains(t.getFromHospitalId()) || authorizedHospitalIds.contains(t.getToHospitalId()))
+                .toList();
     }
 
     /**
@@ -174,6 +207,9 @@ public class ReferralService {
         if (fromId == null) {
             throw new IllegalArgumentException("Patient has no source hospital assigned");
         }
+
+        // Multi-tenant: verify user can access source hospital
+        hospitalAuthService.assertCanAccessHospital(fromId);
 
         // SECURITY (B5): Reject same-hospital transfers early
         if (fromId.equals(toHospitalId)) {
@@ -205,6 +241,12 @@ public class ReferralService {
     public TransferRequest updateReferralStatus(UUID id, ReferralStatus newStatus) {
         TransferRequest request = transferRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Referral not found: " + id));
+
+        // Multi-tenant: verify access to either fromHospital or toHospital of this transfer
+        Set<UUID> authorized = hospitalAuthService.getAuthorizedHospitalIds();
+        if (!authorized.contains(request.getFromHospitalId()) && !authorized.contains(request.getToHospitalId())) {
+            throw new AccessDeniedException("Access denied: Not authorized for this transfer");
+        }
 
         TransferStatus mappedStatus = switch (newStatus) {
             case PENDING -> TransferStatus.APPROVED;

@@ -7,7 +7,40 @@
 
 ## 📌 Architectural Vision: Separation of Triage Web vs. Field Mobile Apps
 
-TriageNet is fundamentally architected as a **headless, decoupled, micro-service capable state healthcare platform**. The platform separates the heavy workstation command dashboards used inside stationary hospital environments from lightweight, ruggedized mobile endpoints needed by mobile field emergency crews.
+TriageNet is fundamentally architected as a **headless, decoupled, micro-service capable state healthcare platform**. The platform strictly separates the central workstation command dashboards used inside stationary hospital environments from lightweight, ruggedized mobile endpoints needed by mobile field emergency crews and rotating ward staff.
+
+### The 6 Web Command Station Leadership Roles (This Web Platform)
+This central web portal is reserved exclusively for the **6 designated leadership and station command roles** that control healthcare operations, facility quotas, and clinical staff:
+
+1. **State Health Command (`SUPER_ADMIN`)**:
+   - **Scope**: Statewide Operations (Controls all 24 districts).
+   - **Authority**: Global triage routing, node management, hospital quotas, statewide surge declarations, system audit logs.
+2. **District Chief Medical Officer (`DISTRICT_CMO`)**:
+   - **Scope**: Single District Command.
+   - **Authority**: District-wide bed quotas, inter-facility transfer approvals, regional surge overrides, emergency escrow.
+3. **Medical Superintendent (`HOSPITAL_ADMIN`)**:
+   - **Scope**: Single Hospital Facility Command.
+   - **Authority**: Hospital ICU & Oxygen capacity, equipment status, physical badge verification of staff, inter-facility patient transfer authorizations.
+4. **Lead Emergency Triage Nurse (`TRIAGE_NURSE`)**:
+   - **Scope**: Hospital Emergency Department (ED) Triage Desk Station.
+   - **Authority**: Bedside MEWS (Modified Early Warning Score) calculation, acuity queue prioritization, critical patient intake, shift management.
+5. **108 Central Ambulance Dispatcher (`AMBULANCE_DISPATCH`)**:
+   - **Scope**: Regional Central Fleet Dispatch Desk.
+   - **Authority**: Fleet assignment, spatial Dijkstra routing, emergency vehicle routing, dispatching orders to field ambulances.
+6. **Medical Officer (`HOSPITAL_STAFF`)**:
+   - **Scope**: Hospital Ward & Bed Intake Control (Hospital In-Charge).
+   - **Authority**: General ward admissions, bed tracking, patient intake & ward assignments.
+
+---
+
+### Downstream Dedicated Mobile Apps (Field Staff & Ward Staff)
+Routine ward nurses, field ambulance drivers/EMTs, and rotating bedside junior doctors do **not** log into this central web hub. Instead:
+- They will operate **dedicated, lightweight client applications** (e.g. *108 Ambulance Field Crew App*, *Bedside Nurse Companion App*).
+- **Two-Way Closed Network Loop**:
+  1. Higher officials on this TriageNet Web Hub issue commands (e.g. ambulance dispatch, inter-facility transfer approval, ward bed allocation).
+  2. Downstream mobile apps receive real-time notifications and compact JSON payloads (`<2KB`).
+  3. Field crew and ward staff execute the tasks and submit status updates back to TriageNet over REST / WebSockets.
+  4. The state healthcare command dashboard reflects live patient, bed, and fleet telemetry in real time.
 
 ```mermaid
 graph TD
@@ -24,9 +57,9 @@ graph TD
         ED_TRIAGE["Emergency Department Triage Desk"]
     end
 
-    subgraph Phase12 ["Phase 12 Field Mobile App (Upcoming Dedicated Build)"]
+    subgraph Phase12 ["Phase 12 Field Mobile Apps (Upcoming Dedicated Build)"]
         APP["108 Ambulance Field Crew Mobile App<br/>Flutter / React Native PWA"]
-        CREW["Paramedic & EMT Rapid Vitals Intake"]
+        BEDSIDE["Bedside Nurse & Doctor Companion App"]
         OFFLINE["SQLite Offline Cache & Sync"]
     end
 
@@ -39,6 +72,11 @@ graph TD
     TRIAGE -.-> APP
     ROUTING -.-> APP
     OFFLINE -.-> APP
+
+    WEB ==>|Dispatch Orders & Bed Allocations| CoreBackend
+    CoreBackend ==>|Real-Time Web Push & Sync| APP
+    APP ==>|Telemetry, Vitals & Arrival Confirmations| CoreBackend
+    CoreBackend ==>|Live Command Telemetry| WEB
 ```
 
 ---

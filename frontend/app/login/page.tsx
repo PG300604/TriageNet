@@ -652,39 +652,46 @@ export default function LoginPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1">
-                          Clinical Duty Role
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-mono font-bold uppercase text-[#382416]">
+                          Command Station & RBAC Role
                         </label>
-                        <select
-                          value={desiredRole}
-                          onChange={(e) => setDesiredRole(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000]"
-                        >
-                          <option value="TRIAGE_NURSE">Triage Nurse</option>
-                          <option value="HOSPITAL_STAFF">Medical Officer / Doctor</option>
-                          <option value="AMBULANCE_DISPATCH">Ambulance Dispatcher</option>
-                        </select>
+                        <span className="text-[10px] text-slate-400 font-mono">6 LEADERSHIP ROLES</span>
                       </div>
+                      <select
+                        value={desiredRole}
+                        onChange={(e) => setDesiredRole(e.target.value)}
+                        className="w-full px-2.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-bold text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000]"
+                      >
+                        <option value="SUPER_ADMIN">State Health Command (Super Admin - All 24 Districts)</option>
+                        <option value="DISTRICT_CMO">District CMO (Chief Medical Officer - District Command)</option>
+                        <option value="HOSPITAL_ADMIN">Medical Superintendent (Hospital Facility Command)</option>
+                        <option value="TRIAGE_NURSE">Lead Emergency Triage Nurse (ED Triage & MEWS Lead)</option>
+                        <option value="AMBULANCE_DISPATCH">108 Central Ambulance Dispatcher (Fleet & Route Dispatch)</option>
+                        <option value="HOSPITAL_STAFF">Medical Officer (Hospital In-Charge - Ward & Bed Intake)</option>
+                      </select>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        * Note: This workstation web portal is for facility leadership and station leads. Field ambulance crews, ward nurses, and rotating doctors will operate dedicated lightweight mobile endpoints (Phase 12).
+                      </p>
+                    </div>
 
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1">
-                          Assigned Hospital
-                        </label>
-                        <select
-                          value={selectedHospitalId}
-                          onChange={(e) => setSelectedHospitalId(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000]"
-                        >
-                          <option value="">Select Facility</option>
-                          {hospitals.map((h) => (
-                            <option key={h.id} value={h.id}>
-                              {h.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1">
+                        Assigned Hospital / Administrative Command Center
+                      </label>
+                      <select
+                        value={selectedHospitalId}
+                        onChange={(e) => setSelectedHospitalId(e.target.value)}
+                        className="w-full px-2.5 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000]"
+                      >
+                        <option value="">Select Facility / District Headquarters</option>
+                        {hospitals.map((h) => (
+                          <option key={h.id} value={h.id}>
+                            {h.name} ({h.districtName || h.region || 'Jharkhand'})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <button

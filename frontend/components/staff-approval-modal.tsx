@@ -171,6 +171,9 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
                       <Building2 className="h-3 w-3 text-slate-400" />
                       {staff.hospitalName}
                     </span>
+                    <span className="font-mono text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                      Requested: {staff.role}
+                    </span>
                     <span className="flex items-center gap-1 font-mono text-[10px]">
                       <Clock className="h-3 w-3 text-slate-400" />
                       Registered {new Date(staff.createdAt).toLocaleDateString()}
@@ -187,11 +190,12 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
                     }
                     className="text-xs font-bold bg-white border border-[#382416]/20 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#382416]"
                   >
-                    <option value="TRIAGE_NURSE">Triage Nurse</option>
-                    <option value="HOSPITAL_STAFF">Medical Officer / Doctor</option>
-                    <option value="HOSPITAL_ADMIN">Medical Superintendent</option>
-                    <option value="AMBULANCE_DISPATCH">108 Dispatcher</option>
+                    <option value="SUPER_ADMIN">State Health Command (Super Admin)</option>
                     <option value="DISTRICT_CMO">District CMO</option>
+                    <option value="HOSPITAL_ADMIN">Medical Superintendent</option>
+                    <option value="TRIAGE_NURSE">Lead Emergency Triage Nurse</option>
+                    <option value="AMBULANCE_DISPATCH">108 Central Ambulance Dispatcher</option>
+                    <option value="HOSPITAL_STAFF">Medical Officer (Ward In-Charge)</option>
                   </select>
 
                   <button

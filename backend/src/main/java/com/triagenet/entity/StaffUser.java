@@ -64,6 +64,9 @@ public class StaffUser {
     @Column(name = "emergency_codes_hash", columnDefinition = "TEXT")
     private String emergencyCodesHash;
 
+    @Column(name = "desired_role", length = 50)
+    private String desiredRole;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -44,6 +44,7 @@ public class AuthService {
     private final TotpService totpService;
     private final MnemonicRecoveryService mnemonicRecoveryService;
     private final com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
+    private final com.triagenet.repository.HospitalRepository hospitalRepository;
 
     @PostConstruct
     @Transactional
@@ -51,6 +52,20 @@ public class AuthService {
         for (RoleName roleName : RoleName.values()) {
             if (roleRepository.findByName(roleName).isEmpty()) {
                 roleRepository.save(Role.builder().name(roleName).build());
+            }
+        }
+
+        if (staffUserRepository.count() == 0) {
+            Role superAdminRole = roleRepository.findByName(RoleName.SUPER_ADMIN).orElse(null);
+            if (superAdminRole != null) {
+                staffUserRepository.save(StaffUser.builder()
+                        .name("System Super Admin")
+                        .staffId("JH-SYS-0001")
+                        .email("superadmin@triagenet.gov.in")
+                        .passwordHash(passwordEncoder.encode("Admin@123!"))
+                        .role(superAdminRole)
+                        .status(StaffUser.UserStatus.ACTIVE)
+                        .build());
             }
         }
     }
@@ -103,45 +118,61 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
-        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        String identifier = request.getEmail() != null ? request.getEmail().trim() : "";
         String clientIp = clientIpOf(httpRequest);
 
-        if (loginAttemptService.isBlocked(email, clientIp)) {
-            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(email, clientIp);
-            securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
+        if (loginAttemptService.isBlocked(identifier, clientIp)) {
+            long remainingMins = loginAttemptService.getRemainingLockTimeMinutes(identifier, clientIp);
+            securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, identifier, "/api/auth/login",
                     "Attempt blocked. Lock remaining: " + remainingMins + " mins");
             throw new LockedException("Account is temporarily locked due to consecutive failed login attempts. Please try again after " + remainingMins + " minutes.");
+        }
+
+        // Check user status before authentication
+        StaffUser user = staffUserRepository.findByStaffIdOrEmail(identifier, identifier).orElse(null);
+        if (user != null) {
+            if (user.getStatus() == StaffUser.UserStatus.PENDING_VERIFICATION) {
+                throw new LockedException("Account registration for Staff ID " + (user.getStaffId() != null ? user.getStaffId() : identifier) +
+                        " has been submitted. It is currently pending in-person badge verification by your Medical Superintendent or District CMO.");
+            } else if (user.getStatus() == StaffUser.UserStatus.SUSPENDED) {
+                throw new LockedException("Staff account (" + (user.getStaffId() != null ? user.getStaffId() : identifier) + ") has been suspended by hospital administration.");
+            } else if (user.getStatus() == StaffUser.UserStatus.REJECTED) {
+                throw new LockedException("Staff registration for " + (user.getStaffId() != null ? user.getStaffId() : identifier) + " was rejected by hospital administration.");
+            }
         }
 
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
+                    new UsernamePasswordAuthenticationToken(identifier, request.getPassword())
             );
-            loginAttemptService.loginSucceeded(email, clientIp);
+            loginAttemptService.loginSucceeded(identifier, clientIp);
         } catch (AuthenticationException e) {
-            boolean isNowLocked = loginAttemptService.loginFailed(email, clientIp);
-            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, email, "/api/auth/login", e.getMessage());
+            boolean isNowLocked = loginAttemptService.loginFailed(identifier, clientIp);
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, identifier, "/api/auth/login", e.getMessage());
             if (isNowLocked) {
-                securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, email, "/api/auth/login",
+                securityAuditService.logEvent(SecurityEventType.AUTH_ACCOUNT_LOCKED, identifier, "/api/auth/login",
                         "Account locked after reaching max failed login attempts");
             }
             throw e;
         }
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        StaffUser user = staffUserRepository.findByEmail(email)
-                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with email: " + email));
+        if (user == null) {
+            user = staffUserRepository.findByStaffIdOrEmail(identifier, identifier)
+                    .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found: " + identifier));
+        }
 
         if (user.isTotpEnabled()) {
             // Cryptographic 2FA required: issue 5-minute challenge token
-            String challengeToken = jwtUtil.generate2faChallengeToken(email);
-            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/login",
-                    "Password verified; 2FA challenge issued");
+            String challengeToken = jwtUtil.generate2faChallengeToken(user.getEmail());
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(), "/api/auth/login",
+                    "Password verified; 2FA challenge issued for Staff ID: " + user.getStaffId());
             return LoginResponse.builder()
                     .twoFactorRequired(true)
                     .challengeToken(challengeToken)
+                    .staffId(user.getStaffId())
+                    .status(user.getStatus())
                     .email(user.getEmail())
                     .name(user.getName())
                     .build();
@@ -158,8 +189,8 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(rt);
 
-        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/login",
-                "Role: " + user.getRole().getName());
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(), "/api/auth/login",
+                "Role: " + user.getRole().getName() + ", StaffId: " + user.getStaffId());
 
         return LoginResponse.builder()
                 .token(token)
@@ -168,6 +199,8 @@ public class AuthService {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .staffId(user.getStaffId())
+                .status(user.getStatus())
                 .role(user.getRole().getName())
                 .hospitalId(user.getHospitalId())
                 .build();
@@ -175,8 +208,19 @@ public class AuthService {
 
     @Transactional
     public UserDto register(RegisterRequest request) {
-        if (staffUserRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered: " + request.getEmail());
+        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        if (staffUserRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email is already registered: " + email);
+        }
+
+        String staffId = request.getStaffId() != null ? request.getStaffId().trim().toUpperCase() : "";
+        if (staffId.isBlank()) {
+            staffId = "JH-STF-" + (1000 + (int)(Math.random() * 9000));
+            while (staffUserRepository.existsByStaffId(staffId)) {
+                staffId = "JH-STF-" + (1000 + (int)(Math.random() * 9000));
+            }
+        } else if (staffUserRepository.existsByStaffId(staffId)) {
+            throw new IllegalArgumentException("Official Staff ID is already registered: " + staffId);
         }
 
         // SECURITY (V1, critical): ignore any client-supplied role — public
@@ -185,25 +229,131 @@ public class AuthService {
         // authenticated admin workflow, never via this endpoint.
         RoleName roleName = RoleName.HOSPITAL_STAFF;
         if (request.getRole() != null && request.getRole() != RoleName.HOSPITAL_STAFF) {
-            securityAuditService.logEvent(SecurityEventType.ACCESS_DENIED, request.getEmail(), "/api/auth/register",
+            securityAuditService.logEvent(SecurityEventType.ACCESS_DENIED, email, "/api/auth/register",
                     "Blocked attempt to self-assign elevated role: " + request.getRole());
         }
         Role role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
 
+        // Pre-generate 2FA Secret and 12-word BIP-39 recovery mnemonic for onboarding wizard
+        String totpSecret = totpService.generateSecret();
+        String qrUri = totpService.generateQrUri(staffId, totpSecret);
+        String mnemonic = mnemonicRecoveryService.generateMnemonic();
+        List<String> backupCodes = mnemonicRecoveryService.generateBackupCodes();
+
         StaffUser user = StaffUser.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .staffId(staffId)
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .hospitalId(request.getHospitalId())
                 .role(role)
+                .totpSecret(totpSecret)
+                .recoveryPhraseHash(mnemonicRecoveryService.hashMnemonic(mnemonic))
+                .emergencyCodesHash(mnemonicRecoveryService.hashBackupCodes(backupCodes))
+                .status(StaffUser.UserStatus.PENDING_VERIFICATION)
                 .build();
 
         StaffUser savedUser = staffUserRepository.save(user);
         securityAuditService.logEvent(SecurityEventType.AUTH_REGISTER_SUCCESS, savedUser.getEmail(), "/api/auth/register",
-                "Role: " + savedUser.getRole().getName());
+                "Role: " + savedUser.getRole().getName() + ", StaffId: " + staffId + ", Status: PENDING_VERIFICATION");
 
-        return UserDto.fromEntity(savedUser);
+        UserDto dto = UserDto.fromEntity(savedUser);
+        dto.setTotpSecret(totpSecret);
+        dto.setQrUri(qrUri);
+        dto.setRecoveryMnemonic(mnemonic);
+        dto.setBackupCodes(backupCodes);
+        return dto;
+    }
+
+    public com.triagenet.dto.ShiftAuthDto.StaffStatusDto getStaffStatus(String staffId) {
+        if (staffId == null || staffId.isBlank()) {
+            throw new IllegalArgumentException("Staff ID must not be empty");
+        }
+        StaffUser user = staffUserRepository.findByStaffIdOrEmail(staffId.trim().toUpperCase(), staffId.trim())
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff ID not found: " + staffId));
+
+        String hospitalName = "Unassigned / General Pool";
+        if (user.getHospitalId() != null) {
+            hospitalName = hospitalRepository.findById(user.getHospitalId())
+                    .map(com.triagenet.entity.Hospital::getName)
+                    .orElse("Hospital #" + user.getHospitalId());
+        }
+
+        return com.triagenet.dto.ShiftAuthDto.StaffStatusDto.builder()
+                .staffId(user.getStaffId())
+                .name(user.getName())
+                .status(user.getStatus().name())
+                .hospitalName(hospitalName)
+                .role(user.getRole() != null ? user.getRole().getName().name() : "HOSPITAL_STAFF")
+                .registeredAt(user.getCreatedAt())
+                .build();
+    }
+
+    public List<com.triagenet.dto.ShiftAuthDto.PendingStaffDto> getPendingStaff(CustomUserDetails adminUser) {
+        boolean isSuperAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+        List<StaffUser> pendingList;
+        if (isSuperAdmin) {
+            pendingList = staffUserRepository.findByStatus(StaffUser.UserStatus.PENDING_VERIFICATION);
+        } else if (adminUser.getHospitalId() != null) {
+            pendingList = staffUserRepository.findByHospitalIdAndStatus(
+                    adminUser.getHospitalId(),
+                    StaffUser.UserStatus.PENDING_VERIFICATION
+            );
+        } else {
+            pendingList = staffUserRepository.findByStatus(StaffUser.UserStatus.PENDING_VERIFICATION);
+        }
+
+        return pendingList.stream().map(u -> {
+            String hospName = "Unassigned";
+            if (u.getHospitalId() != null) {
+                hospName = hospitalRepository.findById(u.getHospitalId())
+                        .map(com.triagenet.entity.Hospital::getName)
+                        .orElse("Hospital #" + u.getHospitalId());
+            }
+            return com.triagenet.dto.ShiftAuthDto.PendingStaffDto.builder()
+                    .id(u.getId().toString())
+                    .staffId(u.getStaffId())
+                    .name(u.getName())
+                    .email(u.getEmail())
+                    .role(u.getRole() != null ? u.getRole().getName().name() : "HOSPITAL_STAFF")
+                    .hospitalId(u.getHospitalId() != null ? u.getHospitalId().toString() : null)
+                    .hospitalName(hospName)
+                    .status(u.getStatus().name())
+                    .createdAt(u.getCreatedAt())
+                    .build();
+        }).toList();
+    }
+
+    @Transactional
+    public void approveStaff(UUID staffUserId, RoleName assignedRole, CustomUserDetails adminUser) {
+        StaffUser user = staffUserRepository.findById(staffUserId)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff user not found with id: " + staffUserId));
+
+        user.setStatus(StaffUser.UserStatus.ACTIVE);
+        if (assignedRole != null) {
+            Role role = roleRepository.findByName(assignedRole)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid role: " + assignedRole));
+            user.setRole(role);
+        }
+        staffUserRepository.save(user);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_STAFF_APPROVED, adminUser.getEmail(), "/api/admin/staff/approve",
+                "Approved Staff ID: " + user.getStaffId() + ", Role: " + user.getRole().getName());
+    }
+
+    @Transactional
+    public void rejectStaff(UUID staffUserId, CustomUserDetails adminUser) {
+        StaffUser user = staffUserRepository.findById(staffUserId)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff user not found with id: " + staffUserId));
+
+        user.setStatus(StaffUser.UserStatus.REJECTED);
+        staffUserRepository.save(user);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_STAFF_REJECTED, adminUser.getEmail(), "/api/admin/staff/reject",
+                "Rejected Staff ID: " + user.getStaffId());
     }
 
     public UserDto getCurrentUser(CustomUserDetails userDetails) {

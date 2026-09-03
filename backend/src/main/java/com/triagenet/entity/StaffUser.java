@@ -20,6 +20,21 @@ public class StaffUser {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    public enum UserStatus {
+        ACTIVE,
+        PENDING_VERIFICATION,
+        SUSPENDED,
+        REJECTED
+    }
+
+    @Column(name = "staff_id", unique = true, length = 50)
+    private String staffId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
+
     @Column(nullable = false, length = 100)
     private String name;
 

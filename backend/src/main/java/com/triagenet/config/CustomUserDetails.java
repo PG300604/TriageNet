@@ -16,6 +16,8 @@ public class CustomUserDetails implements UserDetails {
     private final UUID id;
     private final String name;
     private final String email;
+    private final String staffId;
+    private final StaffUser.UserStatus status;
     private final String password;
     private final UUID hospitalId;
     private final Collection<? extends GrantedAuthority> authorities;
@@ -24,6 +26,8 @@ public class CustomUserDetails implements UserDetails {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
+        this.staffId = user.getStaffId();
+        this.status = user.getStatus();
         this.password = user.getPasswordHash();
         this.hospitalId = user.getHospitalId();
         this.authorities = Collections.singletonList(

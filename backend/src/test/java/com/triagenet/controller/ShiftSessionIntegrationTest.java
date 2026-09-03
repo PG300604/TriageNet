@@ -76,6 +76,11 @@ class ShiftSessionIntegrationTest {
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isCreated());
 
+        staffUserRepository.findByEmail(email).ifPresent(u -> {
+            u.setStatus(StaffUser.UserStatus.ACTIVE);
+            staffUserRepository.save(u);
+        });
+
         // 2. Initial Login (no 2FA yet)
         LoginRequest loginReq = new LoginRequest(email, password);
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")

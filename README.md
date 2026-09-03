@@ -35,6 +35,7 @@
 - [ML Research & Multi-Dataset Benchmarking](#ml-research--multi-dataset-benchmarking)
 - [State-Wide Scaling Vision](#state-wide-scaling-vision)
 - [Development Progress](#development-progress)
+- [Multi-Phase Strategic Roadmap & Architecture](ROADMAP.md)
 - [Environment Variables](#environment-variables)
 - [License](#license)
 

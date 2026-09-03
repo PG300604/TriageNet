@@ -32,6 +32,9 @@ class AuthIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.triagenet.repository.StaffUserRepository staffUserRepository;
+
     @Test
     @DisplayName("Complete Auth Flow: Register -> Login -> Fetch Current User Profile via JWT")
     void testAuthFlow() throws Exception {
@@ -51,6 +54,12 @@ class AuthIntegrationTest {
                 // V1 fix: public registration always yields HOSPITAL_STAFF,
                 // regardless of any requested role.
                 .andExpect(jsonPath("$.role").value("HOSPITAL_STAFF"));
+
+        // Activate user for test
+        staffUserRepository.findByEmail("alice.smith@triagenet.org").ifPresent(u -> {
+            u.setStatus(com.triagenet.entity.StaffUser.UserStatus.ACTIVE);
+            staffUserRepository.save(u);
+        });
 
         // 2. Login
         LoginRequest loginReq = LoginRequest.builder()

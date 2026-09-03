@@ -117,4 +117,35 @@ public class ShiftAuthDto {
         @NotBlank(message = "Reason for emergency bypass is required")
         private String escrowReason;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StaffStatusDto {
+        private String staffId;
+        private String name;
+        private String status;
+        private String hospitalName;
+        private String role;
+        private LocalDateTime registeredAt;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PendingStaffDto {
+        private String id;
+        private String staffId;
+        private String name;
+        private String email;
+        private String role;
+        private String hospitalId;
+        private String hospitalName;
+        private String status;
+        private LocalDateTime createdAt;
+    }
 }

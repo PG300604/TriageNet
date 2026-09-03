@@ -92,6 +92,14 @@ public class MnemonicRecoveryService {
     }
 
     /**
+     * Hashes a list of backup codes joined by commas.
+     */
+    public String hashBackupCodes(List<String> codes) {
+        if (codes == null || codes.isEmpty()) return "";
+        return String.join(",", codes.stream().map(this::hashBackupCode).toList());
+    }
+
+    /**
      * Hashes a backup code for server storage.
      */
     public String hashBackupCode(String code) {

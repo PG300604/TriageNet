@@ -312,4 +312,10 @@ public class AuthController {
                 "emergencyToken", emergencyToken
         ));
     }
+
+    @GetMapping("/status/{staffId}")
+    public ResponseEntity<com.triagenet.dto.ShiftAuthDto.StaffStatusDto> getStaffStatus(
+            @PathVariable String staffId) {
+        return ResponseEntity.ok(authService.getStaffStatus(staffId));
+    }
 }

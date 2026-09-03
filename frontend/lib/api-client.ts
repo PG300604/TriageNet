@@ -168,6 +168,33 @@ export interface AuthResponse {
   shiftActive?: boolean;
   shiftDurationHours?: number;
   isScreenLocked?: boolean;
+  staffId?: string;
+  status?: string;
+  totpSecret?: string;
+  qrUri?: string;
+  recoveryMnemonic?: string;
+  backupCodes?: string[];
+}
+
+export interface StaffStatusResponse {
+  staffId: string;
+  name: string;
+  status: 'ACTIVE' | 'PENDING_VERIFICATION' | 'SUSPENDED' | 'REJECTED';
+  hospitalName: string;
+  role: string;
+  registeredAt: string;
+}
+
+export interface PendingStaffUser {
+  id: string;
+  staffId: string;
+  name: string;
+  email: string;
+  role: string;
+  hospitalId?: string;
+  hospitalName: string;
+  status: string;
+  createdAt: string;
 }
 
 export interface TwoFactorSetupData {
@@ -195,7 +222,15 @@ export const ApiClient = {
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (userData: { name: string; email: string; password: string; role?: string; hospitalId?: string }): Promise<AuthResponse> =>
+  register: (userData: {
+    name: string;
+    staffId?: string;
+    desiredRole?: string;
+    email: string;
+    password: string;
+    role?: string;
+    hospitalId?: string;
+  }): Promise<AuthResponse> =>
     apiFetch<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -214,6 +249,23 @@ export const ApiClient = {
       removeAuthToken();
     }
   },
+
+  // Staff ID Status Probe & Verification
+  getStaffStatus: (staffId: string): Promise<StaffStatusResponse> =>
+    apiFetch<StaffStatusResponse>(`/auth/status/${encodeURIComponent(staffId)}`),
+
+  // Hospital Admin Staff Verification Queue
+  getPendingStaff: (): Promise<PendingStaffUser[]> =>
+    apiFetch<PendingStaffUser[]>('/admin/staff/pending'),
+
+  approveStaff: (id: string, role?: string): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>(`/admin/staff/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ role: role || undefined }),
+    }),
+
+  rejectStaff: (id: string): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>(`/admin/staff/${id}/reject`, { method: 'POST' }),
 
   // 2FA & Clinical Shift Sessions
   setup2FA: (): Promise<TwoFactorSetupData> =>

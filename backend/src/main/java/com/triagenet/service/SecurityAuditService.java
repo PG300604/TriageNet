@@ -20,7 +20,9 @@ public class SecurityAuditService {
         RESOURCE_TRANSFER_EXECUTED,
         PATIENT_REGISTERED,
         PATIENT_DISCHARGED,
-        ACCESS_DENIED
+        ACCESS_DENIED,
+        AUTH_STAFF_APPROVED,
+        AUTH_STAFF_REJECTED
     }
 
     public void logEvent(SecurityEventType eventType, String userEmail, String resource, String details) {

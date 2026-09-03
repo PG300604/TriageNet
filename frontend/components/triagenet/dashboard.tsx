@@ -40,8 +40,9 @@ import { DocsView } from './docs-view'
 import { SuppliesView } from './supplies-view'
 import { ReportsView } from './reports-view'
 import { CommsView } from './comms-view'
-import { Siren, Wifi, WifiOff, Server } from 'lucide-react'
+import { Siren, Wifi, WifiOff, Server, UserCheck } from 'lucide-react'
 import { ApiClient, type HospitalApiData, type StateOverviewData } from '@/lib/api-client'
+import { StaffApprovalModal } from '@/components/staff-approval-modal'
 
 // ---------------------------------------------------------------------------
 // Data Source Mode: 'live' = Spring Boot API, 'simulated' = in-memory engine
@@ -255,6 +256,27 @@ export function Dashboard() {
     }
   }, [user, currentRole, allowedViews, view])
 
+  // Dual-Control Hospital Staff Verification Queue
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false)
+  const [pendingStaffCount, setPendingStaffCount] = useState<number>(0)
+
+  const checkPendingStaff = useCallback(async () => {
+    if (user && ['SUPER_ADMIN', 'DISTRICT_CMO', 'HOSPITAL_ADMIN'].includes(user.role)) {
+      try {
+        const pending = await ApiClient.getPendingStaff()
+        setPendingStaffCount(pending?.length || 0)
+      } catch {
+        // Silently ignore if not authorized
+      }
+    }
+  }, [user])
+
+  useEffect(() => {
+    checkPendingStaff()
+    const interval = setInterval(checkPendingStaff, 25000)
+    return () => clearInterval(interval)
+  }, [checkPendingStaff])
+
   // Handle District Switch
   const handleSelectDistrict = useCallback((newDistrict: string) => {
     setSelectedDistrict(newDistrict)
@@ -461,6 +483,24 @@ export function Dashboard() {
                     <><WifiOff className="size-3" /> SIMULATED</>
                   )}
                 </button>
+
+                {/* Admin Staff Verification Queue Trigger */}
+                {user && ['SUPER_ADMIN', 'DISTRICT_CMO', 'HOSPITAL_ADMIN'].includes(user.role) && (
+                  <button
+                    onClick={() => setIsStaffModalOpen(true)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold transition-all cursor-pointer',
+                      pendingStaffCount > 0
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-sm animate-pulse'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    )}
+                    title="Inspect pending clinician registration requests"
+                  >
+                    <UserCheck className="size-3" />
+                    <span>STAFF QUEUE {pendingStaffCount > 0 ? `(${pendingStaffCount})` : ''}</span>
+                  </button>
+                )}
+
                 <span className="bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#382416]/10 font-bold text-[#382416]">
                   ROLE PERMITTED VIEWS: {allowedViews.length} / 12
                 </span>
@@ -540,6 +580,12 @@ export function Dashboard() {
           </div>
         </main>
       </div>
+
+      <StaffApprovalModal
+        isOpen={isStaffModalOpen}
+        onClose={() => setIsStaffModalOpen(false)}
+        onApproved={checkPendingStaff}
+      />
     </div>
   )
 }

@@ -300,7 +300,7 @@ export default function LoginPage() {
                   OFFICIAL STATE SECURE PORTAL
                 </span>
               </div>
-              <p className="text-xs text-slate-500">Government of Jharkhand • Department of Health & Family Welfare</p>
+              <p className="text-xs text-slate-500">Made for Government of Jharkhand • Department of Health & Family Welfare</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">

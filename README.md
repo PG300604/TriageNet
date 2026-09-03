@@ -984,7 +984,7 @@ flowchart LR
 - [x] **PR #27 Merge Conflict Resolution**: Synchronized `fix/security-hardening-audit-2026-08` branch with `main`, resolving all 7 conflicting files and restoring the V1 critical privilege-escalation block in `AuthService.register()`; fixed missing `+` operator in Haversine formula introduced by CodeRabbit co-authored commit
 - [x] **Full 45/45 Automated Test Suite & Builds**: **45/45 backend tests passing (100% BUILD SUCCESS)** including new integration tests for cache-control headers, trusted proxy IP extraction, atomic discharge promotion, and vitals clamping; **11/11 Next.js static pages** generated cleanly
 
-### Phase 9: Production Hardening, Multi-Tenant Authorization & Security Remediation (Completed)
+### ✅ Phase 9 — Production Hardening, Multi-Tenant Authorization & Security Remediation (Complete)
 - [x] **Multi-Tenant Scoping & IDOR Prevention (V10)**: Implemented `HospitalAuthorizationService` scoping access to hospital staff strictly to their assigned facilities, District CMOs to their respective districts, and statewide oversight roles. Integrated across `PatientService`, `TriageQueueService`, `ReferralService`, `DashboardController`, and `ResourceController`.
 - [x] **H2 Console Access Guard (V2)**: Disabled H2 console by default in `application.yml` (`spring.h2.console.enabled: false`) and restricted `/h2-console/**` access strictly to explicit `dev`/`local` profiles. Enforced `X-Frame-Options: DENY` on all non-dev profiles.
 - [x] **Cryptographic Randomness & Entropy Verification (V3)**: Integrated Shannon entropy check ($\ge 3.5$ bits/char) in `JwtUtil.java`, failing fast with `IllegalStateException` on startup in production if an insecure secret is supplied.
@@ -998,20 +998,93 @@ flowchart LR
 - [x] **Standardized Error Taxonomy (B10)**: Created `ResourceNotFoundException`, mapped to 404 in `GlobalExceptionHandler` with consistent JSON error schema (`status`, `error`, `message`, `timestamp`).
 - [x] **Full 54/54 Automated Test Suite & Production Builds**: **54/54 backend tests passing (100% BUILD SUCCESS)**; **11/11 Next.js static pages** generated cleanly via Turbopack; Knowledge graph updated to 1,479 nodes and 105 communities.
 
+### ✅ Phase 9.1 — Cryptographic 2FA, Offline Shift Management & Account Recovery (Complete — Sep 3, 2026)
+- [x] **Zero-Email, Zero-SMS Offline Cryptographic Engine**: Eliminated third-party authentication services, SMS gateways, and cloud auth vendors to prevent phishing, telecom interception, and credential stuffing on confidential health networks.
+- [x] **RFC 6238 HMAC-SHA1 TOTP Engine**: Built native 160-bit Base32 secret generation with Google Authenticator, Aegis, and YubiKey compatibility; implemented $\pm 1$ time-step window ($\pm 30\text{s}$) clock drift compensation in `TotpService.java`.
+- [x] **12-Word BIP-39 Mnemonic Recovery System**: Added cryptographic 12-word mnemonic phrase generator (`MnemonicRecoveryService.java`) with 128-bit CSPRNG entropy; stored strictly as SHA-256 hashes (`recovery_phrase_hash`), allowing self-sovereign clinician account recovery without email verification.
+- [x] **8 Emergency Single-Use Backup Codes**: Pre-generates 8 collision-free alphanumeric codes (`TR-XXXX-XXXX`), stored as salted SHA-256 hashes (`emergency_codes_hash`) and burned upon consumption.
+- [x] **8h / 12h Clinical Shift Sessions with 4-Digit Quick-Lock PIN**: Built `ShiftSessionService.java` managing duty shifts with 20-minute idle auto-locks and instant 4-digit PIN unlock screen; eliminated repetitive 2FA re-authentications during trauma resuscitations.
+- [x] **Multi-Tier Account Recovery Portal (`/recovery`)**: Full clinical UI for 12-Word BIP-39 mnemonic recovery, emergency backup codes, and a 15-minute District CMO Escrow Bypass (`AUTH_CMO_ESCROW_OVERRIDE`).
+- [x] **62/62 Automated Backend Tests**: Added `ShiftSessionIntegrationTest.java` verifying TOTP, shift creation, PIN unlock, and mnemonic password resets (100% BUILD SUCCESS).
+
+### ✅ Phase 9.2 — Official Staff ID Architecture & Dual-Control Hospital Onboarding (Complete — Sep 3, 2026)
+- [x] **Staff ID Primary Credential (`JH-STF-XXXX`)**: Replaced email login with official state-issued Healthcare Staff IDs (`staffId` column with unique DB index); supported dual identifier lookup (`findByStaffIdOrEmail`) for seamless clinician access.
+- [x] **Continuous 4-Stage Onboarding Wizard (`/login`)**:
+  1. *Command Station & Role*: Full Name, Staff ID, Official Email, Command Station Role, and Assigned Facility.
+  2. *Master Password*: Complexity regex verification (upper, lower, digit, special symbol).
+  3. *Cryptographic Packet*: Base32 TOTP secret, QR URI, 12-word BIP-39 mnemonic phrase (with one-click clipboard copy), and 8 single-use emergency backup codes.
+  4. *Onboarding Complete*: Summary badge, facility verification notice, and live status probe.
+- [x] **Zero-Email Public Real-Time Status Probe (`GET /api/auth/status/{staffId}`)**: Allows clinicians to probe their verification status in real time directly from the login terminal without SMS or email dependencies.
+- [x] **Dual-Control Administrative Verification Queue (`/api/admin/staff/**`)**:
+  - Unapproved accounts are locked (`PENDING_VERIFICATION`), blocking login with HTTP `423 Locked`.
+  - Built `<StaffApprovalModal />` mounted in dashboard with real-time 25s polling and pulsating `[ 👥 STAFF QUEUE (X) ]` badge for Medical Superintendents and District CMOs.
+  - Admins inspect requested credentials, adjust assigned RBAC roles, and approve or reject with 1 click.
+- [x] **Alignment with the 6 Command Station Leadership Roles**:
+  - `SUPER_ADMIN` (State Health Command — Statewide 24 Districts)
+  - `DISTRICT_CMO` (District Chief Medical Officer — Single District Command)
+  - `HOSPITAL_ADMIN` (Medical Superintendent — Hospital Facility Command)
+  - `TRIAGE_NURSE` (Lead Emergency Triage Nurse — ED Triage & MEWS Lead)
+  - `AMBULANCE_DISPATCH` (108 Central Ambulance Dispatcher — Fleet & Route Dispatch)
+  - `HOSPITAL_STAFF` (Medical Officer — Ward In-Charge & Bed Intake)
+- [x] **Full 64/64 Automated Backend Test Suite**: Added `AdminStaffApprovalTest.java` verifying complete registration $\to$ pending lock $\to$ status probe $\to$ admin approval $\to$ active login cycle. **64/64 tests passing, 12/12 Next.js static pages compiled**.
+
 ---
 
-## 🔮 Future Roadmap (Upcoming Phases)
+## 🔮 Strategic Master Roadmap & Architectural Separation
+
+For complete technical specifications, see [**ROADMAP.md**](ROADMAP.md).
 
 ```mermaid
-flowchart LR
-    subgraph Upcoming["Upcoming Phases"]
-        direction TB
-        P10["Phase 10: Production Cloud Deployment<br/>• Multi-Container Docker Compose<br/>• Vercel Edge Frontend + Render Backend<br/>• Automated GitHub Actions CI/CD"]
-        P11["Phase 11: Enterprise Audit & Directorate Exports<br/>• District CMO PDF Audit Reports<br/>• State Capacity CSV Export<br/>• Golden Hour Compliance Matrix"]
+graph TD
+    subgraph CoreBackend ["TriageNet Core Engine (Spring Boot 3.3.2)"]
+        AUTH["Zero-Email Auth & Dual-Control Engine"]
+        TRIAGE["Dynamic MEWS Triage & Acuity Engine"]
+        ROUTING["Statewide Dijkstra Capacity Router"]
+        BEDS["ICU & Oxygen Inventory Ledger"]
     end
 
-    P10 --> P11
+    subgraph StationWeb ["Stationary Triage Web Workstation (This Web Hub)"]
+        WEB["Workstation Command Portal (Next.js 16 + Tailwind)"]
+        ADMIN["Medical Superintendent & CMO Command Terminal"]
+        ED_TRIAGE["Emergency Department Triage Desk"]
+    end
+
+    subgraph FieldCrewMobile ["Dedicated Mobile Apps (Phase 12 — Future Scope)"]
+        APP["108 Ambulance Field Crew Mobile App (Flutter / PWA)"]
+        BEDSIDE["Bedside Nurse & Doctor Companion App"]
+        OFFLINE["SQLite Offline Cache & Sync (< 2KB Payloads)"]
+    end
+
+    AUTH --> WEB
+    TRIAGE --> WEB
+    ROUTING --> WEB
+    BEDS --> WEB
+
+    AUTH -.-> APP
+    TRIAGE -.-> APP
+    ROUTING -.-> APP
+    OFFLINE -.-> APP
+
+    WEB ==>|Dispatch Orders & Bed Allocations| CoreBackend
+    CoreBackend ==>|Real-Time Web Push & Sync| APP
+    APP ==>|Telemetry, Vitals & Arrival Confirmations| CoreBackend
+    CoreBackend ==>|Live Command Telemetry| WEB
 ```
+
+### Summary of Upcoming Phases
+- **Phase 10: FIDO2 / WebAuthn Hardware Security Keys**: USB-C/NFC physical YubiKey 5 Series and biometric passkeys for zero-typing emergency resuscitation room logins.
+- **Phase 11: Real-Time Bed & Oxygen IoT Telemetry**: PSA generator & LMO tank telemetry ingestion; automated bed pressure-mat sensors.
+- **Phase 12: 108 Ambulance Field Crew Dedicated Mobile App**: Lightweight Flutter/PWA application engineered specifically for moving ambulances (high-contrast vibration-resistant UI, `< 2KB` payloads, SQLite offline cache, continuous GPS beaconing). Routine ward nurses, rotating doctors, and ambulance drivers operate this app, which syncs in a closed loop with this central web hub.
+- **Phase 13: Zero-Email W3C Web Push & Acoustic Warning Beacons**: Native browser/mobile push via VAPID keys; WebSocket acoustic sirens for mass casualty events within 5km geofences.
+- **Phase 14: Ayushman Bharat Digital Mission (ABDM) Integration**: National Health Authority (NHA) 14-digit ABHA ID integration, FHIR/HL7 M1/M2/M3 compliance.
+
+### 🛡️ Security Audit Remediation Tracker (Hermes Agent Audit)
+The automated Hermes security audit findings have been cataloged in [`.github/SECURITY_AUDIT_TRACKER.md`](.github/SECURITY_AUDIT_TRACKER.md) with ready-to-implement specifications for the upcoming light sprints:
+- `Issue B1 (MEDIUM)`: Remove dev profile JWT secret fallback in `application-dev.yml`.
+- `Issue B2 (MEDIUM)`: Enforce Content-Security-Policy (CSP) headers in `SecurityConfig.java`.
+- `Issue B3 (MEDIUM)`: Eliminate permissive `permitAll()` endpoints without hospital tenant scoping.
+- `Issue B4 (LOW)`: Cleanse template secret in `application-local.yml.example`.
+- `Issue B5 (LOW)`: Document test profile fixed CSPRNG secret.
 
 ---
 

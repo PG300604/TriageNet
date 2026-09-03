@@ -1,82 +1,112 @@
 # TriageNet Security Audit & Open Source Hardening Tracker
 
-This document tracks the remediation of findings from the **TriageNet Security Audit (Aug 2026)**. These issues are open for community contribution and can earn GitHub profile badges (**Good First Issue**, **Security**, **Help Wanted**).
+This document tracks all security findings from the **Hermes Automated Security Audit (September 3, 2026)** as well as historical audits. These issues are cataloged for resolution in our upcoming **Light Security Sprints** and are open for community contribution.
 
 ---
 
-## Issue Summary Matrix
+## 🎯 Active Sprint Backlog — Hermes Agent Findings (Sep 2026)
 
-| # | Issue Title | Severity | Component | Labels | Status |
-|---|---|---|---|---|---|
-| **1** | [Hardcoded Default JWT Secret & Missing Environment Guard](#issue-1--hardcoded-default-jwt-secret) | 🔴 `CRITICAL` | Backend (Auth) | `security`, `critical`, `backend`, `auth` | 📋 Open |
-| **2** | [Restrict Permissive CORS Wildcard (*) to Authorized Origins](#issue-2--restrict-permissive-cors-wildcard) | 🔴 `HIGH` | Backend (Security) | `security`, `high`, `good first issue` | 📋 Open |
-| **3** | [Enforce RBAC Method-Level Security (@PreAuthorize) Across Controllers](#issue-3--enforce-rbac-method-level-security) | 🔴 `CRITICAL` | Backend (RBAC) | `security`, `critical`, `rbac` | 📋 Open |
-| **4** | [Password Complexity Validation & Account Lockout](#issue-4--password-complexity--account-lockout) | 🔴 `HIGH` | Backend (Auth) | `security`, `high`, `good first issue` | 📋 Open |
-| **5** | [Migrate JWT Storage from localStorage to HttpOnly Cookies](#issue-5--migrate-jwt-storage-to-httponly-cookies) | 🟠 `MEDIUM` | Frontend (Auth) | `security`, `medium`, `frontend` | 📋 Open |
-| **6** | [Security Headers (CSP, HSTS) & Production Error Sanitization](#issue-6--security-headers--error-sanitization) | 🟠 `MEDIUM` | Backend (Security) | `security`, `medium`, `good first issue` | 📋 Open |
-| **7** | [Dependency Upgrades (Spring Boot 3.3+) & Non-Root Docker](#issue-7--dependency-upgrades--docker-hardening) | 🟡 `LOW` | DevOps / Infra | `security`, `low`, `devops` | 📋 Open |
+| # | Issue Title | Severity | CWE | Component | Labels | Status |
+|---|---|---|---|---|---|---|
+| **B1** | [Dev Profile Fallback JWT Secret Vulnerability](#issue-b1--dev-profile-fallback-jwt-secret) | 🟠 `MEDIUM` | CWE-798 | Backend (Auth) | `security`, `sprint`, `backend` | 📋 Ready for Sprint |
+| **B2** | [Enforce Content-Security-Policy (CSP) Directives](#issue-b2--enforce-content-security-policy-csp) | 🟠 `MEDIUM` | CWE-693 | Backend (Headers) | `security`, `sprint`, `good-first-issue` | 📋 Ready for Sprint |
+| **B3** | [Permissive permitAll() Endpoints Without Hospital Tenant Scoping](#issue-b3--permissive-permitall-endpoints) | 🟠 `MEDIUM` | CWE-639 | Backend (RBAC) | `security`, `sprint`, `rbac` | 📋 Ready for Sprint |
+| **B4** | [application-local.yml.example Hardcoded Secret Cleansing](#issue-b4--application-localymlexample-secret-cleansing) | 🟡 `LOW` | CWE-522 | Config / Templates | `security`, `hygiene`, `good-first-issue` | 📋 Ready for Sprint |
+| **B5** | [Runtime Dynamic Test Profile CSPRNG Secret](#issue-b5--runtime-dynamic-test-profile-csprng-secret) | 🟡 `LOW` | CWE-330 | Testing / CI | `security`, `tests` | 📋 Ready for Sprint |
 
 ---
 
-## Detailed Issue Specifications & Reproduction Steps
+## 📋 Detailed Sprint Issue Specifications
 
-### Issue 1 — Hardcoded Default JWT Secret
-- **Severity**: 🔴 `CRITICAL` (Deploy Blocker)
-- **Affected Files**:
-  - `backend/src/main/resources/application.yml`
-  - `backend/src/main/resources/application-dev.yml`
-  - `backend/src/main/java/com/triagenet/util/JwtUtil.java`
-- **Description**: The default secret string `404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970` is committed in source control. Anyone with repo access can sign arbitrary JWTs.
-- **Fix**: Remove fallback from `application.yml` for prod profiles. Fail fast on startup if `JWT_SECRET` is unset or less than 256 bits of entropy.
+### Issue B1 — Dev Profile Fallback JWT Secret (CWE-798)
+- **Severity**: 🟠 `MEDIUM`
+- **Affected File**: `backend/src/main/resources/application-dev.yml:27`
+- **Description**: `application-dev.yml` contains a fallback secret:
+  ```yaml
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  ```
+  While production rejects this secret via `JwtUtil`, a staging or dev deployment without `JWT_SECRET` set will use this publicly known secret, enabling token forgery in dev environments.
+- **Sprint Task**:
+  1. Remove the fallback string from `application-dev.yml`.
+  2. If `JWT_SECRET` is unset in dev, dynamically generate a fresh 256-bit random secret at startup, or require developers to define `JWT_SECRET`.
+- **Target Sprint**: Sprint 10 (Light Security).
 
-### Issue 2 — Restrict Permissive CORS Wildcard (*)
-- **Severity**: 🔴 `HIGH`
-- **Affected Files**:
-  - `AuthController.java`, `HospitalController.java`, `PatientController.java`, `ResourceController.java`, `RoutingController.java`, `TriageQueueController.java`, `DashboardController.java`, `ReferralController.java`
-- **Description**: Controller-level `@CrossOrigin(origins = "*")` permits cross-origin requests from any arbitrary domain.
-- **Fix**: Centralize CORS configuration inside `SecurityConfig.java` allowing only specific origins (`http://localhost:3000`, `https://triagenet.vercel.app`) and explicit HTTP headers.
+---
 
-### Issue 3 — Enforce RBAC Method-Level Security Across Controllers
-- **Severity**: 🔴 `CRITICAL`
-- **Affected Files**:
-  - `SecurityConfig.java`, `HospitalController.java`, `PatientController.java`, `ResourceController.java`, `RoutingController.java`
-- **Description**: `.permitAll()` on `/api/**` in `SecurityConfig.java` exposes REST endpoints to unauthenticated users.
-- **Fix**: Require valid JWT bearer authentication for all `/api/**` endpoints (except `/api/auth/**`) and annotate controller methods with `@PreAuthorize("hasAnyRole(...)")`.
+### Issue B2 — Enforce Content-Security-Policy (CSP) (CWE-693)
+- **Severity**: 🟠 `MEDIUM`
+- **Affected File**: `backend/src/main/java/com/triagenet/config/SecurityConfig.java:100-108`
+- **Description**: While HSTS, X-Frame-Options, and nosniff headers are enabled, the application currently lacks a `Content-Security-Policy` header, leaving defense-in-depth against XSS incomplete.
+- **Sprint Task**:
+  Add standard CSP directives in `SecurityConfig.java`:
+  ```java
+  headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+      "default-src 'self'; " +
+      "script-src 'self'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https://triagenet.vercel.app https://triagenet.gov.in; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self'"
+  ));
+  ```
+- **Target Sprint**: Sprint 10 (Light Security).
 
-### Issue 4 — Password Complexity & Account Lockout
-- **Severity**: 🔴 `HIGH` / 🟠 `MEDIUM`
-- **Affected Files**:
-  - `RegisterRequest.java`, `CustomUserDetails.java`, `AuthService.java`
-- **Description**: Passwords lack complexity regex enforcement. No lockout exists for brute-force login attempts.
-- **Fix**: Add `@Pattern` validation for uppercase, lowercase, number, and special character. Add failed attempt tracking and lockout after 5 consecutive failures.
+---
 
-### Issue 5 — Migrate JWT Storage to HttpOnly Cookies
+### Issue B3 — Permissive `permitAll()` Endpoints (CWE-639)
 - **Severity**: 🟠 `MEDIUM`
 - **Affected Files**:
-  - `frontend/lib/api-client.ts`, `frontend/lib/auth-context.tsx`
-- **Description**: Storing JWT in browser `localStorage` makes tokens vulnerable to XSS exfiltration.
-- **Fix**: Issue tokens via `HttpOnly; Secure; SameSite=Strict` cookies upon login.
+  - `backend/src/main/java/com/triagenet/config/SecurityConfig.java:116-124`
+  - `HospitalController.java`, `DashboardController.java`, `RoutingController.java`
+- **Description**: The endpoints `/api/dashboard/**`, `/api/hospitals/**`, `/api/routing/optimal`, and `/api/patients/score-vitals` are marked `permitAll()`. While public access may be intended for landing page previews, internal hospital metrics, quotas, and patient vitals evaluation should be protected or scoped by facility tenant.
+- **Sprint Task**:
+  1. Audit public vs. authenticated requirements for each endpoint.
+  2. Guard state-sensitive endpoints under `@PreAuthorize("hasAnyRole(...)")`.
+  3. Verify `HospitalAuthorizationService` scopes hospital-specific metrics to assigned staff.
+- **Target Sprint**: Sprint 10 (Light Security).
 
-### Issue 6 — Security Headers & Error Sanitization
-- **Severity**: 🟠 `MEDIUM`
-- **Affected Files**:
-  - `SecurityConfig.java`, `GlobalExceptionHandler.java`
-- **Description**: Missing Content-Security-Policy (CSP), HSTS headers. Internal exception message is returned to clients on 500 errors.
-- **Fix**: Enable Spring Security standard header filters and mask internal error details in `GlobalExceptionHandler.java`.
+---
 
-### Issue 7 — Dependency Upgrades & Docker Hardening
+### Issue B4 — application-local.yml.example Secret Cleansing (CWE-522)
 - **Severity**: 🟡 `LOW`
-- **Affected Files**:
-  - `backend/pom.xml`, `Dockerfile`, `docker-compose.yml`
-- **Description**: Upgrade Spring Boot 3.2.5 to 3.3.x and JJWT 0.12.x; configure non-root user in Docker containers.
+- **Affected File**: `backend/src/main/resources/application-local.yml.example:25`
+- **Description**: The example template contains the old 64-char hex secret string in version control.
+- **Sprint Task**:
+  Replace with a placeholder instruction:
+  ```yaml
+  jwt:
+    # Generate with: openssl rand -hex 32
+    secret: CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32
+  ```
+- **Target Sprint**: Sprint 10 (Light Security).
 
 ---
 
-## How to Contribute & Earn Badges
+### Issue B5 — Runtime Dynamic Test Profile CSPRNG Secret (CWE-330)
+- **Severity**: 🟡 `LOW`
+- **Affected File**: `backend/src/test/resources/application-test.yml:20`
+- **Description**: Test profile uses a fixed high-entropy CSPRNG secret. While acceptable for CI/CD test isolation, dynamic property generation offers cleaner hygiene.
+- **Sprint Task**:
+  Document explicit test-profile isolation or switch to `@DynamicPropertySource` in base test classes.
+- **Target Sprint**: Sprint 11.
 
-1. Fork the [TriageNet repository](https://github.com/PG300604/TriageNet).
-2. Create a branch: `git checkout -b fix/issue-<number>-<description>`.
-3. Implement the remediation and verify tests pass:
-   - Backend: `./mvnw clean test`
-   - Frontend: `npm run build`
-4. Submit a Pull Request referencing the issue number (e.g. `Fixes #1`).
+---
+
+## ✅ Historical Findings (Resolved & Closed)
+
+| # | Title | Original Severity | Resolution Phase | Status |
+|---|---|---|---|---|
+| **1** | Hardcoded Base JWT Secret in `application.yml` | 🔴 `CRITICAL` | Phase 8.1 & 9 | ✅ Resolved (Fail-Fast Entropy Guard) |
+| **2** | Permissive Wildcard CORS `*` on Controllers | 🔴 `HIGH` | Phase 8.1 & 8.2 | ✅ Resolved (Exact-Origin Allowlist) |
+| **3** | Unprotected `/api/**` Endpoints Without RBAC | 🔴 `CRITICAL` | Phase 8.1 & 9 | ✅ Resolved (`@PreAuthorize` on All Endpoints) |
+| **4** | Password Complexity & Account Lockout | 🔴 `HIGH` | Phase 8.1 & 9 | ✅ Resolved (Regex + DB Lockout Service) |
+| **5** | JWT Insecure `localStorage` Storage | 🟠 `MEDIUM` | Phase 8.1 & 9 | ✅ Resolved (HttpOnly SameSite Cookies) |
+| **6** | Lack of Standard Security Headers & Error Masking | 🟠 `MEDIUM` | Phase 8.1 & 8.2 | ✅ Resolved (HSTS, nosniff, cache-control) |
+| **7** | Vulnerable Dependencies & Root Container Execution | 🟡 `LOW` | Phase 8.1 & 9 | ✅ Resolved (Spring Boot 3.3.2, Non-Root 1001) |
+| **8** | Unsanitized Audit Logging | 🟠 `MEDIUM` | Phase 8.1 | ✅ Resolved (CWE-117 PII Sanitizer) |
+| **9** | Lack of Refresh Token Revocation | 🔴 `HIGH` | Phase 9 | ✅ Resolved (7-Day Cookie Rotation & Replay Defense) |
+| **10** | Third-Party Auth & SMS Gateway Dependence | 🔴 `HIGH` | Phase 9.1 & 9.2 | ✅ Resolved (Self-Sovereign Staff ID + TOTP/BIP-39) |

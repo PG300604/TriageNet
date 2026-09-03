@@ -15,114 +15,107 @@ const TOKEN = process.argv[2] || process.env.GITHUB_TOKEN;
 
 const AUDIT_ISSUES = [
   {
-    title: '[Security A1] Remove Hardcoded Default JWT Secret from All Env Files, Test Profile & Docker Compose',
-    labels: ['security', 'high', 'backend', 'auth', 'deploy-blocker'],
-    body: `### 🔴 Severity: HIGH (Deploy Blocker)
+    title: '[Security B1] Remove Dev Profile Fallback JWT Secret in application-dev.yml',
+    labels: ['security', 'medium', 'backend', 'auth'],
+    body: `### 🟠 Severity: MEDIUM
 **CWE**: CWE-798 (Use of Hard-coded Credentials)
 
 #### Problem Description
-The backend configuration currently contains a default hardcoded JWT secret in \`JwtUtil.java\`, \`application.yml\`, \`application-dev.yml\`, \`application-local.yml\`, \`application-test.yml\`, and \`docker-compose.yml\`:
-\`\`\`text
-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+\`application-dev.yml\` contains a hardcoded fallback JWT secret:
+\`\`\`yaml
+jwt:
+  secret: \${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
 \`\`\`
-While \`JwtUtil.validateJwtConfiguration()\` correctly rejects this key in production profiles, having it present in version control means any non-prod or default container deployment is exposed to token forgery.
-
-#### Affected Files
-- \`backend/src/main/java/com/triagenet/util/JwtUtil.java\`
-- \`backend/src/main/resources/application.yml\`
-- \`backend/src/main/resources/application-dev.yml\`
-- \`backend/src/main/resources/application-local.yml\`
-- \`backend/src/test/resources/application-test.yml\`
-- \`docker-compose.yml\`
-
-#### Proposed Remediation
-1. Remove the static fallback secret from \`@Value("\${jwt.secret}")\` in \`JwtUtil.java\` — require explicit configuration.
-2. Remove hardcoded default values from \`application.yml\`, \`application-dev.yml\`, \`application-local.yml\`, and \`docker-compose.yml\`.
-3. In \`application-test.yml\`, generate or inject a test-only dynamic random key or use \`@TestPropertySource\`.
-4. Fail fast with an informative exception if \`jwt.secret\` is unset on startup.`
-  },
-  {
-    title: '[Security A2] Persist Login Attempt Tracking and Lockout State to PostgreSQL Database',
-    labels: ['security', 'medium', 'backend', 'auth', 'database'],
-    body: `### 🟠 Severity: MEDIUM
-**CWE**: CWE-345 (Insufficient Verification of Data Authenticity)
-
-#### Problem Description
-\`LoginAttemptService\` currently tracks failed login attempts and account lockout expiration exclusively in an in-memory \`ConcurrentHashMap\`. 
-On application restart or service redeployment, all lockout state is lost, allowing blocked brute-force attackers to resume authentication attempts immediately.
-
-#### Affected Files
-- \`backend/src/main/java/com/triagenet/service/LoginAttemptService.java\`
-- \`backend/src/main/java/com/triagenet/service/AuthService.java\`
-
-#### Proposed Remediation
-1. Create a database entity and JPA repository for persistent login attempts (e.g. \`login_attempts\` table with \`email\`, \`attempts\`, \`last_attempt_at\`, \`lock_expires_at\`).
-2. Persist lockout state on failure transitions and verify database state during startup or authentication checks.
-3. Add automated integration tests verifying lockout persists across simulated service restarts.`
-  },
-  {
-    title: '[Security A3] Complete Pure HttpOnly Cookie Migration in Frontend & Remove LocalStorage Token Fallbacks',
-    labels: ['security', 'medium', 'frontend', 'auth', 'xss-mitigation'],
-    body: `### 🟠 Severity: MEDIUM
-**CWE**: CWE-942 (Insecure Storage of Sensitive Information)
-
-#### Problem Description
-The Spring Boot backend issues \`HttpOnly; SameSite=Lax\` cookies (\`triagenet_jwt\`) upon login. However, portions of the frontend code (\`api-client.ts\` and \`auth-context.tsx\`) still maintain references to \`localStorage.getItem('triagenet_jwt_token')\` and inject manual \`Authorization: Bearer\` headers.
-Storing or reading tokens via \`localStorage\` leaves the application exposed to token exfiltration if an XSS vulnerability occurs.
-
-#### Affected Files
-- \`frontend/lib/api-client.ts\`
-- \`frontend/lib/auth-context.tsx\`
-- \`frontend/components/triagenet/dashboard.tsx\`
-
-#### Proposed Remediation
-1. Remove all \`localStorage\` JWT token read/write logic (\`triagenet_jwt_token\`).
-2. Rely purely on automatic browser cookie transmission via \`credentials: 'include'\` on all \`fetch()\` API calls.
-3. Reserve \`localStorage\` exclusively for non-sensitive UI user display metadata (\`name\`, \`roleTitle\`, \`districtName\`).`
-  },
-  {
-    title: '[Security A4] Add Password Complexity Validation (Uppercase, Lowercase, Digit, Special Character)',
-    labels: ['security', 'low', 'backend', 'auth', 'good first issue'],
-    body: `### 🟡 Severity: LOW
-**CWE**: CWE-521 (Weak Password Requirements)
-
-#### Problem Description
-\`RegisterRequest.java\` currently enforces only a minimum length constraint (\`@Size(min = 8)\`). There is no regex complexity validation requiring uppercase letters, lowercase letters, numbers, or special symbols.
-As a state healthcare infrastructure platform handling patient vitals and hospital admissions, strong password complexity standards should be strictly enforced.
-
-#### Affected Files
-- \`backend/src/main/java/com/triagenet/dto/RegisterRequest.java\`
-- \`backend/src/test/java/com/triagenet/controller/SecurityHardeningIntegrationTest.java\`
-
-#### Proposed Remediation
-1. Add a \`@Pattern\` constraint on \`RegisterRequest.password\`:
-\`\`\`java
-@Pattern(
-    regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+=\\[\\]{};:'\\\",.<>?/|\\\`~]).{8,}$",
-    message = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
-)
-\`\`\`
-2. Add automated unit/integration tests asserting that passwords missing each required character class are rejected with \`400 Validation Failed\`.`
-  },
-  {
-    title: '[Security A5] Restrict Dev/Test Profiles: Secure H2 Console & Remove application-local.yml from Git',
-    labels: ['security', 'low', 'devops', 'backend', 'good first issue'],
-    body: `### 🟡 Severity: LOW
-**CWE**: CWE-1188 (Insecure Default Initialization)
-
-#### Problem Description
-1. The development profile exposes the H2 web console at \`/h2-console\` with unauthenticated \`permitAll()\` access.
-2. \`application-local.yml\` contains weak local database credentials (\`sa\` / \`""\`) and is tracked in git rather than ignored.
+While \`JwtUtil.validateJwtConfiguration()\` rejects this secret in production profiles, any developer or staging deployment using the \`dev\` profile without setting \`JWT_SECRET\` will use this publicly known secret, enabling token forgery.
 
 #### Affected Files
 - \`backend/src/main/resources/application-dev.yml\`
-- \`backend/src/main/resources/application-local.yml\`
+
+#### Proposed Remediation
+1. Remove the fallback string from \`application-dev.yml\` (\`\${JWT_SECRET:}\`).
+2. Make \`JWT_SECRET\` required or dynamically generate an ephemeral 256-bit secret on startup in dev profile only.`
+  },
+  {
+    title: '[Security B2] Enforce Content-Security-Policy (CSP) Headers in SecurityConfig',
+    labels: ['security', 'medium', 'backend', 'headers', 'good first issue'],
+    body: `### 🟠 Severity: MEDIUM
+**CWE**: CWE-693 (Protection Mechanism Failure)
+
+#### Problem Description
+While HSTS, X-Frame-Options, and nosniff headers are enabled, the application currently lacks a \`Content-Security-Policy\` header. Without CSP, defense-in-depth against Cross-Site Scripting (XSS) relies solely on SameSite cookies and CSRF guards.
+
+#### Affected Files
 - \`backend/src/main/java/com/triagenet/config/SecurityConfig.java\`
-- \`.gitignore\`
 
 #### Proposed Remediation
-1. Add \`backend/src/main/resources/application-local.yml\` to \`.gitignore\` and provide \`application-local.yml.example\` as a template.
-2. Ensure H2 console in \`SecurityConfig.java\` is strictly restricted to localhost or protected behind dev authentication credentials.`
+Add Content-Security-Policy directives in \`SecurityConfig.java\`:
+\`\`\`java
+headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+    "default-src 'self'; " +
+    "script-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https://triagenet.vercel.app https://triagenet.gov.in; " +
+    "frame-ancestors 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self'"
+));
+\`\`\``
+  },
+  {
+    title: '[Security B3] Restrict Permissive permitAll() Endpoints & Enforce Hospital Tenant Scoping',
+    labels: ['security', 'medium', 'backend', 'rbac', 'idor'],
+    body: `### 🟠 Severity: MEDIUM
+**CWE**: CWE-639 (Authorization Bypass Through User-Controlled Key)
+
+#### Problem Description
+The endpoints \`/api/dashboard/**\`, \`/api/hospitals/**\`, \`/api/routing/optimal\`, and \`/api/patients/score-vitals\` are marked \`permitAll()\`. 
+Unauthenticated access to internal hospital telemetry, real-time bed capacity, and patient vitals evaluation creates operational and privacy risks. Furthermore, hospital-scoped authorization is needed to prevent IDOR across facilities.
+
+#### Affected Files
+- \`backend/src/main/java/com/triagenet/config/SecurityConfig.java\`
+- \`HospitalController.java\`, \`DashboardController.java\`, \`RoutingController.java\`
+
+#### Proposed Remediation
+1. Audit public vs. authenticated requirements; require JWT authentication for internal metrics.
+2. Annotate controller methods with \`@PreAuthorize("hasAnyRole(...)")\`.
+3. Verify \`HospitalAuthorizationService\` scopes access to the caller's assigned hospital or district.`
+  },
+  {
+    title: '[Security B4] Cleanse Hardcoded Dev Secret from application-local.yml.example',
+    labels: ['security', 'low', 'config', 'good first issue'],
+    body: `### 🟡 Severity: LOW
+**CWE**: CWE-522 (Insufficiently Protected Credentials)
+
+#### Problem Description
+The committed template file \`backend/src/main/resources/application-local.yml.example\` contains the legacy 64-character hex secret string. Developers copying this template without generating a new secret may unintentionally deploy with default credentials.
+
+#### Affected Files
+- \`backend/src/main/resources/application-local.yml.example\`
+
+#### Proposed Remediation
+Replace the hex string with an instruction placeholder:
+\`\`\`yaml
+jwt:
+  # Generate with: openssl rand -hex 32
+  secret: CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32
+\`\`\``
+  },
+  {
+    title: '[Security B5] Dynamic Runtime CSPRNG Secret in Test Profile Isolation',
+    labels: ['security', 'low', 'testing'],
+    body: `### 🟡 Severity: LOW
+**CWE**: CWE-330 (Use of Insufficiently Random Values)
+
+#### Problem Description
+\`backend/src/test/resources/application-test.yml\` uses a static CSPRNG-generated secret. While acceptable for automated testing isolation, dynamic runtime secret generation via \`@DynamicPropertySource\` provides cleaner security hygiene.
+
+#### Affected Files
+- \`backend/src/test/resources/application-test.yml\`
+
+#### Proposed Remediation
+Document test-profile isolation or dynamically inject an ephemeral CSPRNG secret during test suite bootstrap.`
   }
 ];
 

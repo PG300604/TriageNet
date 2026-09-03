@@ -83,6 +83,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  register: (name: string, email: string, pass: string, hospitalId?: string) => Promise<void>;
   loginAsDemoRole: (role: UserRole) => void;
   logout: () => void;
   hasRoleAccess: (allowedRoles: UserRole[]) => boolean;
@@ -152,6 +153,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   };
 
+  const register = async (name: string, email: string, pass: string, hospitalId?: string) => {
+    setIsLoading(true);
+    try {
+      await ApiClient.register({
+        name,
+        email,
+        password: pass,
+        role: 'HOSPITAL_STAFF',
+        hospitalId: hospitalId || undefined,
+      });
+      // Automatically login after successful registration
+      await login(email, pass);
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
   const loginAsDemoRole = (role: UserRole) => {
     const profile = DEMO_PRESET_USERS[role];
     setToken(null);
@@ -182,6 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        register,
         loginAsDemoRole,
         logout,
         hasRoleAccess,

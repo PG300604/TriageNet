@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserRole, DEMO_PRESET_USERS } from '@/lib/auth-context';
+import { ApiClient, HospitalApiData } from '@/lib/api-client';
 import {
   Shield,
   Activity,
@@ -16,18 +17,33 @@ import {
   Building2,
   Sparkles,
   ChevronRight,
+  UserPlus,
+  Mail,
 } from 'lucide-react';
 
 import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginAsDemoRole, isLoading } = useAuth();
+  const { login, register, loginAsDemoRole, isLoading } = useAuth();
 
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedHospitalId, setSelectedHospitalId] = useState('');
+  const [hospitals, setHospitals] = useState<HospitalApiData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Load hospital directory for registration selector
+    ApiClient.getHospitals()
+      .then((data) => setHospitals(data || []))
+      .catch(() => {});
+  }, []);
 
   const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +59,39 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid credentials. Please verify email and password.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCustomRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Full name, official email, and password are required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter.');
+      return;
+    }
+    // Password complexity check
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};:'",.<>?/|`~]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError('Password must be at least 8 characters with at least 1 uppercase, 1 lowercase, 1 digit, and 1 special symbol.');
+      return;
+    }
+
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      await register(name.trim(), email.trim(), password, selectedHospitalId || undefined);
+      setSuccess('Account created successfully! Redirecting to command console...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please check your details or try another email.');
     } finally {
       setSubmitting(false);
     }
@@ -103,71 +152,239 @@ export default function LoginPage() {
 
         {/* Dual Panel Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-          {/* Left Card: Authenticated Login Form */}
+          {/* Left Card: Authenticated Login / Registration Form */}
           <div className="md:col-span-6 bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-7 shadow-xl flex flex-col justify-between">
             <div>
+              {/* Mode Switcher Tabs */}
+              <div className="flex border-b border-[#382416]/15 mb-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signin');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'signin'
+                      ? 'border-[#382416] text-[#382416] bg-[#382416]/5'
+                      : 'border-transparent text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signup');
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'signup'
+                      ? 'border-[#dc5000] text-[#dc5000] bg-orange-50/50'
+                      : 'border-transparent text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Sign Up (New Staff)
+                </button>
+              </div>
+
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-[#382416]">Staff Authentication</h2>
-                <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                  [SPRING SECURITY]
+                <h2 className="text-lg font-bold text-[#382416]">
+                  {mode === 'signin' ? 'Staff Authentication' : 'Staff Onboarding'}
+                </h2>
+                <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  mode === 'signin'
+                    ? 'text-blue-600 bg-blue-50 border-blue-200'
+                    : 'text-amber-600 bg-amber-50 border-amber-200'
+                }`}>
+                  {mode === 'signin' ? '[SPRING SECURITY]' : '[VERIFIED ONBOARDING]'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mb-6">
-                Enter your official health department email and credentials to access your command console.
+              <p className="text-xs text-slate-500 mb-5">
+                {mode === 'signin'
+                  ? 'Enter your official health department email and credentials to access your command console.'
+                  : 'Register official healthcare credentials. New accounts receive hospital-scoped staff access.'}
               </p>
 
               {error && (
-                <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono">
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono">
                   ⚠️ {error}
                 </div>
               )}
 
-              <form onSubmit={handleCustomLogin} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
-                    Official Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-4 w-4 text-slate-400" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="cmo.ranchi@jharkhand.gov.in"
-                      className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] transition-all"
-                    />
-                  </div>
+              {success && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono">
+                  ✅ {success}
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
-                    Account Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-slate-400" />
+              {mode === 'signin' ? (
+                <form onSubmit={handleCustomLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Official Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="cmo.ranchi@jharkhand.gov.in"
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] transition-all"
+                      />
                     </div>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] transition-all"
-                    />
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting || isLoading}
-                  className="w-full mt-3 py-3 px-4 rounded-xl bg-[#382416] hover:bg-[#28180d] text-[#ffedd7] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? 'Authenticating...' : 'Sign In to Command Portal'}
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </form>
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Account Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting || isLoading}
+                    className="w-full mt-3 py-3 px-4 rounded-xl bg-[#382416] hover:bg-[#28180d] text-[#ffedd7] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50"
+                  >
+                    {submitting ? 'Authenticating...' : 'Sign In to Command Portal'}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('signup'); setError(null); }}
+                      className="text-[11px] text-[#dc5000] hover:underline font-semibold cursor-pointer"
+                    >
+                      New staff member? Create official account →
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleCustomRegister} className="space-y-3.5">
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Full Name & Title
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Dr. Ananya Verma (Medical Officer)"
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Official Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="ananya.verma@rims.gov.in"
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Min 8, 1 Upper, 1 Special"
+                        className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                        Confirm Password
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Repeat password"
+                        className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Affiliated Hospital / Facility
+                    </label>
+                    <select
+                      value={selectedHospitalId}
+                      onChange={(e) => setSelectedHospitalId(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                    >
+                      <option value="">Select Hospital (Optional / Unassigned)</option>
+                      {hospitals.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} ({h.districtName || h.region || 'Jharkhand'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 italic">
+                    * Password must be 8+ characters with uppercase, lowercase, digit, and special symbol.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={submitting || isLoading}
+                    className="w-full mt-2 py-3 px-4 rounded-xl bg-[#dc5000] hover:bg-[#c24600] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50"
+                  >
+                    {submitting ? 'Registering Staff...' : 'Create Staff Account & Sign In'}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('signin'); setError(null); }}
+                      className="text-[11px] text-slate-600 hover:text-[#382416] hover:underline font-semibold cursor-pointer"
+                    >
+                      Already registered? Back to Sign In →
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
@@ -220,7 +437,7 @@ export default function LoginPage() {
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                 24 Districts Connected
               </span>
-              <span className="font-mono text-[10px]">79 HOSPITALS SEEDED</span>
+              <span className="font-mono text-[10px]">111 HOSPITALS SEEDED</span>
             </div>
           </div>
         </div>

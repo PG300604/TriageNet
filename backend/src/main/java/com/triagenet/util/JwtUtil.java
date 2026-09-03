@@ -204,4 +204,34 @@ public class JwtUtil {
             return false;
         }
     }
+
+    public String generate2faChallengeToken(String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + 300_000); // 5 minutes
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "2FA_CHALLENGE");
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject(email)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String validate2faChallengeToken(String token) {
+        try {
+            Claims claims = getAllClaimsFromToken(token);
+            if (!"2FA_CHALLENGE".equals(claims.get("type"))) {
+                return null;
+            }
+            if (claims.getExpiration().before(new Date())) {
+                return null;
+            }
+            return claims.getSubject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

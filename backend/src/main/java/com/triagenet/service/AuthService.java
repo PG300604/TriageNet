@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,9 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final LoginAttemptService loginAttemptService;
     private final SecurityAuditService securityAuditService;
+    private final TotpService totpService;
+    private final MnemonicRecoveryService mnemonicRecoveryService;
+    private final com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
 
     @PostConstruct
     @Transactional
@@ -126,10 +130,24 @@ public class AuthService {
         }
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(userDetails);
 
         StaffUser user = staffUserRepository.findByEmail(email)
                 .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with email: " + email));
+
+        if (user.isTotpEnabled()) {
+            // Cryptographic 2FA required: issue 5-minute challenge token
+            String challengeToken = jwtUtil.generate2faChallengeToken(email);
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/login",
+                    "Password verified; 2FA challenge issued");
+            return LoginResponse.builder()
+                    .twoFactorRequired(true)
+                    .challengeToken(challengeToken)
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .build();
+        }
+
+        String token = jwtUtil.generateToken(userDetails);
 
         // SECURITY (V4): Generate cryptographically random refresh token and persist SHA-256 hash
         String refreshToken = jwtUtil.generateRefreshToken();
@@ -266,5 +284,297 @@ public class AuthService {
                 refreshTokenRepository.save(rt);
             });
         }
+    }
+
+    // ==========================================
+    // HYBRID CRYPTOGRAPHIC 2FA & CLINICAL SHIFTS
+    // ==========================================
+
+    @Transactional
+    public com.triagenet.dto.ShiftAuthDto.TwoFactorSetupResponse setup2fa(UUID userId) {
+        StaffUser user = staffUserRepository.findById(userId)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found"));
+
+        String secret = totpService.generateSecret();
+        String qrUri = totpService.generateQrUri(user.getEmail(), secret);
+        String mnemonic = mnemonicRecoveryService.generateMnemonic();
+        List<String> backupCodes = mnemonicRecoveryService.generateBackupCodes();
+
+        user.setTotpSecret(secret);
+        user.setRecoveryPhraseHash(mnemonicRecoveryService.hashMnemonic(mnemonic));
+
+        List<String> hashedCodes = backupCodes.stream()
+                .map(mnemonicRecoveryService::hashBackupCode)
+                .toList();
+        user.setEmergencyCodesHash(String.join(",", hashedCodes));
+        staffUserRepository.save(user);
+
+        return com.triagenet.dto.ShiftAuthDto.TwoFactorSetupResponse.builder()
+                .secret(secret)
+                .qrUri(qrUri)
+                .recoveryMnemonic(mnemonic)
+                .backupCodes(backupCodes)
+                .build();
+    }
+
+    @Transactional
+    public void confirm2faSetup(UUID userId, com.triagenet.dto.ShiftAuthDto.TwoFactorConfirmRequest request) {
+        StaffUser user = staffUserRepository.findById(userId)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found"));
+
+        if (user.getTotpSecret() == null) {
+            throw new IllegalStateException("2FA has not been initiated. Please run setup first.");
+        }
+
+        if (!totpService.validateCode(user.getTotpSecret(), request.getCode())) {
+            throw new IllegalArgumentException("Invalid 6-digit code. Please check your authenticator app.");
+        }
+
+        user.setTotpEnabled(true);
+        staffUserRepository.save(user);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(),
+                "/api/auth/2fa/confirm-setup", "2FA successfully activated on account");
+    }
+
+    @Transactional
+    public LoginResponse verify2fa(com.triagenet.dto.ShiftAuthDto.TwoFactorVerifyRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String email = jwtUtil.validate2faChallengeToken(request.getChallengeToken());
+        if (email == null) {
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid or expired 2FA challenge token. Please enter credentials again.");
+        }
+
+        StaffUser user = staffUserRepository.findByEmail(email)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with email: " + email));
+
+        String code = request.getCode().trim();
+        boolean isValid = totpService.validateCode(user.getTotpSecret(), code);
+
+        // Check single-use emergency backup code if TOTP failed
+        if (!isValid && user.getEmergencyCodesHash() != null) {
+            String codeHash = mnemonicRecoveryService.hashBackupCode(code);
+            String storedCodes = user.getEmergencyCodesHash();
+            if (storedCodes.contains(codeHash)) {
+                // Burn the emergency backup code
+                storedCodes = storedCodes.replace(codeHash, "").replace(",,", ",").replaceAll("^,|,$", "");
+                user.setEmergencyCodesHash(storedCodes);
+                staffUserRepository.save(user);
+                isValid = true;
+                securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/2fa/verify",
+                        "Single-use emergency backup code utilized");
+            }
+        }
+
+        if (!isValid) {
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, email, "/api/auth/2fa/verify",
+                    "Invalid 2FA code entered");
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid 6-digit authenticator code or emergency backup code");
+        }
+
+        // Establish Clinical Shift Session (8h or 12h)
+        int duration = request.getShiftDurationHours() == 12 ? 12 : 8;
+        String pinHash = passwordEncoder.encode(request.getShiftPin() != null ? request.getShiftPin() : "1234");
+        String fingerprint = httpRequest != null ? httpRequest.getHeader("User-Agent") : "Clinical Terminal";
+
+        // Deactivate previous shifts for this user
+        shiftSessionRepository.findByUserIdAndActiveTrue(user.getId()).forEach(s -> {
+            s.setActive(false);
+            s.setEndedAt(LocalDateTime.now());
+            shiftSessionRepository.save(s);
+        });
+
+        com.triagenet.entity.ShiftSession session = com.triagenet.entity.ShiftSession.builder()
+                .user(user)
+                .shiftPinHash(pinHash)
+                .durationHours(duration)
+                .workstationFingerprint(fingerprint)
+                .startedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusHours(duration))
+                .isLocked(false)
+                .active(true)
+                .build();
+        shiftSessionRepository.save(session);
+
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        String refreshToken = jwtUtil.generateRefreshToken();
+
+        RefreshToken rt = RefreshToken.builder()
+                .user(user)
+                .tokenHash(jwtUtil.hashToken(refreshToken))
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getRefreshExpirationMs() / 1000))
+                .build();
+        refreshTokenRepository.save(rt);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, email, "/api/auth/2fa/verify",
+                "2FA verified. Shift session active for " + duration + " hours.");
+
+        return LoginResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .type("Bearer")
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().getName())
+                .hospitalId(user.getHospitalId())
+                .shiftActive(true)
+                .shiftDurationHours(duration)
+                .isScreenLocked(false)
+                .build();
+    }
+
+    @Transactional
+    public LoginResponse unlockShift(UUID userId, com.triagenet.dto.ShiftAuthDto.ShiftUnlockRequest request) {
+        StaffUser user = staffUserRepository.findById(userId)
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found"));
+
+        com.triagenet.entity.ShiftSession session = shiftSessionRepository.findFirstByUserIdAndActiveTrueOrderByStartedAtDesc(userId)
+                .orElseThrow(() -> new IllegalStateException("No active clinical shift session found. Please start a new shift."));
+
+        if (session.isExpired()) {
+            session.setActive(false);
+            session.setEndedAt(LocalDateTime.now());
+            shiftSessionRepository.save(session);
+            throw new IllegalStateException("Clinical duty shift has expired. Please sign in with full credentials.");
+        }
+
+        if (!passwordEncoder.matches(request.getPin(), session.getShiftPinHash())) {
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, user.getEmail(),
+                    "/api/auth/shift/unlock", "Invalid Shift PIN entered");
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid 4-digit Shift PIN");
+        }
+
+        session.setLocked(false);
+        shiftSessionRepository.save(session);
+
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+
+        return LoginResponse.builder()
+                .token(token)
+                .type("Bearer")
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().getName())
+                .hospitalId(user.getHospitalId())
+                .shiftActive(true)
+                .shiftDurationHours(session.getDurationHours())
+                .isScreenLocked(false)
+                .build();
+    }
+
+    @Transactional
+    public void lockShift(UUID userId) {
+        shiftSessionRepository.findFirstByUserIdAndActiveTrueOrderByStartedAtDesc(userId).ifPresent(s -> {
+            s.setLocked(true);
+            shiftSessionRepository.save(s);
+        });
+    }
+
+    @Transactional
+    public void endShift(UUID userId) {
+        StaffUser user = staffUserRepository.findById(userId).orElse(null);
+        if (user != null) {
+            shiftSessionRepository.findByUserIdAndActiveTrue(userId).forEach(s -> {
+                s.setActive(false);
+                s.setEndedAt(LocalDateTime.now());
+                shiftSessionRepository.save(s);
+            });
+            refreshTokenRepository.revokeAllForUser(user, LocalDateTime.now());
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(),
+                    "/api/auth/shift/end", "Clinical duty shift terminated; all tokens revoked.");
+        }
+    }
+
+    public com.triagenet.dto.ShiftAuthDto.ShiftStatusResponse getShiftStatus(UUID userId) {
+        com.triagenet.entity.ShiftSession session = shiftSessionRepository.findFirstByUserIdAndActiveTrueOrderByStartedAtDesc(userId)
+                .orElse(null);
+
+        if (session == null || !session.isActive() || session.isExpired()) {
+            return com.triagenet.dto.ShiftAuthDto.ShiftStatusResponse.builder()
+                    .shiftActive(false)
+                    .isLocked(false)
+                    .build();
+        }
+
+        long remainingMinutes = java.time.Duration.between(LocalDateTime.now(), session.getExpiresAt()).toMinutes();
+        return com.triagenet.dto.ShiftAuthDto.ShiftStatusResponse.builder()
+                .shiftActive(true)
+                .isLocked(session.isLocked())
+                .durationHours(session.getDurationHours())
+                .startedAt(session.getStartedAt())
+                .expiresAt(session.getExpiresAt())
+                .remainingMinutes(Math.max(0, remainingMinutes))
+                .build();
+    }
+
+    @Transactional
+    public void recoverWithMnemonic(com.triagenet.dto.ShiftAuthDto.MnemonicRecoveryRequest request) {
+        StaffUser user = staffUserRepository.findByEmail(request.getEmail().trim())
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Account not found with email: " + request.getEmail()));
+
+        if (user.getRecoveryPhraseHash() == null) {
+            throw new IllegalStateException("No recovery phrase was configured for this account. Contact your District CMO for emergency escrow.");
+        }
+
+        if (!mnemonicRecoveryService.verifyMnemonic(request.getMnemonic(), user.getRecoveryPhraseHash())) {
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, user.getEmail(),
+                    "/api/auth/recovery/mnemonic", "Invalid 12-word mnemonic phrase submitted");
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid 12-word cryptographic recovery phrase");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setTotpEnabled(false);
+        user.setTotpSecret(null);
+        staffUserRepository.save(user);
+
+        refreshTokenRepository.revokeAllForUser(user, LocalDateTime.now());
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(),
+                "/api/auth/recovery/mnemonic", "Account successfully recovered via 12-word mnemonic phrase");
+    }
+
+    @Transactional
+    public void recoverWithBackupCode(com.triagenet.dto.ShiftAuthDto.BackupCodeRecoveryRequest request) {
+        StaffUser user = staffUserRepository.findByEmail(request.getEmail().trim())
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Account not found with email: " + request.getEmail()));
+
+        if (user.getEmergencyCodesHash() == null) {
+            throw new IllegalStateException("No backup codes exist for this account.");
+        }
+
+        String codeHash = mnemonicRecoveryService.hashBackupCode(request.getBackupCode());
+        if (!user.getEmergencyCodesHash().contains(codeHash)) {
+            securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_FAILURE, user.getEmail(),
+                    "/api/auth/recovery/backup-code", "Invalid emergency backup code");
+            throw new org.springframework.security.authentication.BadCredentialsException("Invalid emergency backup code");
+        }
+
+        // Burn the code
+        String updated = user.getEmergencyCodesHash().replace(codeHash, "").replace(",,", ",").replaceAll("^,|,$", "");
+        user.setEmergencyCodesHash(updated);
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        staffUserRepository.save(user);
+
+        refreshTokenRepository.revokeAllForUser(user, LocalDateTime.now());
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, user.getEmail(),
+                "/api/auth/recovery/backup-code", "Account successfully recovered via emergency backup code");
+    }
+
+    @Transactional
+    public String approveCmoEscrow(CustomUserDetails approver, com.triagenet.dto.ShiftAuthDto.CmoEscrowApprovalRequest request) {
+        StaffUser target = staffUserRepository.findByEmail(request.getTargetStaffEmail().trim())
+                .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff user not found: " + request.getTargetStaffEmail()));
+
+        CustomUserDetails targetDetails = new CustomUserDetails(target);
+        String emergencyToken = jwtUtil.generateToken(targetDetails);
+
+        securityAuditService.logEvent(SecurityEventType.AUTH_LOGIN_SUCCESS, target.getEmail(),
+                "/api/auth/recovery/cmo-escrow", "Emergency shift bypass issued by " + approver.getUsername() + ": " + request.getEscrowReason());
+
+        return emergencyToken;
     }
 }

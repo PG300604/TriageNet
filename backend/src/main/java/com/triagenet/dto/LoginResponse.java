@@ -20,4 +20,9 @@ public class LoginResponse {
     private RoleName role;
     private UUID hospitalId;
     private String refreshToken;
+    private boolean twoFactorRequired;
+    private String challengeToken;
+    private boolean shiftActive;
+    private int shiftDurationHours;
+    private boolean isScreenLocked;
 }

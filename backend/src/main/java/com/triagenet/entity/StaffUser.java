@@ -36,6 +36,19 @@ public class StaffUser {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    @Column(name = "totp_secret")
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    @Builder.Default
+    private boolean totpEnabled = false;
+
+    @Column(name = "recovery_phrase_hash")
+    private String recoveryPhraseHash;
+
+    @Column(name = "emergency_codes_hash", columnDefinition = "TEXT")
+    private String emergencyCodesHash;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

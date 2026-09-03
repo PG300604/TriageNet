@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, UserRole, DEMO_PRESET_USERS } from '@/lib/auth-context';
 import { ApiClient, HospitalApiData } from '@/lib/api-client';
+import Link from 'next/link';
 import {
   Shield,
   Activity,
@@ -19,15 +20,24 @@ import {
   ChevronRight,
   UserPlus,
   Mail,
+  KeyRound,
+  Clock,
+  ArrowLeft,
 } from 'lucide-react';
 
 import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, loginAsDemoRole, isLoading } = useAuth();
+  const { login, register, verify2FAAndStartShift, loginAsDemoRole, isLoading } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [loginStep, setLoginStep] = useState<'credentials' | '2fa'>('credentials');
+  const [challengeToken, setChallengeToken] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [shiftDuration, setShiftDuration] = useState<number>(8);
+  const [shiftPin, setShiftPin] = useState('1234');
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,10 +65,39 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
+      const resp = await login(email, password);
+      if (resp && resp.twoFactorRequired && resp.challengeToken) {
+        setChallengeToken(resp.challengeToken);
+        setLoginStep('2fa');
+        return;
+      }
       router.push('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid credentials. Please verify email and password.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorCode.trim()) {
+      setError('Please enter your 6-digit authenticator code or emergency backup code.');
+      return;
+    }
+    if (shiftPin.length !== 4) {
+      setError('Please enter a 4-digit Shift PIN for terminal quick-locking.');
+      return;
+    }
+
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      await verify2FAAndStartShift(challengeToken, twoFactorCode.trim(), shiftDuration, shiftPin);
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid 2FA code or expired challenge token.');
     } finally {
       setSubmitting(false);
     }
@@ -152,62 +191,69 @@ export default function LoginPage() {
 
         {/* Dual Panel Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-          {/* Left Card: Authenticated Login / Registration Form */}
+          {/* Left Card: Authenticated Login / Registration / 2FA Form */}
           <div className="md:col-span-6 bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-7 shadow-xl flex flex-col justify-between">
             <div>
-              {/* Mode Switcher Tabs */}
-              <div className="flex border-b border-[#382416]/15 mb-5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('signin');
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                  className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    mode === 'signin'
-                      ? 'border-[#382416] text-[#382416] bg-[#382416]/5'
-                      : 'border-transparent text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  <Lock className="h-3.5 w-3.5" />
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('signup');
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                  className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    mode === 'signup'
-                      ? 'border-[#dc5000] text-[#dc5000] bg-orange-50/50'
-                      : 'border-transparent text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  Sign Up (New Staff)
-                </button>
-              </div>
+              {loginStep === 'credentials' && (
+                /* Mode Switcher Tabs */
+                <div className="flex border-b border-[#382416]/15 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('signin');
+                      setError(null);
+                      setSuccess(null);
+                    }}
+                    className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mode === 'signin'
+                        ? 'border-[#382416] text-[#382416] bg-[#382416]/5'
+                        : 'border-transparent text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('signup');
+                      setError(null);
+                      setSuccess(null);
+                    }}
+                    className={`flex-1 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      mode === 'signup'
+                        ? 'border-[#dc5000] text-[#dc5000] bg-orange-50/50'
+                        : 'border-transparent text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Sign Up (New Staff)
+                  </button>
+                </div>
+              )}
 
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-[#382416]">
-                  {mode === 'signin' ? 'Staff Authentication' : 'Staff Onboarding'}
-                </h2>
-                <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
-                  mode === 'signin'
-                    ? 'text-blue-600 bg-blue-50 border-blue-200'
-                    : 'text-amber-600 bg-amber-50 border-amber-200'
-                }`}>
-                  {mode === 'signin' ? '[SPRING SECURITY]' : '[VERIFIED ONBOARDING]'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mb-5">
-                {mode === 'signin'
-                  ? 'Enter your official health department email and credentials to access your command console.'
-                  : 'Register official healthcare credentials. New accounts receive hospital-scoped staff access.'}
-              </p>
+              {loginStep === 'credentials' && (
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-bold text-[#382416]">
+                    {mode === 'signin' ? 'Staff Authentication' : 'Staff Onboarding'}
+                  </h2>
+                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    mode === 'signin'
+                      ? 'text-blue-600 bg-blue-50 border-blue-200'
+                      : 'text-amber-600 bg-amber-50 border-amber-200'
+                  }`}>
+                    {mode === 'signin' ? '[SPRING SECURITY]' : '[VERIFIED ONBOARDING]'}
+                  </span>
+                </div>
+              )}
+
+              {loginStep === 'credentials' && (
+                <p className="text-xs text-slate-500 mb-5">
+                  {mode === 'signin'
+                    ? 'Enter your official health department email and credentials to access your command console.'
+                    : 'Register official healthcare credentials. New accounts receive hospital-scoped staff access.'}
+                </p>
+              )}
 
               {error && (
                 <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono">
@@ -221,7 +267,130 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {mode === 'signin' ? (
+              {loginStep === '2fa' ? (
+                <form onSubmit={handleVerify2FA} className="space-y-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-lg font-bold text-[#382416]">Two-Factor Authentication</h2>
+                    <span className="font-mono text-[10px] font-bold text-[#dc5000] bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
+                      [CRYPTOGRAPHIC 2FA]
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Enter the rotating 6-digit code from your authenticator app or an emergency backup code.
+                  </p>
+
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                    <span className="text-slate-600 font-mono text-[11px] truncate">{email}</span>
+                    <span className="text-emerald-700 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      PASSWORD VERIFIED
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      6-Digit Authenticator / Backup Code
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <KeyRound className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={twoFactorCode}
+                        onChange={(e) => setTwoFactorCode(e.target.value)}
+                        placeholder="123456 or TR-XXXX-XXXX"
+                        maxLength={12}
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-sm font-mono tracking-wider font-bold text-[#382416] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
+                      Clinical Duty Shift Duration
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShiftDuration(8)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          shiftDuration === 8
+                            ? 'bg-[#382416] text-[#ffedd7] border-[#382416]'
+                            : 'bg-[#FAF6F0] text-slate-600 border-[#382416]/20 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Clock className="h-3.5 w-3.5" />
+                        8 Hours (Standard)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShiftDuration(12)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          shiftDuration === 12
+                            ? 'bg-[#dc5000] text-white border-[#dc5000]'
+                            : 'bg-[#FAF6F0] text-slate-600 border-[#382416]/20 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Clock className="h-3.5 w-3.5" />
+                        12 Hours (Surge)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[11px] font-mono font-bold uppercase text-[#382416]">
+                        4-Digit Quick-Lock Shift PIN
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-mono">1-SEC SCREEN UNLOCK</span>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="password"
+                        value={shiftPin}
+                        onChange={(e) => setShiftPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        placeholder="1234"
+                        maxLength={4}
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-sm font-mono tracking-widest font-bold text-[#382416] focus:outline-none focus:ring-2 focus:ring-[#dc5000] transition-all"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Quickly resumes your station if left idle for 20 minutes without re-entering passwords.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting || isLoading}
+                    className="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#dc5000] hover:bg-[#c24600] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50"
+                  >
+                    {submitting ? 'Verifying 2FA...' : 'Start Clinical Duty Shift'}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex items-center justify-between text-[11px] pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setLoginStep('credentials'); setError(null); }}
+                      className="text-slate-500 hover:text-[#382416] flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                      Back to Credentials
+                    </button>
+
+                    <Link
+                      href="/recovery"
+                      className="text-[#dc5000] hover:underline font-semibold"
+                    >
+                      Lost 2FA phone? Recover →
+                    </Link>
+                  </div>
+                </form>
+              ) : mode === 'signin' ? (
                 <form onSubmit={handleCustomLogin} className="space-y-4">
                   <div>
                     <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1.5">
@@ -276,6 +445,16 @@ export default function LoginPage() {
                     >
                       New staff member? Create official account →
                     </button>
+                  </div>
+
+                  <div className="text-center mt-3 pt-3 border-t border-slate-100">
+                    <Link
+                      href="/recovery"
+                      className="text-[11px] text-slate-500 hover:text-[#382416] hover:underline inline-flex items-center gap-1 font-medium"
+                    >
+                      <KeyRound className="h-3 w-3 text-slate-400" />
+                      Lost 2FA device or password? 12-Word Recovery Portal →
+                    </Link>
                   </div>
                 </form>
               ) : (

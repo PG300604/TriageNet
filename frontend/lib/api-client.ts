@@ -163,6 +163,27 @@ export interface AuthResponse {
   name: string;
   role: string;
   hospitalId?: string;
+  twoFactorRequired?: boolean;
+  challengeToken?: string;
+  shiftActive?: boolean;
+  shiftDurationHours?: number;
+  isScreenLocked?: boolean;
+}
+
+export interface TwoFactorSetupData {
+  secret: string;
+  qrUri: string;
+  recoveryMnemonic: string;
+  backupCodes: string[];
+}
+
+export interface ShiftStatusData {
+  shiftActive: boolean;
+  isLocked: boolean;
+  durationHours: number;
+  remainingMinutes: number;
+  startedAt?: string;
+  expiresAt?: string;
 }
 
 // Exported API Client Methods
@@ -174,7 +195,7 @@ export const ApiClient = {
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (userData: { name: string; email: string; password: string; role: string; hospitalId?: string }): Promise<AuthResponse> =>
+  register: (userData: { name: string; email: string; password: string; role?: string; hospitalId?: string }): Promise<AuthResponse> =>
     apiFetch<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -193,6 +214,61 @@ export const ApiClient = {
       removeAuthToken();
     }
   },
+
+  // 2FA & Clinical Shift Sessions
+  setup2FA: (): Promise<TwoFactorSetupData> =>
+    apiFetch<TwoFactorSetupData>('/auth/2fa/setup', { method: 'POST' }),
+
+  confirm2FASetup: (code: string): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>('/auth/2fa/confirm-setup', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
+  verify2FA: (data: { challengeToken: string; code: string; shiftDurationHours?: number; shiftPin?: string }): Promise<AuthResponse> =>
+    apiFetch<AuthResponse>('/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  unlockShift: (pin: string): Promise<AuthResponse> =>
+    apiFetch<AuthResponse>('/auth/shift/unlock', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    }),
+
+  lockShift: (): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>('/auth/shift/lock', { method: 'POST' }),
+
+  endShift: async (): Promise<{ message: string }> => {
+    try {
+      return await apiFetch<{ message: string }>('/auth/shift/end', { method: 'POST' });
+    } finally {
+      removeAuthToken();
+    }
+  },
+
+  getShiftStatus: (): Promise<ShiftStatusData> =>
+    apiFetch<ShiftStatusData>('/auth/shift/status'),
+
+  // Cryptographic Account Recovery (No Email)
+  recoverWithMnemonic: (data: { email: string; mnemonic: string; newPassword: string }): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>('/auth/recovery/mnemonic', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  recoverWithBackupCode: (data: { email: string; backupCode: string; newPassword: string }): Promise<{ message: string }> =>
+    apiFetch<{ message: string }>('/auth/recovery/backup-code', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  approveCmoEscrow: (data: { targetStaffEmail: string; escrowReason: string }): Promise<{ message: string; emergencyToken: string }> =>
+    apiFetch<{ message: string; emergencyToken: string }>('/auth/recovery/cmo-escrow', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Dashboard & Telemetry
   getStateOverview: (): Promise<StateOverviewData> =>

@@ -77,13 +77,22 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
   },
 };
 
+import { ShiftLockModal } from '@/components/shift-lock-modal';
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  isShiftActive: boolean;
+  isScreenLocked: boolean;
+  shiftDurationHours: number;
+  login: (email: string, pass: string) => Promise<AuthResponse>;
   register: (name: string, email: string, pass: string, hospitalId?: string) => Promise<void>;
+  verify2FAAndStartShift: (challengeToken: string, code: string, shiftDurationHours: number, shiftPin: string) => Promise<void>;
+  unlockScreen: (pin: string) => Promise<void>;
+  lockScreen: () => Promise<void>;
+  endShift: () => Promise<void>;
   loginAsDemoRole: (role: UserRole) => void;
   logout: () => void;
   hasRoleAccess: (allowedRoles: UserRole[]) => boolean;
@@ -95,6 +104,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isShiftActive, setIsShiftActive] = useState(false);
+  const [isScreenLocked, setIsScreenLocked] = useState(false);
+  const [shiftDurationHours, setShiftDurationHours] = useState(8);
+
+  const lockScreen = async () => {
+    setIsScreenLocked(true);
+    try {
+      await ApiClient.lockShift();
+    } catch {}
+  };
+
+  const unlockScreen = async (pin: string) => {
+    const resp = await ApiClient.unlockShift(pin);
+    if (resp.token) {
+      setToken(resp.token);
+    }
+    setIsScreenLocked(false);
+  };
+
+  const endShift = async () => {
+    try {
+      await ApiClient.endShift();
+    } catch {}
+    setIsShiftActive(false);
+    setIsScreenLocked(false);
+    setToken(null);
+    setUser(null);
+  };
+
+  // Proactive background silent refresh every 10 minutes (600,000 ms)
+  useEffect(() => {
+    if (!user) return;
+    const refreshInterval = setInterval(() => {
+      ApiClient.refreshToken().catch(() => {});
+    }, 600000);
+
+    return () => clearInterval(refreshInterval);
+  }, [user]);
+
+  // Idle Activity Tracker: Locks screen after 20 minutes of inactivity
+  useEffect(() => {
+    if (!user || !isShiftActive || isScreenLocked) return;
+
+    let timeoutId: NodeJS.Timeout;
+    const resetIdleTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        lockScreen();
+      }, 1200000); // 20 minutes
+    };
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((e) => window.addEventListener(e, resetIdleTimer));
+    resetIdleTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((e) => window.removeEventListener(e, resetIdleTimer));
+    };
+  }, [user, isShiftActive, isScreenLocked]);
 
   useEffect(() => {
     // SECURITY (B9): Authenticate with backend /api/auth/me using HttpOnly cookie
@@ -111,6 +180,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hospitalId: resp.hospitalId,
         };
         setUser(profile);
+
+        // Check active shift status
+        try {
+          const shift = await ApiClient.getShiftStatus();
+          setIsShiftActive(shift.shiftActive);
+          setIsScreenLocked(shift.isLocked);
+          if (shift.durationHours) setShiftDurationHours(shift.durationHours);
+        } catch {}
       } catch {
         // If unauthenticated on server, check if offline demo mode is chosen
         const isDemo = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') : null;
@@ -129,10 +206,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (email: string, pass: string): Promise<AuthResponse> => {
     setIsLoading(true);
     try {
       const resp = await ApiClient.login(email, pass);
+      if (resp.twoFactorRequired) {
+        setIsLoading(false);
+        return resp;
+      }
+
       const profile: UserProfile = {
         id: resp.id,
         name: resp.name,
@@ -144,6 +226,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(resp.token || null);
       setUser(profile);
+      setIsShiftActive(!!resp.shiftActive);
+      setIsScreenLocked(!!resp.isScreenLocked);
+      localStorage.removeItem('triagenet_demo_active');
+      localStorage.removeItem('triagenet_demo_role');
+      setIsLoading(false);
+      return resp;
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
+  const verify2FAAndStartShift = async (
+    challengeToken: string,
+    code: string,
+    durationHours: number,
+    shiftPin: string
+  ) => {
+    setIsLoading(true);
+    try {
+      const resp = await ApiClient.verify2FA({
+        challengeToken,
+        code,
+        shiftDurationHours: durationHours,
+        shiftPin,
+      });
+
+      const profile: UserProfile = {
+        id: resp.id,
+        name: resp.name,
+        email: resp.email,
+        role: (resp.role as UserRole) || 'TRIAGE_NURSE',
+        roleTitle: resp.role || 'Hospital Staff',
+        hospitalId: resp.hospitalId,
+      };
+
+      setToken(resp.token || null);
+      setUser(profile);
+      setIsShiftActive(true);
+      setIsScreenLocked(false);
+      setShiftDurationHours(durationHours);
       localStorage.removeItem('triagenet_demo_active');
       localStorage.removeItem('triagenet_demo_role');
     } catch (err) {
@@ -175,6 +298,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const profile = DEMO_PRESET_USERS[role];
     setToken(null);
     setUser(profile);
+    setIsShiftActive(true);
+    setIsScreenLocked(false);
     localStorage.setItem('triagenet_demo_active', 'true');
     localStorage.setItem('triagenet_demo_role', role);
   };
@@ -186,6 +311,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('triagenet_demo_role');
     setToken(null);
     setUser(null);
+    setIsShiftActive(false);
+    setIsScreenLocked(false);
   };
 
   const hasRoleAccess = (allowedRoles: UserRole[]) => {
@@ -200,14 +327,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated: !!user,
         isLoading,
+        isShiftActive,
+        isScreenLocked,
+        shiftDurationHours,
         login,
         register,
+        verify2FAAndStartShift,
+        unlockScreen,
+        lockScreen,
+        endShift,
         loginAsDemoRole,
         logout,
         hasRoleAccess,
       }}
     >
       {children}
+      <ShiftLockModal />
     </AuthContext.Provider>
   );
 };

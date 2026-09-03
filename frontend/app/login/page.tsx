@@ -290,8 +290,8 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative size-12 rounded-xl bg-white border border-[#382416]/15 shadow-sm flex items-center justify-center overflow-hidden">
-              <Image src="/jh-logo.png" alt="Jharkhand State Emblem" fill className="object-contain p-1" priority />
+            <div className="relative size-12 rounded-xl bg-[#491205] border border-[#382416]/15 shadow-sm flex items-center justify-center overflow-hidden">
+              <Image src="/triagenet-logo.png" alt="TriageNet Official Logo" fill className="object-cover" priority />
             </div>
             <div>
               <div className="flex items-center gap-2">

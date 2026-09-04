@@ -152,20 +152,189 @@ Data Scale:     111 real Jharkhand hospitals (RIMS, MGM, Sadar, SDH, CHC)
 SEO & PWA:      Schema.org JSON-LD · OpenGraph · Twitter Cards · Sitemap · Robots
                 Web App Manifest · Font display:swap · Preconnect hints
 
-Testing:        64/64 backend test suites — 100% passing
+Testing:        65/65 backend test suites — 100% passing
                 5 ML algorithms × 4 datasets benchmarked
                 Full JPA persistence + REST API integration tests
 ```
 
-**Phase 9.2 — Official Staff ID & Dual-Control Onboarding (Latest):**
+**Phase 9.2 — Cryptographic Zero-Email Onboarding, 3-Tier Precedence Hierarchy & Clinical Shift Engine (Latest):**
 
-| Feature | Detail |
+| Core Innovation | Implementation & Algorithmic Detail |
 |---|---|
-| Staff ID Credentials | Official `JH-STF-XXXX` state-issued healthcare IDs replace email login |
-| 4-Stage Onboarding Wizard | Role → Password → Crypto Packet (TOTP + BIP-39 + Backup Codes) → Complete |
-| Dual-Control Verification | Pending accounts locked `423`; admins approve via `<StaffApprovalModal />` with 25s polling |
-| Status Probe API | `GET /api/auth/status/{staffId}` — zero-email real-time verification check |
-| 64/64 Tests | Full registration → pending → approval → active login cycle verified |
+| **Zero-Email & Zero-SMS Paradigm** | Total elimination of telecom gateways, SMS OTPs, and external mail dependencies to prevent SIM-swapping, phishing, and disaster network blackouts. |
+| **Official Staff ID Credentials** | Standardized `JH-STF-XXXX` (healthcare workers) and `JH-SYS-XXXX` (command staff) credentials with dual-identifier Spring Security DB resolution. |
+| **Continuous 4-Stage Onboarding** | Step 1 (Identity & Command Role) → Step 2 (Master Password) → Step 3 (Offline Crypto Packet: TOTP + BIP-39 + Backup Codes) → Step 4 (In-Person Verification Notice). |
+| **RFC 6238 TOTP Engine** | Native 160-bit Base32 HMAC-SHA1 algorithm with $\pm 1$ time-step ($\pm 30$s) clock drift compensation running 100% offline. |
+| **BIP-39 Mnemonic Recovery** | 128-bit CSPRNG entropy + 4-bit SHA-256 checksum mapped to 12 words from the standardized 2048-word dictionary; persisted as SHA-256 hashes. |
+| **8 Emergency Backup Codes** | Single-use cryptographically random `TR-XXXX-XXXX` tokens hashed with salted SHA-256 and burned on invocation. |
+| **Clinical Shift Session Engine** | 8h/12h bound duty shifts with 20-min idle terminal auto-lock and 4-digit quick PIN unlock (designed for gloved clinicians). |
+| **3-Tier Approval Precedence** | State Command (`SUPER_ADMIN`) → Intermediate Leadership (`DISTRICT_CMO`, `HOSPITAL_ADMIN`) → Ground Operational Staff (`TRIAGE_NURSE`, `HOSPITAL_STAFF`, `AMBULANCE_DISPATCH`). High-level admins are strictly prohibited from bypassing local superintendents. |
+| **Zero-Email Status Probe API** | `GET /api/auth/status/{staffId}` — Public, real-time cryptographic status check allowing clinicians to probe verification status without SMS/email notifications. |
+| **65/65 Backend Tests** | 100% automated test coverage covering full registration → pending lock → hierarchical precedence guards → active shift login. |
+
+<details>
+<summary><b>🔍 Deep Dive: Cryptographic Onboarding Architecture, Algorithms & Approval Hierarchy</b></summary>
+
+<br/>
+
+#### 1. The Zero-Email / Zero-SMS Imperative in Emergency Triage
+During mass-casualty incidents, epidemics, or disasters, reliance on commercial SMS gateways (Twilio, AWS SNS) or third-party email providers (SendGrid) introduces critical failure points:
+1. **Rural Telecom Outages**: Emergency wards in rural Jharkhand often operate under zero cellular signal or during regional telecom blackouts.
+2. **SIM Swapping & Interception**: SMS OTPs are vulnerable to SS7 exploitation and telecom phishing.
+3. **Delivery Latency**: A 2-minute SMS delay during an active golden-hour triage intake costs human lives.
+
+TriageNet operates as a **sovereign cryptographic enclave**: authentication, multi-factor authorization, and disaster recovery keys are generated, verified, and handled entirely offline.
+
+---
+
+#### 2. The Algorithmic Mechanics
+
+##### A. RFC 6238 HMAC-SHA1 TOTP Engine with Drift Compensation
+The Time-Based One-Time Password (TOTP) algorithm computes an ephemeral 6-digit code derived from a shared secret $K$ and the current Unix epoch time $t$:
+
+$$\text{Time Step Index: } T = \left\lfloor \frac{t - T_0}{X} \right\rfloor$$
+
+where $T_0 = 0$ and the time-step interval $X = 30\text{ seconds}$.
+
+$$\text{Hash Derivation: } \text{HS} = \text{HMAC-SHA1}(K, T)$$
+
+$$\text{Dynamic Truncation: } \text{Offset} = \text{HS}[19] \land \text{0x0F}$$
+
+$$\text{Binary Code: } P = (\text{HS}[\text{Offset}] \land \text{0x7F}) \ll 24 \mid (\text{HS}[\text{Offset}+1] \land \text{0xFF}) \ll 16 \mid (\text{HS}[\text{Offset}+2] \land \text{0xFF}) \ll 8 \mid (\text{HS}[\text{Offset}+3] \land \text{0xFF})$$
+
+$$\text{Final 6-Digit Code: } \text{TOTP} = P \pmod{10^6}$$
+
+**Clock Drift Compensation**: To accommodate physical workstation clock skew in rural health centers, TriageNet verifies the client-provided code against a window of 3 steps: $T - 1$, $T$, and $T + 1$ ($\pm 30$ seconds tolerance).
+
+##### B. BIP-39 12-Word Mnemonic Recovery Architecture
+If a clinician loses their mobile authenticator device, they can self-recover their account using a 12-word cryptographic recovery phrase generated during onboarding:
+
+1. **Entropy Generation**: A cryptographically secure pseudorandom number generator (CSPRNG) produces 128 bits of high-entropy data ($E$).
+2. **Checksum Derivation**: Compute the SHA-256 hash of $E$. The first $\frac{128}{32} = 4\text{ bits}$ serve as the checksum ($CS$).
+3. **Bit Concatenation**: Concatenate $E \parallel CS$ to yield a 132-bit sequence.
+4. **Word Extraction**: Divide the 132 bits into 12 distinct 11-bit chunks ($2^{11} = 2048$).
+5. **Dictionary Mapping**: Each 11-bit integer serves as a direct index into the standardized BIP-39 English wordlist of 2048 words.
+6. **Zero-Knowledge Persistence**: The plaintext phrase is displayed only once during Stage 3 of onboarding. The backend persists strictly $\text{SHA-256}(\text{phrase})$, making it mathematically impossible for database leaks to compromise recovery keys.
+
+##### C. Emergency Single-Use Recovery Codes
+As an auxiliary defense, clinicians are issued 8 pre-generated single-use recovery codes in `TR-XXXX-XXXX` format:
+- Generated with CSPRNG uppercase alphanumeric tokens.
+- Hashed using salted SHA-256 at rest.
+- Once entered, the matching hash is permanently deleted (**burned on use**), preventing replay attacks.
+
+##### D. Clinical Shift Sessions with 4-Digit Quick PIN
+Standard web session timeouts (e.g. 15 minutes) interrupt urgent clinical intake. In emergency wards, doctors and triage nurses wear latex gloves and PPE, making continuous re-typing of 16-character master passwords impractical.
+- **Shift Duration**: Clinicians select an 8-hour or 12-hour duty shift at authentication.
+- **20-Minute Idle Workstation Auto-Lock**: If the workstation detects 20 minutes of user inactivity, the UI enters a secure glassmorphism lockdown overlay.
+- **4-Digit Quick PIN**: Clinicians unlock the active terminal in under 2 seconds by entering their 4-digit shift PIN, verified via fast cryptographic hashing, maintaining continuous security without clinical disruption.
+
+---
+
+#### 3. The 3-Tier Approval Precedence Hierarchy
+
+In state healthcare operations, high-level administrative officials should never arbitrarily verify routine hospital staff, nor should facility staff approve regional commanders. TriageNet enforces a strict **3-Tier Precedence Chain**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    TIER 1: STATE COMMAND                        │
+│                 SUPER_ADMIN / STATE_HEALTH_DEPT                 │
+│                                                                 │
+│   CAN APPROVE: Intermediate District & Hospital Leadership      │
+│   • DISTRICT_CMO (District Chief Medical Officers - 24 Dists)   │
+│   • HOSPITAL_ADMIN (Hospital Medical Superintendents)           │
+│                                                                 │
+│   BLOCKED FROM APPROVING: Ground Operational Roles              │
+│   (TRIAGE_NURSE, HOSPITAL_STAFF, AMBULANCE_DISPATCH)           │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │ Approves & Appoints
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  TIER 2: INTERMEDIATE LEADERSHIP                │
+│                                                                 │
+│   A. DISTRICT_CMO (District Headquarters)                       │
+│      CAN APPROVE:                                               │
+│      • HOSPITAL_ADMIN (Superintendents in district)             │
+│      • AMBULANCE_DISPATCH (District 108 fleet dispatchers)      │
+│                                                                 │
+│   B. HOSPITAL_ADMIN (Hospital Medical Superintendent)           │
+│      CAN APPROVE: Facility Ground Operational Staff             │
+│      • TRIAGE_NURSE (Emergency Triage Lead Nurses)              │
+│      • HOSPITAL_STAFF (Medical Officers / Ward In-Charge)       │
+│      • AMBULANCE_DISPATCH (Facility-stationed dispatchers)      │
+│                                                                 │
+│   BLOCKED FROM APPROVING: Higher or Peer Tiers                  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │ Approves & Badges
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               TIER 3: GROUND OPERATIONAL STAFF                  │
+│       TRIAGE_NURSE  •  HOSPITAL_STAFF  •  AMBULANCE_DISPATCH   │
+│                                                                 │
+│   (Operational roles possess NO staff approval privileges)      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+##### Authority Matrix & Jurisdictional Boundaries:
+| Approver Role | Allowed Target Roles for Approval | Disallowed Target Roles (Precedence Violation) | Geographic / Facility Scope |
+|---|---|---|---|
+| **`SUPER_ADMIN`** | `DISTRICT_CMO`, `HOSPITAL_ADMIN` | `TRIAGE_NURSE`, `HOSPITAL_STAFF`, `AMBULANCE_DISPATCH` | Statewide (24 Districts) |
+| **`DISTRICT_CMO`** | `HOSPITAL_ADMIN`, `AMBULANCE_DISPATCH` | `SUPER_ADMIN`, `DISTRICT_CMO`, `TRIAGE_NURSE`, `HOSPITAL_STAFF` | Assigned District Only |
+| **`HOSPITAL_ADMIN`** | `TRIAGE_NURSE`, `HOSPITAL_STAFF`, `AMBULANCE_DISPATCH` | `SUPER_ADMIN`, `DISTRICT_CMO`, `HOSPITAL_ADMIN` | Assigned Hospital Facility Only |
+| **Operational Staff** | None (Access Denied `403`) | All Roles | Zero Administrative Privileges |
+
+---
+
+#### 4. End-to-End Onboarding & Verification Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Clinician as Applicant Clinician
+    participant Wizard as Onboarding Wizard (/login)
+    participant API as Spring Boot Security API
+    participant DB as PostgreSQL / H2
+    actor Supt as Hospital Medical Superintendent
+
+    Note over Clinician,Wizard: STAGE 1: Identity & Station Role
+    Clinician->>Wizard: Enters Name, Staff ID (JH-STF-8012), Hospital & Desired Role
+    
+    Note over Clinician,Wizard: STAGE 2: Master Password
+    Clinician->>Wizard: Enters strong password (meets complexity policy)
+    Wizard->>API: POST /api/auth/register
+    API->>API: Compute RFC 6238 Secret, BIP-39 12-word phrase, 8 Backup Codes
+    API->>DB: Persist StaffUser (status: PENDING_VERIFICATION, hashes)
+    API-->>Wizard: 201 Created + Crypto Packet (Secret, Mnemonic, Backup Codes)
+    
+    Note over Clinician,Wizard: STAGE 3: Cryptographic Packet Handover
+    Wizard-->>Clinician: Displays Base32 Key, QR Code & 12-Word Recovery Phrase
+    Clinician->>Wizard: Confirms key backup & clicks "Complete Onboarding"
+    
+    Note over Clinician,Wizard: STAGE 4: Polite Verification Notice
+    Wizard-->>Clinician: Displays badge card: Status = PENDING_VERIFICATION (Account locked 423)
+    
+    Note over Clinician,API: Zero-Email Public Status Probe
+    Clinician->>API: GET /api/auth/status/JH-STF-8012
+    API-->>Clinician: Returns status: "PENDING_VERIFICATION"
+    
+    Note over Supt,DB: Dual-Control In-Person Badge Verification
+    Clinician-->>Supt: In-person badge & government ID presentation
+    Supt->>API: GET /api/admin/staff/pending (with Supt JWT)
+    API->>DB: Scoped query for facility + Tier 3 applicants
+    API-->>Supt: Returns [JH-STF-8012 Dr. Ananya Verma - TRIAGE_NURSE]
+    Supt->>API: POST /api/admin/staff/{id}/approve {"role": "TRIAGE_NURSE"}
+    API->>API: Enforce Precedence Rules (Supt can approve Tier 3)
+    API->>DB: Update StaffUser -> status: ACTIVE, role: ROLE_TRIAGE_NURSE
+    API-->>Supt: 200 OK Staff Account Activated
+    
+    Note over Clinician,API: Live Activation & Clinical Duty Shift
+    Clinician->>API: GET /api/auth/status/JH-STF-8012 -> Status: "ACTIVE"
+    Clinician->>API: POST /api/auth/login (JH-STF-8012 + Password)
+    API-->>Clinician: 2FA Challenge Token issued
+    Clinician->>API: POST /api/auth/2fa/verify-and-start-shift (TOTP + 8h Shift + 4-digit PIN)
+    API-->>Clinician: Sets HttpOnly JWT Cookie & Launches Clinical Dashboard
+```
+
+</details>
 
 **Phase 9.1 — Cryptographic 2FA & Shift Management:**
 

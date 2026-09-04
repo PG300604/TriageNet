@@ -243,7 +243,7 @@ export default function LoginPage() {
   };
 
   const handleAutofillAccount = (staffId: string) => {
-    setActiveTab('signin');
+    setMode('signin');
     setLoginStep('credentials');
     setLoginIdentifier(staffId);
     setPassword('Triage@2026!');

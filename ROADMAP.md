@@ -155,6 +155,19 @@ graph TD
 
 ---
 
+### ✅ Phase 9.5: AI Predictive Shortage Recording & Proactive Pre-Fetch Engine (Completed & Embedded)
+- **Bottom-Up Shortage Incident Recording**:
+  - Frontline triage nurses, ward in-charges, and emergency medical officers log local equipment or bed deficits with structured incident tokens (`#SHORT-2026-XXXX`).
+  - Tracks specific resource shortages (ICU Beds, Ventilators, High-Flow O₂, Multipara Monitors, Blood Units) along with active patients impacted.
+- **AI Automated Correlation & Predictive Logistics**:
+  - Correlates nurse incident logs with incoming 108 ambulance admissions and admission velocity.
+  - Generates predictive pre-fetch recommendations (`PredictiveInventoryRecommendation`) determining *which inventory to fetch beforehand* from nearby reserve depots or donor CHCs before bottlenecks occur.
+- **Proactive Insights Delivered to Triage Desks & Command Leadership**:
+  - Triage Lead receives proactive alert banners right in the Triage Queue with 1-click `[Pre-Fetch Units from Reserve]` actions.
+  - District CMOs and State Health Directorate receive aggregated shortage trends to rebalance shares and negotiate bulk GeM rate contracts before statewide stockouts.
+
+---
+
 ### 🔮 Phase 10: FIDO2 / WebAuthn Hardware Security Keys (Planned)
 - **Physical YubiKey & Biometric Passkey Support**:
   - Add W3C WebAuthn API support allowing hospital staff to tap a USB-C/NFC hardware key (YubiKey 5 Series) or scan a hospital-issued fingerprint/Windows Hello sensor.

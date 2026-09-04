@@ -25,6 +25,10 @@ import {
   PlusCircle,
   FileCheck2,
   SlidersHorizontal,
+  Bot,
+  Sparkles,
+  Clock,
+  TrendingUp,
 } from 'lucide-react'
 import {
   SupplyApprovalPillModal,
@@ -35,6 +39,13 @@ import {
   type DistrictBudgetRecord,
 } from './district-overview-modal'
 import { HospitalOverviewModal } from './hospital-overview-modal'
+import { LogShortageModal } from './log-shortage-modal'
+import {
+  type ShortageIncidentReport,
+  type PredictiveInventoryRecommendation,
+  INITIAL_SHORTAGE_INCIDENTS,
+  INITIAL_PREDICTIVE_RECOMMENDATIONS,
+} from '@/lib/predictive-supply-engine'
 
 interface SuppliesViewProps {
   state: TriageState
@@ -91,7 +102,12 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
   const [activeRequisition, setActiveRequisition] = useState<SupplyRequisition | null>(null)
   const [inspectDistrict, setInspectDistrict] = useState<DistrictBudgetRecord | null>(null)
   const [inspectHospital, setInspectHospital] = useState<Hospital | null>(null)
+  const [logShortageModalOpen, setLogShortageModalOpen] = useState(false)
   const [lastEventToast, setLastEventToast] = useState<string | null>(null)
+
+  // AI Predictive Telemetry State
+  const [shortageReports, setShortageReports] = useState<ShortageIncidentReport[]>(INITIAL_SHORTAGE_INCIDENTS)
+  const [predictiveRecs, setPredictiveRecs] = useState<PredictiveInventoryRecommendation[]>(INITIAL_PREDICTIVE_RECOMMENDATIONS)
 
   // Audit Log history
   const [auditLogs, setAuditLogs] = useState<Array<{ id: string; time: string; text: string; tier: string }>>([
@@ -367,7 +383,64 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
     return hospitals.find((h) => h.id === userHospitalId) || hospitals[0]
   }, [hospitals, userHospitalId])
 
-  // --- REQUISITION ACTIONS ---
+  // --- REQUISITION & TELEMETRY ACTIONS ---
+
+  // Handle logging a bottom-up shortage incident by a frontline clinical officer
+  const handleLogShortageSubmit = (report: ShortageIncidentReport) => {
+    setShortageReports((prev) => [report, ...prev])
+
+    // Synthesize an instant AI predictive pre-fetch recommendation based on the shortage report
+    const newRec: PredictiveInventoryRecommendation = {
+      id: `PRED-REC-${Math.floor(100 + Math.random() * 900)}`,
+      generatedAt: new Date().toTimeString().split(' ')[0],
+      targetFacilityId: report.facilityId,
+      targetFacilityName: report.facilityName,
+      district: report.district,
+      department: report.department,
+      resourceType: report.resourceType,
+      recommendedItem:
+        report.resourceType === 'VENTILATORS'
+          ? 'Mindray SV300 Portable ICU Ventilators'
+          : report.resourceType === 'ICU_BEDS'
+          ? '5-Function Motorized Critical Beds'
+          : report.resourceType === 'HIGH_FLOW_O2'
+          ? 'High-Flow O₂ Humidifiers & Cannulas'
+          : 'Emergency Multipara Cardiac Monitors',
+      recommendedQuantity: report.quantityDeficit,
+      sourceFacilityOrStore: `${report.district} District Emergency Medical Depot`,
+      preFetchWindowHours: 1.5,
+      confidenceScore: 93,
+      clinicalDriver: `Ingested frontline report from ${report.reportingOfficerName} (${report.reportingOfficerRole}): ${report.clinicalNotes}`,
+      status: 'PENDING_PRE_FETCH',
+    }
+    setPredictiveRecs((prev) => [newRec, ...prev])
+
+    const toastMsg = `[AI PREDICTIVE INGESTION] Recorded shortage incident ${report.id}. AI recommended pre-fetching ${newRec.recommendedQuantity}x ${newRec.recommendedItem} for ${report.department}.`
+    setLastEventToast(toastMsg)
+    setAuditLogs((prev) => [
+      { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: report.timestamp, text: toastMsg, tier: 'AI Predictive Engine' },
+      ...prev,
+    ])
+  }
+
+  // Handle authorizing a proactive pre-fetch recommendation
+  const handleAuthorizePreFetch = (rec: PredictiveInventoryRecommendation) => {
+    setActiveRequisition({
+      id: `REQ-PREFETCH-${Math.floor(1000 + Math.random() * 9000)}`,
+      title: `Proactive Pre-Surge Inventory Pre-Fetch`,
+      tier: 'DISTRICT_TRANSFER',
+      source: rec.sourceFacilityOrStore,
+      destination: `${rec.targetFacilityName} (${rec.department})`,
+      urgency: 'High P2',
+      items: [
+        { label: 'Pre-Fetch Resource', value: `${rec.recommendedQuantity}x ${rec.recommendedItem}`, highlight: true },
+        { label: 'Window', value: `< ${rec.preFetchWindowHours} Hours`, icon: 'box' },
+        { label: 'Confidence', value: `${rec.confidenceScore}% AI Match`, icon: 'icu' },
+      ],
+      clinicalJustification: `Proactive deployment prior to predicted bottleneck. ${rec.clinicalDriver}`,
+    })
+    setApprovalModalOpen(true)
+  }
 
   // Tier 1 Action: Super Admin releases district healthcare grant
   const handleOpenDistrictGrantModal = (district: DistrictBudgetRecord) => {
@@ -552,6 +625,18 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         onAuthorizeReallocation={handleOpenInterHospitalTransferModal}
       />
 
+      {/* FRONTLINE LOG SHORTAGE MODAL (Portaled to document.body) */}
+      <LogShortageModal
+        isOpen={logShortageModalOpen}
+        onClose={() => setLogShortageModalOpen(false)}
+        facilityName={activeHospital.name}
+        facilityId={activeHospital.id}
+        district={userDistrict}
+        officerName={user?.name || 'Dr. Priyanshu Ghosh'}
+        officerRole={user?.roleTitle || 'Clinical Triage Officer'}
+        onSubmitShortage={handleLogShortageSubmit}
+      />
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
         <div>
@@ -579,6 +664,16 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Action to log shortage incident (Available to frontline officers and facility command) */}
+          <button
+            type="button"
+            onClick={() => setLogShortageModalOpen(true)}
+            className="rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 px-3 py-1.5 text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <AlertTriangle className="size-3.5 text-rose-600" />
+            <span>Log Shortage Incident</span>
+          </button>
+
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
             <span className="size-2 rounded-full bg-emerald-500 animate-ping"></span>
             Live Telemetry Active
@@ -602,6 +697,158 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
           </span>
         </motion.div>
       )}
+
+      {/* ========================================================================= */}
+      {/* AI PREDICTIVE SHORTAGE & PROACTIVE PRE-FETCH INTELLIGENCE PANEL           */}
+      {/* ========================================================================= */}
+      <div className="rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-white to-stone-50/50 p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-[#382416]">
+                  AI Predictive Shortage Telemetry & Pre-Surge Fetch Engine
+                </h3>
+                <span className="text-[10px] font-bold text-indigo-800 bg-indigo-100 border border-indigo-300 px-2 py-0.5 rounded-full">
+                  Just-In-Time Pipeline
+                </span>
+              </div>
+              <p className="text-xs text-stone-600 mt-0.5">
+                AI software continuously correlates frontline nurse shortage incident reports with incoming 108 ambulance dispatches to recommend which inventory to pre-fetch <em>before</em> bottlenecks occur.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setLogShortageModalOpen(true)}
+            className="rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <PlusCircle className="size-3.5" />
+            <span>Log Local Shortage</span>
+          </button>
+        </div>
+
+        {/* 2-Column Section: Active AI Pre-Fetch Recommendations & Recent Frontline Logs */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Column 1: AI Proactive Pre-Fetch Recommendations */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                <Bot className="size-3.5 text-indigo-600" />
+                Active Pre-Fetch Recommendations
+              </span>
+              <span className="text-[11px] font-semibold text-indigo-700">
+                {predictiveRecs.length} Actionable Proposals
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {predictiveRecs.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-3.5 rounded-xl border border-indigo-200 bg-white shadow-2xs space-y-2 hover:border-indigo-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-sm text-[#382416] flex items-center gap-1.5">
+                        <span>{rec.recommendedQuantity}x {rec.recommendedItem}</span>
+                      </div>
+                      <div className="text-[11px] text-stone-500">
+                        Target: <strong>{rec.targetFacilityName}</strong> ({rec.department})
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                        {rec.confidenceScore}% AI Match
+                      </span>
+                      <span className="text-[10px] font-bold text-orange-800 bg-orange-100 border border-orange-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Clock className="size-3" />
+                        &lt; {rec.preFetchWindowHours}h
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-stone-600 bg-stone-50 p-2.5 rounded-lg border border-stone-100 leading-relaxed">
+                    <span className="font-semibold text-stone-800">AI Deducement: </span>
+                    {rec.clinicalDriver}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 text-xs">
+                    <span className="text-[11px] text-stone-500">
+                      Source: <strong>{rec.sourceFacilityOrStore}</strong>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAuthorizePreFetch(rec)}
+                      className="rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      <span>Authorize Pre-Fetch</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 2: Frontline Shortage Telemetry Log Feed (Bottom-up recordings) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                <AlertTriangle className="size-3.5 text-rose-600" />
+                Frontline Clinician Shortage Incident Telemetry
+              </span>
+              <span className="text-[11px] font-semibold text-stone-500">
+                {shortageReports.length} Records Logged
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+              {shortageReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="p-3 rounded-xl border border-stone-200 bg-stone-50/70 space-y-1.5 text-xs text-stone-700"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] font-bold text-stone-600 bg-stone-200 px-1.5 py-0.2 rounded">
+                        {report.id}
+                      </span>
+                      <span className="font-bold text-stone-900">{report.facilityName}</span>
+                    </div>
+
+                    <span className="font-mono text-[10px] text-stone-400">{report.timestamp}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                    <span className="font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                      Shortage: -{report.quantityDeficit} {report.resourceType}
+                    </span>
+                    <span className="text-stone-500">Dept: {report.department}</span>
+                    <span className="text-stone-400">·</span>
+                    <span className="text-stone-600">Impact: {report.patientImpactCount} Patients</span>
+                  </div>
+
+                  <p className="text-stone-600 text-[11px] italic bg-white p-2 rounded border border-stone-200/80">
+                    &quot;{report.clinicalNotes}&quot;
+                  </p>
+
+                  <div className="flex items-center justify-between text-[10px] text-stone-400 pt-0.5">
+                    <span>Reported by: <strong>{report.reportingOfficerName}</strong> ({report.reportingOfficerRole})</span>
+                    <span className="font-bold text-indigo-700">[ANALYZED BY AI]</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* TIER 1: STATE HEALTH DIRECTORATE (SUPER ADMIN ONLY)                      */}

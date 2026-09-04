@@ -36,9 +36,17 @@ import {
   Send,
   X,
   Sliders,
+  Bot,
+  Sparkles,
 } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth-context'
+import { LogShortageModal } from './log-shortage-modal'
+import {
+  INITIAL_PREDICTIVE_RECOMMENDATIONS,
+  type ShortageIncidentReport,
+  type PredictiveInventoryRecommendation,
+} from '@/lib/predictive-supply-engine'
 
 interface TriageQueueViewProps {
   hospital: Hospital
@@ -97,6 +105,17 @@ export function TriageQueueView({
   const [tab, setTab] = useState<'active' | 'discharged'>('active')
   const [intakeOpen, setIntakeOpen] = useState(false)
   const [expandedPatientId, setExpandedPatientId] = useState<string | null>(null)
+  const [logShortageModalOpen, setLogShortageModalOpen] = useState(false)
+  const [preFetchNotice, setPreFetchNotice] = useState<string | null>(null)
+  const [activeProactiveRec, setActiveProactiveRec] = useState<PredictiveInventoryRecommendation | null>(() => {
+    return (
+      INITIAL_PREDICTIVE_RECOMMENDATIONS.find(
+        (r) =>
+          r.targetFacilityId === hospital.id ||
+          r.targetFacilityName.toLowerCase().includes(hospital.name.toLowerCase()),
+      ) || INITIAL_PREDICTIVE_RECOMMENDATIONS[0]
+    )
+  })
 
   // Rapid Intake Form State
   const [patientName, setPatientName] = useState('Ramesh Soren')
@@ -313,6 +332,84 @@ export function TriageQueueView({
             <span>Refer to {referralRecommendation.toHospitalName}</span>
             <ArrowRight className="size-3.5" />
           </button>
+        </div>
+      )}
+
+      {/* Log Shortage Incident Modal for Triage Clinicians */}
+      <LogShortageModal
+        isOpen={logShortageModalOpen}
+        onClose={() => setLogShortageModalOpen(false)}
+        facilityName={hospital.name}
+        facilityId={hospital.id}
+        district={hospital.district || 'Ranchi'}
+        officerName={user?.name || 'Emergency Triage Lead'}
+        officerRole={user?.roleTitle || 'Clinical Triage Nurse'}
+        onSubmitShortage={(report: ShortageIncidentReport) => {
+          setPreFetchNotice(
+            `[SHORTAGE LOGGED] Telemetry ${report.id} ingested. AI correlated deficit for ${report.department}. Proactive reserve fetch prioritized.`,
+          )
+          setTimeout(() => setPreFetchNotice(null), 8000)
+        }}
+      />
+
+      {/* Pre-Fetch Status Notice */}
+      {preFetchNotice && (
+        <div className="flex items-center justify-between rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 shadow-xs">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+            <span>{preFetchNotice}</span>
+          </div>
+          <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-300">
+            Active Fetch
+          </span>
+        </div>
+      )}
+
+      {/* AI Proactive Shortage Intelligence & Pre-Fetch Insight Banner */}
+      {activeProactiveRec && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 to-white p-4 text-indigo-950 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 shrink-0">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900">
+                  AI PROACTIVE PRE-FETCH INSIGHT
+                </span>
+                <span className="rounded-full bg-indigo-100 border border-indigo-300 px-2 py-0.2 text-[10px] font-bold text-indigo-800">
+                  {activeProactiveRec.confidenceScore}% AI Confidence · &lt; {activeProactiveRec.preFetchWindowHours}h Surge Window
+                </span>
+              </div>
+              <p className="text-xs text-stone-700 mt-0.5">
+                <strong>Recommended Pre-Fetch:</strong> {activeProactiveRec.recommendedQuantity}x {activeProactiveRec.recommendedItem} for {activeProactiveRec.department}. {activeProactiveRec.clinicalDriver}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLogShortageModalOpen(true)}
+              className="rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-bold text-rose-800 shadow-2xs cursor-pointer transition-colors"
+            >
+              Log Local Deficit
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPreFetchNotice(
+                  `[PRE-FETCH DISPATCHED] Ordered ${activeProactiveRec.recommendedQuantity}x ${activeProactiveRec.recommendedItem} from ${activeProactiveRec.sourceFacilityOrStore}. ETA: 25 Mins.`,
+                )
+                setTimeout(() => setPreFetchNotice(null), 8000)
+              }}
+              className="rounded-xl bg-indigo-700 hover:bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <Bot className="size-3.5" />
+              <span>Pre-Fetch Units from Reserve</span>
+            </button>
+          </div>
         </div>
       )}
 

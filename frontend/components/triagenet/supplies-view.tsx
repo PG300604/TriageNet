@@ -1,12 +1,11 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   type TriageState,
   type Hospital,
   occupancyRatio,
-  calculateAiSupplyNeed,
 } from '@/lib/triage-data'
 import { useAuth, type UserRole } from '@/lib/auth-context'
 import {
@@ -22,21 +21,20 @@ import {
   Zap,
   Building2,
   IndianRupee,
-  Layers,
   Landmark,
-  TrendingDown,
-  Filter,
   PlusCircle,
   FileCheck2,
   SlidersHorizontal,
-  ChevronRight,
-  RefreshCw,
-  Info,
 } from 'lucide-react'
 import {
   SupplyApprovalPillModal,
   type SupplyRequisition,
 } from './supply-approval-pill-modal'
+import {
+  DistrictOverviewModal,
+  type DistrictBudgetRecord,
+} from './district-overview-modal'
+import { HospitalOverviewModal } from './hospital-overview-modal'
 
 interface SuppliesViewProps {
   state: TriageState
@@ -45,19 +43,6 @@ interface SuppliesViewProps {
 }
 
 type SupplyTier = 'STATE_HEALTH' | 'DISTRICT_CMO' | 'HOSPITAL_DEPT'
-
-interface DistrictBudgetRecord {
-  id: string
-  districtName: string
-  population: string
-  hospitalCount: number
-  totalBudgetCr: number
-  releasedBudgetCr: number
-  capacityLoadPct: number
-  queuedPatients: number
-  status: 'CRITICAL_SURGE' | 'MODERATE_STRAIN' | 'NOMINAL'
-  pendingRequisitions: number
-}
 
 interface BulkProcurementDeal {
   id: string
@@ -89,26 +74,23 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
   const { user } = useAuth()
   const hospitals = state.hospitals
 
-  // Derive initial tier based on user's clinical/administrative role
+  // Strictly bind view to user's assigned role — no multi-tier leakage
   const userRole: UserRole = user?.role || 'SUPER_ADMIN'
-  const defaultTier: SupplyTier =
-    userRole === 'HOSPITAL_ADMIN'
+  const activeTier: SupplyTier =
+    userRole === 'HOSPITAL_ADMIN' || userRole === 'TRIAGE_NURSE' || userRole === 'AMBULANCE_DISPATCH'
       ? 'HOSPITAL_DEPT'
       : userRole === 'DISTRICT_CMO'
       ? 'DISTRICT_CMO'
       : 'STATE_HEALTH'
 
-  const [activeTier, setActiveTier] = useState<SupplyTier>(defaultTier)
-  const [selectedDistrict, setSelectedDistrict] = useState<string>(
-    user?.districtName && user.districtName !== 'Statewide' ? user.districtName : 'Ranchi'
-  )
-  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(
-    user?.hospitalId || hospitals[0]?.id || 'jh-rims-ranchi'
-  )
+  const userDistrict = user?.districtName && user.districtName !== 'Statewide' ? user.districtName : 'Ranchi'
+  const userHospitalId = user?.hospitalId || hospitals[0]?.id || 'jh-rims-ranchi'
 
-  // Requisition Modal State
+  // Modal States
   const [approvalModalOpen, setApprovalModalOpen] = useState(false)
   const [activeRequisition, setActiveRequisition] = useState<SupplyRequisition | null>(null)
+  const [inspectDistrict, setInspectDistrict] = useState<DistrictBudgetRecord | null>(null)
+  const [inspectHospital, setInspectHospital] = useState<Hospital | null>(null)
   const [lastEventToast, setLastEventToast] = useState<string | null>(null)
 
   // Audit Log history
@@ -133,7 +115,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
     },
   ])
 
-  // Statewide Districts Data
+  // Statewide Districts Data (Tier 1)
   const [districtRecords, setDistrictRecords] = useState<DistrictBudgetRecord[]>([
     {
       id: 'dist-ranchi',
@@ -285,7 +267,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
     },
   ])
 
-  // Intra-Hospital Departments Data for Selected Facility
+  // Intra-Hospital Departments Data for Selected Facility (Tier 3)
   const [departments, setDepartments] = useState<DepartmentAllocation[]>([
     {
       id: 'dept-trauma',
@@ -351,16 +333,16 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
 
   // Filter hospitals for current district in Tier 2
   const districtHospitals = useMemo(() => {
-    if (!selectedDistrict || selectedDistrict === 'ALL') return hospitals
+    if (!userDistrict || userDistrict === 'ALL' || userDistrict === 'Statewide') return hospitals
     const filtered = hospitals.filter(
       (h) =>
-        (h.district && h.district.toLowerCase().includes(selectedDistrict.toLowerCase())) ||
-        h.name.toLowerCase().includes(selectedDistrict.toLowerCase())
+        (h.district && h.district.toLowerCase().includes(userDistrict.toLowerCase())) ||
+        h.name.toLowerCase().includes(userDistrict.toLowerCase())
     )
     return filtered.length > 0 ? filtered : hospitals
-  }, [hospitals, selectedDistrict])
+  }, [hospitals, userDistrict])
 
-  // Strained hospitals in current view
+  // Strained hospitals in current district
   const strainedHospitals = useMemo(() => {
     return districtHospitals
       .filter((h) => {
@@ -382,15 +364,14 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
 
   // Current active hospital object for Tier 3
   const activeHospital = useMemo(() => {
-    return hospitals.find((h) => h.id === selectedHospitalId) || hospitals[0]
-  }, [hospitals, selectedHospitalId])
+    return hospitals.find((h) => h.id === userHospitalId) || hospitals[0]
+  }, [hospitals, userHospitalId])
 
   // --- REQUISITION ACTIONS ---
 
   // Tier 1 Action: Super Admin releases district healthcare grant
   const handleOpenDistrictGrantModal = (district: DistrictBudgetRecord) => {
     const grantAmountCr = district.status === 'CRITICAL_SURGE' ? 1.5 : 0.8
-    const newReleased = district.releasedBudgetCr + grantAmountCr
 
     setActiveRequisition({
       id: `REQ-JH-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -480,7 +461,6 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
     const nowStr = new Date().toLocaleTimeString()
 
     if (req.tier === 'STATE_GRANT') {
-      // Update district records
       setDistrictRecords((prev) =>
         prev.map((d) => {
           if (req.destination.includes(d.districtName)) {
@@ -502,7 +482,6 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         ...prev,
       ])
     } else if (req.tier === 'DISTRICT_TRANSFER') {
-      // Execute inter-hospital transfer
       if (onRunAiSupplyDispatch) {
         onRunAiSupplyDispatch()
       }
@@ -513,7 +492,6 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         ...prev,
       ])
     } else if (req.tier === 'DEPARTMENT_ALLOCATION') {
-      // Update departmental allocation
       setDepartments((prev) =>
         prev.map((d) => {
           if (req.destination.includes(d.name) || req.destination.includes(d.short)) {
@@ -546,7 +524,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
 
   return (
     <div className="flex flex-col gap-6 font-sans text-stone-900">
-      {/* QUICK APPROVAL PILL MODAL */}
+      {/* QUICK APPROVAL PILL MODAL (Portaled to document.body with full-screen blur) */}
       <SupplyApprovalPillModal
         isOpen={approvalModalOpen}
         onClose={() => {
@@ -557,7 +535,24 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         onConfirm={handleConfirmRequisition}
       />
 
-      {/* Header & Hierarchy Overview */}
+      {/* DISTRICT BASIC OVERVIEW MODAL (Portaled to document.body) */}
+      <DistrictOverviewModal
+        isOpen={!!inspectDistrict}
+        onClose={() => setInspectDistrict(null)}
+        district={inspectDistrict}
+        onReleaseGrant={handleOpenDistrictGrantModal}
+        hospitals={hospitals}
+      />
+
+      {/* HOSPITAL BASIC OVERVIEW MODAL (Portaled to document.body) */}
+      <HospitalOverviewModal
+        isOpen={!!inspectHospital}
+        onClose={() => setInspectHospital(null)}
+        hospital={inspectHospital}
+        onAuthorizeReallocation={handleOpenInterHospitalTransferModal}
+      />
+
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
         <div>
           <div className="flex items-center gap-2.5">
@@ -566,10 +561,18 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight text-[#382416]">
-                Healthcare Inventory & Fiscal Supply Governance
+                {activeTier === 'STATE_HEALTH'
+                  ? 'Statewide Healthcare Grants & Bulk Procurement Deals'
+                  : activeTier === 'DISTRICT_CMO'
+                  ? `District CMO Supply & Inter-Hospital Distribution (${userDistrict})`
+                  : `Hospital Department & Ward Resource Allocation (${activeHospital.name})`}
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                3-Tier State Health Administrative Allocation: Statewide District Grants ➔ District CMO Shares ➔ Facility Ward Allocation
+                {activeTier === 'STATE_HEALTH'
+                  ? 'State Health Directorate Command: Macro district budgets, surge strain reports, and master bulk rate deals.'
+                  : activeTier === 'DISTRICT_CMO'
+                  ? 'District Chief Medical Officer: Equitable resource balancing and equipment transfers across district facilities.'
+                  : 'Medical Superintendent: Clinical department equipment, beds, and funds mobilization.'}
               </p>
             </div>
           </div>
@@ -578,75 +581,9 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
             <span className="size-2 rounded-full bg-emerald-500 animate-ping"></span>
-            Live Fiscal Telemetry Active
+            Live Telemetry Active
           </span>
         </div>
-      </div>
-
-      {/* 3-Tier Hierarchy Tab Switcher */}
-      <div className="rounded-2xl border border-stone-200/80 bg-stone-100/70 p-1.5 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTier('STATE_HEALTH')}
-          className={`flex-1 min-w-[220px] rounded-xl px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeTier === 'STATE_HEALTH'
-              ? 'bg-white text-[#382416] shadow-xs border border-stone-200/80'
-              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
-          }`}
-        >
-          <Landmark className="size-4 text-orange-600" />
-          <div className="text-left">
-            <div className="leading-tight">Tier 1: State Health Directorate</div>
-            <div className="text-[10px] font-normal text-stone-500">District Grants & Bulk Rate Deals</div>
-          </div>
-          {userRole === 'SUPER_ADMIN' && (
-            <span className="ml-auto text-[9px] font-semibold bg-orange-100 text-[#ea580c] px-1.5 py-0.5 rounded-md">
-              Your Role
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTier('DISTRICT_CMO')}
-          className={`flex-1 min-w-[220px] rounded-xl px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeTier === 'DISTRICT_CMO'
-              ? 'bg-white text-[#382416] shadow-xs border border-stone-200/80'
-              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
-          }`}
-        >
-          <Building2 className="size-4 text-indigo-600" />
-          <div className="text-left">
-            <div className="leading-tight">Tier 2: District CMO Command</div>
-            <div className="text-[10px] font-normal text-stone-500">Inter-Hospital Share Balancing</div>
-          </div>
-          {userRole === 'DISTRICT_CMO' && (
-            <span className="ml-auto text-[9px] font-semibold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-md">
-              Your Role
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTier('HOSPITAL_DEPT')}
-          className={`flex-1 min-w-[220px] rounded-xl px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeTier === 'HOSPITAL_DEPT'
-              ? 'bg-white text-[#382416] shadow-xs border border-stone-200/80'
-              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
-          }`}
-        >
-          <BedDouble className="size-4 text-teal-600" />
-          <div className="text-left">
-            <div className="leading-tight">Tier 3: Facility Command</div>
-            <div className="text-[10px] font-normal text-stone-500">Ward & Dept Internal Allocation</div>
-          </div>
-          {userRole === 'HOSPITAL_ADMIN' && (
-            <span className="ml-auto text-[9px] font-semibold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-md">
-              Your Role
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Operational Event Notification Banner */}
@@ -667,7 +604,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       )}
 
       {/* ========================================================================= */}
-      {/* TIER 1: STATE HEALTH DIRECTORATE (SUPER ADMIN)                           */}
+      {/* TIER 1: STATE HEALTH DIRECTORATE (SUPER ADMIN ONLY)                      */}
       {/* ========================================================================= */}
       {activeTier === 'STATE_HEALTH' && (
         <div className="space-y-6">
@@ -685,7 +622,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold tracking-tight">₹{totalStateBudgetCr.toFixed(2)} Cr</span>
-                <span className="text-xs font-medium text-orange-100">State Allocation</span>
+                <span className="text-xs font-medium text-orange-100">Total Fiscal Pool</span>
               </div>
               <p className="mt-2 text-xs text-orange-100/80">
                 ₹{releasedStateBudgetCr.toFixed(2)} Cr Disbursed · ₹{stateReserveCr.toFixed(2)} Cr Contingency Pool
@@ -709,7 +646,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                 <span className="text-xs font-medium text-stone-500">Critical Status</span>
               </div>
               <p className="mt-2 text-xs text-stone-600">
-                Ranchi & Dhanbad reporting acute surge pressures
+                Ranchi & Dhanbad reporting acute surge admissions
               </p>
             </div>
 
@@ -764,7 +701,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                   District-Wise Healthcare Allocation & Strain Telemetry
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Super Admin high-level oversight: Allocate district budget shares and dispatch state emergency grants.
+                  Super Admin high-level oversight: Inspect basic district summaries and disburse state emergency grants.
                 </p>
               </div>
 
@@ -834,15 +771,13 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {/* INSPECT BUTTON: Shows basic district overview modal without switching tiers */}
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedDistrict(dist.districtName)
-                              setActiveTier('DISTRICT_CMO')
-                            }}
-                            className="rounded-lg border border-stone-200 bg-white hover:bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-700 transition-colors cursor-pointer"
+                            onClick={() => setInspectDistrict(dist)}
+                            className="rounded-lg border border-stone-300 bg-white hover:bg-stone-100 px-3 py-1 text-[11px] font-semibold text-stone-700 transition-colors cursor-pointer"
                           >
-                            Inspect ➔
+                            Inspect Overview
                           </button>
 
                           <button
@@ -935,11 +870,11 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       )}
 
       {/* ========================================================================= */}
-      {/* TIER 2: DISTRICT CMO COMMAND (INTER-HOSPITAL DISTRIBUTION)              */}
+      {/* TIER 2: DISTRICT CMO COMMAND (DISTRICT CMO ONLY)                         */}
       {/* ========================================================================= */}
       {activeTier === 'DISTRICT_CMO' && (
         <div className="space-y-6">
-          {/* District Header & Scoping */}
+          {/* District Header */}
           <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 to-white p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 shrink-0">
@@ -951,29 +886,13 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                     District Chief Medical Officer (CMO) Command
                   </h3>
                   <span className="text-xs font-bold text-indigo-800 bg-indigo-100 border border-indigo-300 px-2.5 py-0.5 rounded-full">
-                    {selectedDistrict} District
+                    {userDistrict} District
                   </span>
                 </div>
                 <p className="text-xs text-stone-600 mt-0.5">
                   Ensure equitable healthcare share distribution across all district facilities. Relieve strained public hospitals by authorizing transfers from surplus facilities.
                 </p>
               </div>
-            </div>
-
-            {/* District Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-stone-500">District Scope:</span>
-              <select
-                value={selectedDistrict}
-                onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-[#382416] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-              >
-                {districtRecords.map((d) => (
-                  <option key={d.id} value={d.districtName}>
-                    {d.districtName} District
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -985,7 +904,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
               </span>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-2xl font-extrabold text-[#382416]">
-                  ₹{districtRecords.find((d) => d.districtName === selectedDistrict)?.releasedBudgetCr.toFixed(2) || '5.10'} Cr
+                  ₹{districtRecords.find((d) => d.districtName.toLowerCase().includes(userDistrict.toLowerCase()))?.releasedBudgetCr.toFixed(2) || '5.10'} Cr
                 </span>
                 <span className="text-xs text-stone-500">State Quota</span>
               </div>
@@ -1080,15 +999,13 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* INSPECT BUTTON: Shows basic hospital overview modal without switching tiers */}
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedHospitalId(hosp.id)
-                            setActiveTier('HOSPITAL_DEPT')
-                          }}
+                          onClick={() => setInspectHospital(hosp)}
                           className="rounded-xl border border-stone-300 bg-white hover:bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 transition-colors cursor-pointer"
                         >
-                          Inspect Depts ➔
+                          Inspect Overview
                         </button>
 
                         <button
@@ -1112,7 +1029,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                         All District Facilities Operating Within Balanced Limits
                       </span>
                       <span className="text-xs text-emerald-800">
-                        All {districtHospitals.length} hospitals in {selectedDistrict} are operating below 70% load.
+                        All {districtHospitals.length} hospitals in {userDistrict} are operating below 70% load.
                       </span>
                     </div>
                   </div>
@@ -1129,7 +1046,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-[#382416]">
-                  District Hospital Resource Inventory Matrix ({selectedDistrict})
+                  District Hospital Resource Inventory Matrix ({userDistrict})
                 </h3>
                 <p className="text-xs text-stone-500">
                   Equitable resource shares and current occupancy buffers across all facilities in this district.
@@ -1146,19 +1063,28 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                     <div className="flex justify-between items-center">
                       <div>
                         <h4 className="font-bold text-sm text-[#382416]">{h.name}</h4>
-                        <span className="text-[11px] text-stone-500">{h.district || selectedDistrict}</span>
+                        <span className="text-[11px] text-stone-500">{h.district || userDistrict}</span>
                       </div>
-                      <span
-                        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-                          loadPct >= 85
-                            ? 'bg-red-100 text-red-800 border-red-300'
-                            : loadPct >= 70
-                            ? 'bg-amber-100 text-amber-800 border-amber-300'
-                            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        }`}
-                      >
-                        {loadPct}% Capacity
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                            loadPct >= 85
+                              ? 'bg-red-100 text-red-800 border-red-300'
+                              : loadPct >= 70
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          }`}
+                        >
+                          {loadPct}% Capacity
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setInspectHospital(h)}
+                          className="text-[11px] font-semibold text-stone-600 hover:text-stone-900 underline cursor-pointer"
+                        >
+                          Details
+                        </button>
+                      </div>
                     </div>
 
                     {/* Progress bar */}
@@ -1196,11 +1122,11 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       )}
 
       {/* ========================================================================= */}
-      {/* TIER 3: FACILITY IN-CHARGE / MEDICAL SUPERINTENDENT                      */}
+      {/* TIER 3: FACILITY COMMAND (HOSPITAL IN-CHARGE ONLY)                       */}
       {/* ========================================================================= */}
       {activeTier === 'HOSPITAL_DEPT' && (
         <div className="space-y-6">
-          {/* Hospital Header & Selector */}
+          {/* Hospital Header */}
           <div className="rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50/80 to-white p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="flex size-10 items-center justify-center rounded-xl bg-teal-100 text-teal-700 shrink-0">
@@ -1219,22 +1145,6 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                   Internal hospital governance: When funds and equipment are received from the District CMO, allocate them directly across internal clinical departments.
                 </p>
               </div>
-            </div>
-
-            {/* Hospital Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-stone-500">Facility:</span>
-              <select
-                value={selectedHospitalId}
-                onChange={(e) => setSelectedHospitalId(e.target.value)}
-                className="rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-xs font-bold text-[#382416] shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-teal-500"
-              >
-                {hospitals.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 

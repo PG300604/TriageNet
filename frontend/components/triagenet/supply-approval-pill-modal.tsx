@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShieldCheck,
@@ -52,9 +53,14 @@ export function SupplyApprovalPillModal({
   requisition,
   onConfirm,
 }: SupplyApprovalPillModalProps) {
+  const [mounted, setMounted] = useState(false)
   const [isAuthorizing, setIsAuthorizing] = useState(false)
 
-  if (!isOpen || !requisition) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!isOpen || !requisition || !mounted) return null
 
   const handleAuthorize = () => {
     setIsAuthorizing(true)
@@ -79,12 +85,12 @@ export function SupplyApprovalPillModal({
       ? { label: 'District CMO ➔ Inter-Hospital Share', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' }
       : { label: 'Medical Supt ➔ Department Allocation', color: 'bg-teal-100 text-teal-800 border-teal-300' }
 
-  return (
+  const modalElement = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs font-sans text-stone-900">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md font-sans text-stone-900">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 0.95, y: 0 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-stone-200/90 overflow-hidden"
@@ -120,7 +126,7 @@ export function SupplyApprovalPillModal({
           </div>
 
           {/* Body */}
-          <div className="p-6 space-y-5">
+          <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
             {/* Tier & Urgency Badges */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${tierBadge.color}`}>
@@ -256,4 +262,6 @@ export function SupplyApprovalPillModal({
       </div>
     </AnimatePresence>
   )
+
+  return createPortal(modalElement, document.body)
 }

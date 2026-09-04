@@ -77,6 +77,27 @@
 
 ---
 
+## 🔮 Phase 9.7: Inter-District Patient Referral & Cross-Boundary Transfer Protocol (Planned)
+
+> [!IMPORTANT]
+> **Cross-District Transfer Necessity**: District CMOs are currently scoped strictly to their own district's hospitals. However, certain complex cases (severe neurotrauma, pediatric cardiac surgery, advanced oncology) require referral to tertiary centers in other districts — e.g., RIMS Ranchi, MGM Jamshedpur, or Medica Superspecialty.
+
+### 1. Inter-District Referral Authorization Flow
+- **District CMO of originating district** initiates a cross-boundary transfer request specifying the patient's clinical needs and the target facility.
+- **Receiving District CMO** or **Receiving Hospital Admin** reviews and approves/rejects the incoming referral with bed pre-booking confirmation.
+- **State Health Command** has oversight visibility on all inter-district transfers for audit and resource tracking.
+
+### 2. Intelligent Cross-District Hospital Matching
+- Extends the existing Dijkstra routing engine to evaluate hospitals across district boundaries.
+- Multi-criteria scoring includes: specialist availability (e.g., neurosurgeon on duty), equipment compatibility (CT/MRI/Cath Lab), current ICU vacancy, and real road-distance ETA.
+- Presents ranked recommendations to the referring CMO with confidence scores.
+
+### 3. Transfer Audit Trail
+- Every cross-district transfer generates a permanent audit token (`#JH-XFER-YYYY-XXXX`) linking originating facility, receiving facility, authorizing officers, patient clinical summary, and ambulance dispatch ID.
+- State Health Command can query all inter-district transfers by date, district, facility, or severity tier.
+
+---
+
 ## 🚀 Strategic Multi-Phase Roadmap Overview
 
 | Phase | Title | Focus & Deliverables | Status |
@@ -86,6 +107,7 @@
 | **Phase 9.3** | UI/UX Modernization & Doctor Availability | Plus Jakarta Sans typography, Boltshift KPIs, Globetrans Map HUD, Doctor Roster | ✅ Completed |
 | **Phase 9.4** | Clinician & Doctor Profile Customization | Individual editable profile cards, cross-user inspection, user-provided card layout | 🔮 Next Sprint |
 | **Phase 9.5** | AI Predictive Shortage & Proactive Pre-Fetch | Bottom-up shortage incident logging, AI pre-fetch recommendations, triage queue insight alerts | ✅ Architecture Embedded |
+| **Phase 9.6** | GIS Map Overhaul, Multi-Ambulance Fleet & 3-Tier Inventory | Real GPS hospital positioning, surge capacity coloring, 6-unit ALS/BLS fleet command, role-scoped inventory governance | ✅ Completed |
 | **Phase 10** | FIDO2 / WebAuthn Hardware Security Keys | Physical YubiKey 5 NFC / USB-C & biometric fingerprint passkey support | 🔮 Planned |
 | **Phase 11** | Real-Time Bed & Oxygen IoT Telemetry | PSA oxygen plant telemetry, LMO pressure sensors, HL7/FHIR ventilator polling | 🔮 Planned |
 | **Phase 12** | 108 Ambulance Dedicated Field Mobile App | Flutter/React Native PWA, `< 2KB` payload, offline SQLite queue, glove-friendly UI | 🔮 Planned |

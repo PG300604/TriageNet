@@ -144,6 +144,35 @@ graph TD
 
 ---
 
+### ✅ Phase 9.6: GIS Spatial Map Overhaul, Multi-Ambulance Fleet & 3-Tier Inventory Governance (Completed — Sep 4, 2026)
+- **Real GIS Coordinate Hospital Positioning**:
+  - Eliminated radial trigonometric circle layout that placed all hospitals in a uniform circle pattern.
+  - All 79 hospital markers now positioned at their actual GPS latitude/longitude coordinates from the authenticated Jharkhand facility dataset.
+  - Haversine-based fuzzy coordinate matching ensures backend API data maps accurately to local GIS coordinates.
+- **3-Tier Surge Capacity Color Hierarchy on Leaflet Map**:
+  - Crimson Red (≥80% load) with animated pulsing beacon and percentage badge.
+  - Amber (60–80% load) with percentage badge.
+  - Emerald Green (<60% load) with percentage badge.
+  - Real-time color transitions as capacity fluctuates during simulation and live mode.
+- **6-Unit Multi-Ambulance Fleet Tactical Command**:
+  - ALS (Advanced Life Support) and BLS (Basic Life Support) fleet units deployed with real Jharkhand GPS coordinates.
+  - Operational coverage circles (20–35 km radius) rendered with status-based coloring.
+  - Fleet filter pills: All Fleet / Dispatched / Ready at Base / On-Scene.
+  - Interactive ambulance telemetry drawer with vitals HUD, crew roster, equipment badges, and action buttons.
+  - Fleet state syncs automatically on dispatch and patient arrival.
+- **3-Tier Inventory & Supplies Role-Scoped Governance**:
+  - **State Health Command**: District-wise budget allocation overview, bulk procurement deal tracking, statewide shortage trend aggregation.
+  - **District CMO**: Equitable hospital share distribution, inter-facility equipment rebalancing, district emergency reserve management.
+  - **Hospital Admin**: Department-level spend allocation (ICU, Trauma Bay, General Wards), equipment lifecycle tracking, frontline shortage incident logging.
+  - Replaced legacy terminal CLI interface with modern pill-based approval modals with full-viewport backdrop blur.
+- **District & Hospital Inspect Overview Modals**:
+  - Full-viewport portal overlay modals with backdrop blur across sidebar and topbar.
+  - Inspect button reveals essential metrics summary without navigating to lower tiers.
+- **Inter-District Referral Architecture (Design Noted)**:
+  - Design scaffolding documented for future cross-district patient referral to specialized tertiary hospitals (e.g., RIMS Ranchi for complex neurotrauma).
+
+---
+
 ### 🔮 Phase 9.4: Clinician & Doctor Profile Customization System (Next Sprint)
 - **Individualized Profile Cards for Every Health Professional**:
   - Dedicated personal profile card for each user and staff member with qualifications, medical council registration, affiliated facility, active shift hours, and comms extensions.

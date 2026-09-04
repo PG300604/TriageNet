@@ -6,7 +6,7 @@
 
 ### AI-powered state-wide hospital emergency triage & spatial resource allocation platform for Jharkhand government healthcare
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.2-6DB33F?logo=spring-boot)](https://spring.io/projects/spring-boot)
 [![Python](https://img.shields.io/badge/Python-ML_Pipeline-3776AB?logo=python)](https://python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://postgresql.org/)
@@ -35,6 +35,7 @@
 - [ML Research & Multi-Dataset Benchmarking](#ml-research--multi-dataset-benchmarking)
 - [State-Wide Scaling Vision](#state-wide-scaling-vision)
 - [Development Progress](#development-progress)
+- [User Onboarding Guide](#user-onboarding-guide)
 - [Multi-Phase Strategic Roadmap & Architecture](ROADMAP.md)
 - [Environment Variables](#environment-variables)
 - [License](#license)
@@ -64,7 +65,7 @@ The system uses **machine learning severity scoring**, **Haversine & OpenRouteSe
 |---------|-------------|
 | **Haversine & ORS Distance Matrix** | Calculates real road driving distances (km) and travel durations (minutes) between patient/ambulance GPS coordinates and candidate hospitals |
 | **Interactive Leaflet Map** | OpenStreetMap tile layer rendering color-coded hospital capacity markers (🟢 <60%, 🟡 60–80%, 🔴 >80% surge) across all 24 districts |
-| **108 Ambulance Dispatcher** | Live ambulance location pin and animated polyline road routing to optimal referral destination |
+| **Multi-Ambulance Fleet Command** | 6-unit ALS/BLS fleet with real GPS coordinates, operational coverage circles (20–35 km), status-based coloring, fleet filter pills, and interactive telemetry drawers with vitals HUD and crew roster |
 | **24-District Segregation** | Statewide overview mode or district-specific filtering with facility tier locks (*TERTIARY, DISTRICT, SUB_DIVISIONAL, CHC*) |
 
 ### 108 Ambulance Tactical Command System
@@ -75,13 +76,14 @@ The system uses **machine learning severity scoring**, **Haversine & OpenRouteSe
 | **1-Click Bed Pre-Booking** | Generates dispatch token `#JH-108-DISPATCH-XXXX`, reserves ICU bed, injects patient into receiving triage queue |
 | **In-Flight Fleet Telemetry** | Live countdown timer and arrival bed handover action |
 
-### Autonomous AI Supply Demand & Dispatcher Engine
+### 3-Tier Inventory & Supplies Governance
 | Feature | Description |
 |---------|-------------|
-| **Autonomous 24/7 Telemetry** | Continuously monitors regional hospital bed and ICU capacity loads without requiring manual button triggers |
-| **Dynamic Need Calculator** | Computes exact dynamic deficits based on situation severity (Mass Casualty vs Regional Surge vs Steady State) |
-| **Darkroom Terminal CLI** | Interactive macOS/Linux terminal streaming 100% live computed telemetry, bottleneck metrics, AI solutions, and embedded operator permission controls |
-| **Dynamic Need Flagging** | Automatically raises live supply flags for strained facilities (Load ≥ 70%) with one-click live approval |
+| **State Health Command Tier** | District-wise budget allocation, bulk GeM procurement contracts, statewide shortage trend aggregation |
+| **District CMO Tier** | Equitable hospital share distribution, inter-facility equipment rebalancing, district emergency reserve management |
+| **Hospital Admin Tier** | Department-level budget allocation (ICU, Trauma, Wards), equipment maintenance tracking, frontline shortage incident logging |
+| **AI Predictive Pre-Fetch Engine** | Correlates shortage reports with incoming 108 admissions and historical patterns to recommend proactive inventory mobilization before bottlenecks |
+| **Pill-Based Approval System** | Modern modal-based approval workflow replacing legacy terminal CLI — inspect details and approve/reject with a single click |
 
 ### AI Financial & Equipment Cost Management Agent (Indian Rupees ₹)
 | Feature | Description |
@@ -763,13 +765,13 @@ TriageNet/
 │   │       ├── sidebar.tsx             # RBAC navigation drawer (185 lines)
 │   │       ├── top-bar.tsx             # Scenario switch + simulation clock (365 lines)
 │   │       ├── triage-queue-view.tsx   # Priority Heap management (675 lines)
-│   │       ├── regional-network-view.tsx  # GIS + Dijkstra + 108 Dispatch (991 lines)
-│   │       ├── leaflet-map.tsx         # OpenStreetMap interactive map (282 lines)
+│   │       ├── regional-network-view.tsx  # GIS + Dijkstra + 108 Dispatch (1283 lines)
+│   │       ├── leaflet-map.tsx         # OpenStreetMap interactive map (470 lines)
 │   │       ├── patients-view.tsx       # Patient registry + ML scorer (292 lines)
 │   │       ├── capacity-view.tsx       # Bed & ICU occupancy meters (222 lines)
 │   │       ├── billing-view.tsx        # Revenue & PM-JAY claims (533 lines)
 │   │       ├── reports-view.tsx        # Risk telemetry analytics (503 lines)
-│   │       ├── supplies-view.tsx       # Equipment inventory (272 lines)
+│   │       ├── supplies-view.tsx       # Equipment inventory (680 lines)
 │   │       ├── appointments-view.tsx   # Scheduling calendar (334 lines)
 │   │       ├── aicds-view.tsx          # AI Clinical Decision Support (180 lines)
 │   │       ├── clinical-view.tsx       # Ward operations & shifts (191 lines)
@@ -1048,6 +1050,15 @@ flowchart LR
 | **Zero-Email Status Probe API** | `GET /api/auth/status/{staffId}` — Public, real-time cryptographic status check allowing clinicians to probe verification status without SMS/email notifications. |
 | **65/65 Backend Tests** | 100% automated test coverage covering full registration → pending lock → hierarchical precedence guards → active shift login. |
 
+### ✅ Phase 9.6 — GIS Spatial Map Overhaul, Multi-Ambulance Fleet Command & 3-Tier Inventory Governance (Complete — Sep 4, 2026)
+- [x] **Real GIS Coordinate Hospital Positioning**: Eliminated radial trigonometric circle layout; hospitals now placed at actual GPS lat/lng coordinates from the 79-facility Jharkhand dataset using Haversine-based fuzzy matching.
+- [x] **3-Tier Surge Capacity Color Hierarchy**: Hospital markers dynamically colored — Crimson Red (≥80% load, pulsing beacon), Amber (60–80%), Emerald Green (<60%) — with live percentage badges on the Leaflet map.
+- [x] **6-Unit Multi-Ambulance Fleet Command**: ALS/BLS fleet deployed with real Jharkhand GPS coordinates, operational coverage circles (20–35 km radius), status-based coloring, fleet filter pills (All / Dispatched / Ready / On-Scene), and interactive telemetry drawers with vitals HUD, crew roster, and equipment badges.
+- [x] **3-Tier Inventory & Supplies Governance**: Role-scoped inventory views — State Health Command (district-wise budget allocation & bulk procurement), District CMO (equitable hospital share distribution), Hospital Admin (department-level spend allocation). Replaced terminal CLI with modern pill-based approval modals.
+- [x] **District/Hospital Overview Inspect Modals**: Full-viewport portal overlay modals with backdrop blur for inspecting district and hospital inventory details without leaving the current tier.
+- [x] **AI Predictive Supply Engine (Phase 9.5 Architecture)**: Bottom-up shortage incident logging by frontline officers, AI-correlated pre-fetch recommendations with Dijkstra transit routing to nearest reserve depots.
+- [x] **Inter-District Referral Provision (Architecture Noted)**: Design scaffolding for referring patients to specialized hospitals across district boundaries (e.g., RIMS Ranchi for complex trauma cases).
+
 <details>
 <summary><b>🔍 Deep Dive: Cryptographic Onboarding Architecture, Algorithms & Approval Hierarchy</b></summary>
 
@@ -1269,6 +1280,115 @@ The automated Hermes security audit findings have been cataloged in [`.github/SE
 - `Issue B3 (MEDIUM)`: Eliminate permissive `permitAll()` endpoints without hospital tenant scoping.
 - `Issue B4 (LOW)`: Cleanse template secret in `application-local.yml.example`.
 - `Issue B5 (LOW)`: Document test profile fixed CSPRNG secret.
+
+---
+
+## User Onboarding Guide
+
+TriageNet is built for real-world impact — from state health commanders managing 24 districts to triage nurses saving lives in rural emergency departments. This guide explains how each role uses the platform in plain language.
+
+### For Healthcare Officers & Administrators
+
+#### State Health Command (Super Admin)
+You oversee the entire state of Jharkhand's healthcare emergency operations from a single dashboard.
+
+| What You Can Do | How |
+|-----------------|-----|
+| **See the big picture** | Your dashboard shows all 24 districts and 111 hospitals at a glance — bed occupancy, ICU loads, and oxygen levels in real time |
+| **Spot trouble early** | Hospitals nearing capacity (80%+) flash red on the live map. Amber means watch closely. Green means capacity is healthy |
+| **Allocate district budgets** | In Inventory & Supplies, review district-wise needs and allocate annual budgets for medical equipment and consumables |
+| **Approve district officers** | New District CMOs register themselves and appear in your Staff Queue for verification |
+| **Track ambulances statewide** | The Regional Network map shows every 108 ambulance — dispatched, en route, or standing by — with coverage zones |
+
+#### District Chief Medical Officer (District CMO)
+You manage all hospitals within your assigned district.
+
+| What You Can Do | How |
+|-----------------|-----|
+| **Monitor your district's hospitals** | Your dashboard filters automatically to show only hospitals in your district — their beds, ICU, equipment, and staff |
+| **Balance resources between hospitals** | See which hospitals need more supplies and redistribute budget shares from the Inventory section |
+| **Handle emergency overflows** | When a hospital in your district is full, the system suggests the nearest hospital with available capacity |
+| **Approve hospital superintendents** | Verify and activate Medical Superintendent accounts for hospitals in your district |
+| **View district risk reports** | Access district-level analytics — patient severity trends, admission velocity, and capacity forecasts |
+
+#### Hospital Medical Superintendent (Hospital Admin)
+You run the day-to-day operations of your hospital facility.
+
+| What You Can Do | How |
+|-----------------|-----|
+| **Track bed occupancy in real time** | See exactly how many beds, ICU slots, and ventilators are available right now |
+| **Manage department budgets** | Allocate your hospital's budget across departments — Trauma, ICU, Pediatrics, etc. |
+| **Approve your clinical staff** | Verify and activate Triage Nurses, Ward Officers, and Dispatchers who register for your hospital |
+| **View billing & revenue** | Track PM-JAY (Ayushman Bharat) claims, patient billing, and cost recovery metrics in Indian Rupees (₹) |
+| **Check doctor availability** | See which specialists are on duty, on call, or off shift across all departments |
+
+#### Emergency Triage Nurse
+You are the first point of contact for patients arriving at the emergency department.
+
+| What You Can Do | How |
+|-----------------|-----|
+| **Score patient severity instantly** | Enter vitals (oxygen level, heart rate, blood pressure, temperature, breathing rate, age) and get an AI-powered severity score from 0 to 100 |
+| **Manage the priority queue** | Patients are automatically ranked by urgency. The sickest patients appear at the top |
+| **Get AI clinical guidance** | The AI Clinical Decision Support suggests possible conditions and recommended actions based on vital patterns |
+| **Flag shortages** | If your trauma bay is running low on ventilators or ICU beds, log it immediately — the AI will alert your superintendent and recommend pre-fetching supplies |
+
+#### 108 Ambulance Dispatcher
+You coordinate emergency ambulance services from the central dispatch desk.
+
+| What You Can Do | How |
+|-----------------|-----|
+| **Find the best hospital for the patient** | Enter the incident type and patient condition — the system scores all nearby hospitals on travel time, ICU beds, ventilators, and specialist availability |
+| **Pre-book a bed before arrival** | With one click, reserve an ICU bed at the receiving hospital and get a dispatch token (#JH-108-DISPATCH-XXXX) |
+| **Track your fleet** | See all ambulances on the live map — which ones are dispatched, which are at the base, and what area each one covers |
+| **Monitor arrival** | Live countdown timer shows ETA. When the ambulance arrives, mark it to trigger bed handover |
+
+### Quick Start for New Users
+
+```
+Step 1: Open TriageNet → http://localhost:3000
+Step 2: Click "Staff Registration" on the login page
+Step 3: Fill in your details — Name, Staff ID, Hospital, Role
+Step 4: Create a strong password
+Step 5: Save your security keys (QR code + 12-word recovery phrase + backup codes)
+Step 6: Wait for your supervisor to verify your account
+Step 7: Once approved, log in and start your shift!
+```
+
+### How the System Helps Save Lives — A Real Scenario
+
+> **Situation**: A road accident on NH-33 near Dhanbad. 5 critical patients need immediate care.
+>
+> 1. **108 Dispatcher** receives the call and enters incident details into TriageNet
+> 2. The system instantly scores all hospitals near Dhanbad — PMCH Dhanbad has 2 ICU beds, but Patliputra Medical College is already at 90% capacity (flashing red on the map)
+> 3. Dispatcher pre-books 3 beds at PMCH Dhanbad and 2 at Sadar Hospital Bokaro with one click each
+> 4. Ambulances are dispatched with live GPS tracking and ETA countdowns
+> 5. **Triage Nurses** at both receiving hospitals see the incoming patients in their queue with severity scores already computed
+> 6. **Hospital Admin** at PMCH notices ventilator stock dropping — logs a shortage. The AI recommends pre-fetching 2 units from the district reserve before the next wave arrives
+> 7. **District CMO** of Dhanbad sees the surge on their dashboard and reallocates emergency budget to cover the equipment gap
+> 8. **State Health Command** monitors the entire incident from the statewide map, ready to escalate if more districts need to be involved
+>
+> **Result**: All 5 patients receive care within the golden hour. Zero bed-hunting delays.
+
+### For Developers & Contributors
+
+See the [Getting Started](#getting-started) section for technical setup instructions, the [System Architecture](#system-architecture) section for how the codebase is structured, and the [Tech Stack](#tech-stack) for technologies used.
+
+Key entry points for development:
+- **Frontend**: `frontend/components/triagenet/dashboard.tsx` — the central view router
+- **Backend**: `src/main/java/com/triagenet/TriageNetApplication.java` — Spring Boot entry
+- **Data**: `frontend/lib/jharkhand-data.ts` — all 79 hospital facilities with GPS coordinates
+- **Algorithms**: `backend/src/main/java/com/triagenet/engine/` — Dijkstra, Hungarian Matcher, Severity Scorer
+
+### For Recruiters & Evaluators
+
+This project demonstrates:
+- **Full-stack engineering**: Next.js 16 + Spring Boot 3.3.2 + PostgreSQL
+- **Real-world data**: 79 actual government hospitals across 24 districts of Jharkhand with GPS coordinates
+- **Production security**: JWT + TOTP 2FA + BIP-39 recovery + CSRF protection + 54+ automated tests
+- **AI/ML integration**: Logistic Regression severity scoring with 98.88% cross-dataset transfer recall
+- **GIS & spatial computing**: Leaflet maps, Haversine distance, Dijkstra routing, OpenRouteService
+- **Role-based access control**: 6 hierarchical roles with 3-tier approval precedence
+- **Government healthcare domain**: Designed for Jharkhand State Health Department operations
 
 ---
 

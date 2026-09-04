@@ -343,16 +343,10 @@ export function Dashboard() {
     setState(built)
     setIsPlaying(false)
     setLastEventMessage(null)
-    if (next === 'mass-casualty') {
-      if (built.hospitals.length > 0) {
-        setSelectedHospitalId(built.hospitals[0].id)
-      }
-      setView('queue')
-      setUpdatedIds(new Set(built.patients.map((p) => p.id)))
-      window.setTimeout(() => setUpdatedIds(new Set()), 1200)
-    } else {
-      setUpdatedIds(new Set())
+    if (built.hospitals.length > 0) {
+      setSelectedHospitalId(built.hospitals[0].id)
     }
+    setUpdatedIds(new Set())
   }, [selectedDistrict])
 
 

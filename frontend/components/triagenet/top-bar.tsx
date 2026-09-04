@@ -7,17 +7,8 @@ import {
   Building2,
   Check,
   ChevronDown,
-  Play,
-  Pause,
-  Siren,
-  TrendingUp,
-  FastForward,
   Search,
-  Bell,
-  User,
   X,
-  AlertTriangle,
-  Sparkles,
   MapPin,
 } from 'lucide-react'
 
@@ -30,34 +21,13 @@ interface TopBarProps {
   onSelectHospital: (id: string) => void
   selectedDistrict?: string
   onSelectDistrict?: (district: string) => void
-  scenario: ScenarioKey
-  onRunScenario: (scenario: ScenarioKey) => void
+  scenario?: ScenarioKey
+  onRunScenario?: (scenario: ScenarioKey) => void
   onFastForward?: (stepMinutes: number) => void
   isPlaying?: boolean
   onTogglePlay?: () => void
   onNavigateView?: (view: string) => void
 }
-
-const SCENARIOS: {
-  key: ScenarioKey
-  label: string
-  desc: string
-  icon: typeof Play
-}[] = [
-  { key: 'steady', label: 'Steady State', desc: 'Baseline regional load', icon: Play },
-  {
-    key: 'mass-casualty',
-    label: 'Mass Casualty Event',
-    desc: 'Surge & overflow at Apex Hospital',
-    icon: Siren,
-  },
-  {
-    key: 'regional-surge',
-    label: 'Regional Surge',
-    desc: 'Elevated load network-wide',
-    icon: TrendingUp,
-  },
-]
 
 function useClickOutside(onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null)
@@ -88,7 +58,6 @@ export function TopBar({
   const { user } = useAuth()
   const [hospOpen, setHospOpen] = useState(false)
   const [distOpen, setDistOpen] = useState(false)
-  const [scenOpen, setScenOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -104,7 +73,6 @@ export function TopBar({
 
   const hospRef = useClickOutside(() => setHospOpen(false))
   const distRef = useClickOutside(() => setDistOpen(false))
-  const scenRef = useClickOutside(() => setScenOpen(false))
   const searchRef = useClickOutside(() => setSearchOpen(false))
 
   const searchResults = searchQuery.trim()
@@ -287,47 +255,11 @@ export function TopBar({
         </div>
       </div>
 
-      {/* Right: Scenario Switcher */}
+      {/* Right: Clean Live Network Sync Badge */}
       <div className="flex items-center gap-3">
-        {/* Scenario Selector Dropdown */}
-        <div ref={scenRef} className="relative z-50">
-          <button
-            type="button"
-            onClick={() => setScenOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#382416] hover:bg-stone-50 cursor-pointer shadow-xs transition-colors"
-          >
-            <Sparkles className="size-3.5 text-[#ea580c]" />
-            <span className="font-semibold">{SCENARIOS.find((s) => s.key === scenario)?.label}</span>
-            <ChevronDown className="size-3 text-stone-400" />
-          </button>
-
-          {scenOpen && (
-            <div className="absolute right-0 top-full mt-2 z-[100] w-72 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl space-y-1">
-              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                Simulation Scenarios
-              </div>
-              {SCENARIOS.map((s) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => {
-                    onRunScenario(s.key)
-                    setScenOpen(false)
-                  }}
-                  className={cn(
-                    'flex w-full items-start gap-3 rounded-xl p-2.5 text-xs text-left cursor-pointer transition-colors',
-                    s.key === scenario ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-stone-50 text-stone-800',
-                  )}
-                >
-                  <s.icon className="size-4 shrink-0 text-[#ea580c] mt-0.5" />
-                  <div>
-                    <p className="font-bold">{s.label}</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">{s.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="hidden sm:flex items-center gap-2 rounded-full border border-stone-200/80 bg-stone-50/80 px-3 py-1 text-xs font-medium text-stone-600">
+          <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>Live Network Synced</span>
         </div>
       </div>
     </header>

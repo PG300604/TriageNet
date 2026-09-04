@@ -24,6 +24,7 @@ import {
   convertFacilityToHospital,
   generateInterconnectivityEdges,
   JHARKHAND_24_DISTRICTS,
+  JHARKHAND_79_HOSPITALS,
 } from '@/lib/jharkhand-data'
 import { CapacityView } from './capacity-view'
 import { RegionalNetworkView } from './regional-network-view'
@@ -55,17 +56,39 @@ type DataSourceMode = 'live' | 'simulated'
  * so all downstream components work without modification.
  */
 function mapApiHospitalToLocal(h: HospitalApiData, idx: number, total: number): Hospital {
-  // Distribute hospitals in a radial layout for the Dijkstra SVG graph
-  const angle = (2 * Math.PI * idx) / Math.max(total, 1)
-  const radius = 30
-  const cx = 50, cy = 50
+  // Determine real geographic coordinates
+  const matchedFacility = JHARKHAND_79_HOSPITALS.find(
+    (f) =>
+      f.id === h.id ||
+      (h.shortCode && f.shortCode.toLowerCase() === h.shortCode.toLowerCase()) ||
+      f.name.toLowerCase() === h.name.toLowerCase() ||
+      h.name.toLowerCase().includes(f.name.toLowerCase()) ||
+      f.name.toLowerCase().includes(h.name.toLowerCase())
+  )
+
+  const districtName = h.districtName || h.region || matchedFacility?.districtName || 'Ranchi'
+  const matchedDistrict = JHARKHAND_24_DISTRICTS.find(
+    (d) => d.name.toLowerCase().includes(districtName.toLowerCase()) || districtName.toLowerCase().includes(d.name.toLowerCase())
+  )
+
+  const lat = (h.lat && h.lat > 15) ? h.lat : (matchedFacility?.latitude ?? matchedDistrict?.lat ?? 23.3441)
+  const lng = (h.lng && h.lng > 70) ? h.lng : (matchedFacility?.longitude ?? matchedDistrict?.lng ?? 85.3096)
+
+  // Real GIS bounding box projection for 2D Canvas/SVG:
+  // Jharkhand Lat bounds: 22.0 to 25.5 -> y from 90 to 10
+  // Jharkhand Lng bounds: 83.3 to 88.0 -> x from 10 to 90
+  const x = Math.min(92, Math.max(8, Math.round(((lng - 83.3) / 4.7) * 80 + 10)))
+  const y = Math.min(92, Math.max(8, Math.round((1 - (lat - 22.0) / 3.5) * 80 + 10)))
+
   return {
     id: h.id,
     name: h.name,
-    short: h.shortCode || h.name.replace(/[^A-Z]/g, '').slice(0, 5) || h.name.slice(0, 8),
-    district: h.districtName || h.region,
-    x: cx + radius * Math.cos(angle),
-    y: cy + radius * Math.sin(angle),
+    short: h.shortCode || matchedFacility?.shortCode || h.name.replace(/[^A-Z]/g, '').slice(0, 5) || h.name.slice(0, 8),
+    district: districtName,
+    lat,
+    lng,
+    x,
+    y,
     beds: { used: h.usedBeds, total: h.totalBeds },
     icuBeds: {
       used: (h.totalIcuBeds ?? 10) - (h.availableIcuBeds ?? 2),

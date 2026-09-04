@@ -28,6 +28,8 @@ export interface Hospital {
   /** normalized map position, 0-100 on each axis */
   x: number
   y: number
+  lat?: number
+  lng?: number
   beds: ResourcePool
   icuBeds: ResourcePool
   generalBeds: ResourcePool
@@ -81,6 +83,14 @@ export interface ReferralRecommendation {
   travelTimeMinutes: number
   matchReason: string
   reason: string
+}
+
+export interface TriageState {
+  hospitals: Hospital[]
+  patients: Patient[]
+  transfers: Transfer[]
+  edges?: NetworkEdge[]
+  recommendation?: ReferralRecommendation | null
 }
 
 export const HOSPITAL_IDS = {

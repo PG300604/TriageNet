@@ -36,7 +36,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import type { MapHospitalNode } from './leaflet-map'
+import type { MapHospitalNode, MapAmbulanceUnit } from './leaflet-map'
 import { useAuth } from '@/lib/auth-context'
 import { JHARKHAND_24_DISTRICTS, JHARKHAND_79_HOSPITALS } from '@/lib/jharkhand-data'
 import { apiClient } from '@/lib/api-client'
@@ -157,6 +157,121 @@ export function RegionalNetworkView({
   const [originName, setOriginName] = useState<string>('NH-33 Toll Crash (Ormanjhi)')
   const [activeHotspot, setActiveHotspot] = useState<string>('ormanjhi')
 
+  // Multi-Ambulance Fleet State across Jharkhand
+  const [fleetAmbulances, setFleetAmbulances] = useState<MapAmbulanceUnit[]>([
+    {
+      id: 'amb-1081',
+      callSign: '108 ALS #1081',
+      number: 'JH-01-ALS-1081',
+      type: 'ALS',
+      status: 'DISPATCHED',
+      lat: 23.4832,
+      lng: 85.4611,
+      baseStationName: 'RIMS Central Trauma EMT Hub (Ranchi)',
+      coverageRadiusKm: 25,
+      patientName: 'Kunal Besra',
+      incidentNature: 'NH-33 Toll High-Speed Collision',
+      priority: 'P1',
+      severityScore: 92,
+      destinationHospitalId: hospitals[0]?.id || 'jh-rims-ranchi',
+      destinationHospitalName: hospitals[0]?.name || 'Rajendra Institute of Medical Sciences (RIMS)',
+      etaMinutes: 11,
+      vitals: { spo2: 83, heartRate: 132, systolicBp: 86, gcs: 9 },
+      crew: { driver: 'S. K. Verma', paramedic: 'Dr. A. Minz (EMT-Adv)' },
+      equipment: ['Mindray Transport Vent', 'Philips MRx Defib', 'O2 Supply', 'Syringe Pump'],
+    },
+    {
+      id: 'amb-1082',
+      callSign: '108 ALS #1082',
+      number: 'JH-01-ALS-1082',
+      type: 'ALS',
+      status: 'AVAILABLE_AT_BASE',
+      lat: 23.3667,
+      lng: 85.325,
+      baseStationName: 'Sadar Hospital Base (Ranchi Central)',
+      coverageRadiusKm: 20,
+      crew: { driver: 'M. P. Yadav', paramedic: 'P. Linda (Paramedic)' },
+      equipment: ['Transport Vent', 'Defibrillator', 'Crash Cart', 'Oxygen Tank'],
+    },
+    {
+      id: 'amb-1083',
+      callSign: '108 ALS #1083',
+      number: 'JH-04-ALS-1083',
+      type: 'ALS',
+      status: 'DISPATCHED',
+      lat: 23.7501,
+      lng: 86.4162,
+      baseStationName: 'SNMMCH Dhanbad Colliery Emergency Station',
+      coverageRadiusKm: 30,
+      patientName: 'Sunil Karmakar',
+      incidentNature: 'Jharia Underground Mine Surge',
+      priority: 'P1',
+      severityScore: 89,
+      destinationHospitalId: 'jh-shaheed-nirmal-mahto-medical-college-hospital-dhanbad',
+      destinationHospitalName: 'SNMMCH Dhanbad',
+      etaMinutes: 16,
+      vitals: { spo2: 86, heartRate: 124, systolicBp: 94, gcs: 11 },
+      crew: { driver: 'R. K. Roy', paramedic: 'S. Banerjee (Critical Care Paramedic)' },
+      equipment: ['BIPAP/CPAP Vent', 'Defib Unit', 'Suction Machine', 'Multipara Monitor'],
+    },
+    {
+      id: 'amb-1084',
+      callSign: '108 BLS #1084',
+      number: 'JH-05-BLS-1084',
+      type: 'BLS',
+      status: 'AVAILABLE_AT_BASE',
+      lat: 22.8046,
+      lng: 86.2029,
+      baseStationName: 'MGM Medical College Hub (Jamshedpur)',
+      coverageRadiusKm: 22,
+      crew: { driver: 'D. Hansda', paramedic: 'A. Gorai (BLS Specialist)' },
+      equipment: ['Stretcher Trolley', 'Portable Oxygen', 'First Aid Trauma Kit'],
+    },
+    {
+      id: 'amb-1085',
+      callSign: '108 ALS #1085',
+      number: 'JH-02-ALS-1085',
+      type: 'ALS',
+      status: 'ON_SCENE',
+      lat: 24.298,
+      lng: 85.423,
+      baseStationName: 'Sadar Hospital Hazaribagh / Barhi GT Road Base',
+      coverageRadiusKm: 35,
+      patientName: 'Devendra Tiwary',
+      incidentNature: 'Barhi GT Road Multi-Vehicle Highway Pileup',
+      priority: 'P1',
+      severityScore: 88,
+      destinationHospitalId: 'jh-hazaribagh-medical-college-hospital',
+      destinationHospitalName: 'Hazaribagh Medical College Hospital',
+      etaMinutes: 24,
+      vitals: { spo2: 88, heartRate: 116, systolicBp: 102, gcs: 12 },
+      crew: { driver: 'B. Paswan', paramedic: 'Dr. N. K. Pandey' },
+      equipment: ['Spine Board & Extrication Collar', 'Automated CPR Machine', 'Transport Ventilator'],
+    },
+    {
+      id: 'amb-1086',
+      callSign: '108 BLS #1086',
+      number: 'JH-03-BLS-1086',
+      type: 'BLS',
+      status: 'AVAILABLE_AT_BASE',
+      lat: 23.6693,
+      lng: 86.1511,
+      baseStationName: 'Bokaro General Hospital EMT Base',
+      coverageRadiusKm: 20,
+      crew: { driver: 'K. N. Soren', paramedic: 'R. Kisku' },
+      equipment: ['Vital Signs Monitor', 'Oxygen Resuscitator', 'Splints & Burn Dressings'],
+    },
+  ])
+
+  const [fleetFilter, setFleetFilter] = useState<'ALL' | 'DISPATCHED' | 'AVAILABLE' | 'ON_SCENE'>('ALL')
+
+  const filteredAmbulances = useMemo(() => {
+    if (fleetFilter === 'DISPATCHED') return fleetAmbulances.filter((a) => a.status === 'DISPATCHED')
+    if (fleetFilter === 'AVAILABLE') return fleetAmbulances.filter((a) => a.status === 'AVAILABLE_AT_BASE')
+    if (fleetFilter === 'ON_SCENE') return fleetAmbulances.filter((a) => a.status === 'ON_SCENE')
+    return fleetAmbulances
+  }, [fleetAmbulances, fleetFilter])
+
   // Live Dispatches Fleet State
   const [activeDispatches, setActiveDispatches] = useState<ActiveAmbulanceDispatch[]>([
     {
@@ -181,12 +296,31 @@ export function RegionalNetworkView({
 
   const [lastDispatchAlert, setLastDispatchAlert] = useState<string | null>(null)
 
-  // Real Multi-Criteria Hospital Match Evaluator
+  // Real Multi-Criteria Hospital Match Evaluator - Natural Coordinates (Zero Circle Formula)
   const rankedCandidateHospitals = useMemo(() => {
     return hospitals.map((h) => {
-      const f = JHARKHAND_79_HOSPITALS.find((item) => item.id === h.id)
-      const hLat = f?.latitude ?? (23.3441 + (h.y - 50) * 0.02)
-      const hLng = f?.longitude ?? (85.3096 + (h.x - 50) * 0.02)
+      const f = JHARKHAND_79_HOSPITALS.find(
+        (item) =>
+          item.id === h.id ||
+          item.shortCode.toLowerCase() === h.short.toLowerCase() ||
+          item.name.toLowerCase() === h.name.toLowerCase() ||
+          item.name.toLowerCase().includes(h.name.toLowerCase()) ||
+          h.name.toLowerCase().includes(item.name.toLowerCase())
+      )
+
+      const districtObj = JHARKHAND_24_DISTRICTS.find(
+        (d) =>
+          (h.district && d.name.toLowerCase().includes(h.district.toLowerCase())) ||
+          (f?.districtName && d.name.toLowerCase().includes(f.districtName.toLowerCase()))
+      )
+
+      // Deterministic spatial offset if facility lat/lng is missing, spreading hospitals naturally
+      const idHash = (h.id || h.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      const jitterLat = ((idHash % 17) - 8) * 0.012
+      const jitterLng = (((idHash * 3) % 19) - 9) * 0.014
+
+      const hLat = h.lat ?? f?.latitude ?? (districtObj ? districtObj.lat + jitterLat : 23.3441 + jitterLat)
+      const hLng = h.lng ?? f?.longitude ?? (districtObj ? districtObj.lng + jitterLng : 85.3096 + jitterLng)
 
       const dLat = ((hLat - originLat) * Math.PI) / 180
       const dLng = ((hLng - originLng) * Math.PI) / 180
@@ -200,16 +334,16 @@ export function RegionalNetworkView({
       const distanceKm = Math.max(1.5, Math.round(6371 * c * 10) / 10)
       const etaMinutes = Math.max(4, Math.round(distanceKm * 1.35))
 
-      const totalIcu = h.icuBeds?.total ?? 10
-      const usedIcu = h.icuBeds?.used ?? 8
+      const totalIcu = h.icuBeds?.total ?? (f?.totalIcuBeds ?? 10)
+      const usedIcu = h.icuBeds?.used ?? (f ? Math.max(0, f.totalIcuBeds - f.availableIcuBeds) : 8)
       const availIcu = Math.max(0, totalIcu - usedIcu)
 
-      const totalGen = h.beds?.total ?? 100
-      const usedGen = h.beds?.used ?? 80
+      const totalGen = h.beds?.total ?? (f ? f.totalGeneralBeds + f.totalIcuBeds : 100)
+      const usedGen = h.beds?.used ?? (f ? Math.max(0, (f.totalGeneralBeds - f.availableGeneralBeds) + (f.totalIcuBeds - f.availableIcuBeds)) : 75)
       const availGen = Math.max(0, totalGen - usedGen)
 
-      const hasTraumaSurgeon = (h.specialistRoster?.traumaSurgeons?.available ?? 0) > 0 || totalIcu >= 30
-      const hasVentilators = (h.ventilators?.total ?? 0) > 0
+      const hasTraumaSurgeon = (h.specialistRoster?.traumaSurgeons?.available ?? 0) > 0 || (f?.hasTraumaSurgery ?? false) || totalIcu >= 30
+      const hasVentilators = (h.ventilators?.total ?? 0) > 0 || (f?.hasVentilator ?? false)
 
       const timeScore = Math.max(0, 40 - etaMinutes * 0.8)
       const icuScore = availIcu >= 3 ? 30 : availIcu === 2 ? 22 : availIcu === 1 ? 14 : 0
@@ -316,6 +450,28 @@ export function RegionalNetworkView({
       })
     }
 
+    // Sync into active fleet units
+    setFleetAmbulances((prev) => {
+      const idx = prev.findIndex((a) => a.number === assignedAmbulance || a.callSign.includes(assignedAmbulance))
+      if (idx !== -1) {
+        const updated = [...prev]
+        updated[idx] = {
+          ...updated[idx],
+          status: 'DISPATCHED',
+          patientName,
+          incidentNature,
+          priority: priorityTier === 'P1_IMMEDIATE' ? 'P1' : priorityTier === 'P2_URGENT' ? 'P2' : 'P3',
+          severityScore: liveAcuityScore,
+          destinationHospitalId: targetHospital.hospital.id,
+          destinationHospitalName: targetHospital.hospital.name,
+          etaMinutes: targetHospital.etaMinutes,
+          vitals: { spo2, heartRate, systolicBp, gcs },
+        }
+        return updated
+      }
+      return prev
+    })
+
     setLastDispatchAlert(
       `🚨 ${assignedAmbulance} DISPATCHED! Pre-booked ICU bed at ${targetHospital.hospital.name}. ETA: ${targetHospital.etaMinutes} mins (Token: ${dispatchToken})`,
     )
@@ -323,10 +479,29 @@ export function RegionalNetworkView({
   }
 
   const handleMarkArrived = (dispId: string) => {
+    const disp = activeDispatches.find((d) => d.id === dispId)
     setActiveDispatches((prev) =>
       prev.map((d) => (d.id === dispId ? { ...d, status: 'ARRIVED_TRAUMA_BAY', remainingMinutes: 0 } : d)),
     )
-    setLastDispatchAlert(`✅ Patient safely handed over to Trauma Bay team. Ambulance unit released!`)
+
+    if (disp) {
+      setFleetAmbulances((prev) =>
+        prev.map((a) =>
+          a.number === disp.ambulanceNumber || a.callSign.includes(disp.ambulanceNumber)
+            ? {
+                ...a,
+                status: 'AVAILABLE_AT_BASE',
+                patientName: undefined,
+                incidentNature: undefined,
+                destinationHospitalId: undefined,
+                destinationHospitalName: undefined,
+              }
+            : a
+        )
+      )
+    }
+
+    setLastDispatchAlert(`✅ Patient safely handed over to Trauma Bay team. Ambulance unit released to Standby!`)
     setTimeout(() => setLastDispatchAlert(null), 6000)
   }
 
@@ -337,21 +512,40 @@ export function RegionalNetworkView({
     setOriginName(name)
   }
 
-  const mapNodes: MapHospitalNode[] = rankedCandidateHospitals.map((c) => ({
-    id: c.hospital.id,
-    name: c.hospital.name,
-    districtName: selectedDistrict,
-    facilityTier: c.tier,
-    lat: c.lat,
-    lng: c.lng,
-    totalBeds: c.hospital.beds?.total ?? 100,
-    usedBeds: c.hospital.beds?.used ?? 80,
-    availableGeneralBeds: c.availGen,
-    availableIcuBeds: c.availIcu,
-    hasVentilator: c.hasVentilators,
-    hasTraumaSurgery: c.hasTraumaSurgeon,
-    hasBloodBank: true,
-  }))
+  const mapNodes: MapHospitalNode[] = rankedCandidateHospitals.map((c) => {
+    const f = JHARKHAND_79_HOSPITALS.find(
+      (item) =>
+        item.id === c.hospital.id ||
+        item.shortCode.toLowerCase() === c.hospital.short.toLowerCase() ||
+        item.name.toLowerCase() === c.hospital.name.toLowerCase() ||
+        item.name.toLowerCase().includes(c.hospital.name.toLowerCase()) ||
+        c.hospital.name.toLowerCase().includes(item.name.toLowerCase())
+    )
+
+    const totBeds = (c.hospital.beds && c.hospital.beds.total > 0)
+      ? c.hospital.beds.total
+      : (f ? f.totalGeneralBeds + f.totalIcuBeds : 100)
+
+    const usedB = (c.hospital.beds && c.hospital.beds.used !== undefined)
+      ? c.hospital.beds.used
+      : (f ? Math.max(0, (f.totalGeneralBeds - f.availableGeneralBeds) + (f.totalIcuBeds - f.availableIcuBeds)) : 68)
+
+    return {
+      id: c.hospital.id,
+      name: c.hospital.name,
+      districtName: c.hospital.district || f?.districtName || selectedDistrict,
+      facilityTier: c.tier,
+      lat: c.lat,
+      lng: c.lng,
+      totalBeds: totBeds,
+      usedBeds: usedB,
+      availableGeneralBeds: c.availGen,
+      availableIcuBeds: c.availIcu,
+      hasVentilator: c.hasVentilators,
+      hasTraumaSurgery: c.hasTraumaSurgeon,
+      hasBloodBank: true,
+    }
+  })
 
   const layoutMap = getLayoutPositions(hospitals)
   const activeTransfers = transfers.filter((t) => t.active)
@@ -578,12 +772,94 @@ export function RegionalNetworkView({
         {/* Left Column: Spatial Map / Topology + Floating Telemetry HUD */}
         <div className="space-y-4">
           {activeTab === 'map' ? (
-            <div className="rounded-2xl border border-stone-200/80 bg-white p-2 shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-stone-200/80 bg-white p-3 shadow-sm overflow-hidden space-y-3">
+              {/* Fleet Filter Bar & Status Overview */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-stone-100">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mr-1">
+                    Fleet Filter:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFleetFilter('ALL')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
+                      fleetFilter === 'ALL'
+                        ? 'bg-[#382416] text-[#ffedd7] shadow-2xs'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200/60'
+                    )}
+                  >
+                    All Fleet ({fleetAmbulances.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetFilter('DISPATCHED')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                      fleetFilter === 'DISPATCHED'
+                        ? 'bg-[#ea580c] text-white shadow-2xs'
+                        : 'bg-orange-50 text-[#ea580c] border border-orange-200 hover:bg-orange-100/60'
+                    )}
+                  >
+                    <span className="size-1.5 rounded-full bg-[#ea580c] animate-ping"></span>
+                    Dispatched ({fleetAmbulances.filter((a) => a.status === 'DISPATCHED').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetFilter('AVAILABLE')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                      fleetFilter === 'AVAILABLE'
+                        ? 'bg-emerald-700 text-white shadow-2xs'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100/60'
+                    )}
+                  >
+                    <span className="size-1.5 rounded-full bg-emerald-500"></span>
+                    Ready at Base ({fleetAmbulances.filter((a) => a.status === 'AVAILABLE_AT_BASE').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFleetFilter('ON_SCENE')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                      fleetFilter === 'ON_SCENE'
+                        ? 'bg-rose-700 text-white shadow-2xs'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100/60'
+                    )}
+                  >
+                    On-Scene ({fleetAmbulances.filter((a) => a.status === 'ON_SCENE').length})
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-stone-500 font-medium hidden sm:block">
+                  Click any ambulance or hospital marker to inspect real-time telemetry
+                </div>
+              </div>
+
               <LeafletMap
                 hospitals={mapNodes}
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={setSelectedHospitalId}
+                ambulances={filteredAmbulances}
                 ambulanceLocation={{ lat: originLat, lng: originLng }}
+                onMarkArrived={(ambId) => {
+                  setFleetAmbulances((prev) =>
+                    prev.map((a) =>
+                      a.id === ambId
+                        ? {
+                            ...a,
+                            status: 'AVAILABLE_AT_BASE',
+                            patientName: undefined,
+                            incidentNature: undefined,
+                            destinationHospitalId: undefined,
+                            destinationHospitalName: undefined,
+                          }
+                        : a
+                    )
+                  )
+                  setLastDispatchAlert(`✅ Patient safely handed over to Trauma Bay. Unit returned to standby!`)
+                  setTimeout(() => setLastDispatchAlert(null), 6000)
+                }}
               />
             </div>
           ) : (

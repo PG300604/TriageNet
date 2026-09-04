@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ApiClient, getAuthToken, setAuthToken, removeAuthToken } from './api-client';
+import { ApiClient, getAuthToken, setAuthToken, removeAuthToken, type AuthResponse } from './api-client';
 
 export type UserRole =
   | 'SUPER_ADMIN'

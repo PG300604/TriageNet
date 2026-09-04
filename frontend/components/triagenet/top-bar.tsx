@@ -129,25 +129,25 @@ export function TopBar({
             onClick={() => canSwitchDistrict && setDistOpen((v) => !v)}
             disabled={!canSwitchDistrict}
             className={cn(
-              'inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 font-mono text-xs font-bold transition-all shadow-2xs',
+              'inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all shadow-xs',
               canSwitchDistrict
                 ? 'border-[#382416]/20 bg-[#382416] text-[#ffedd7] hover:bg-[#28180d] cursor-pointer'
-                : 'border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed opacity-90',
+                : 'border-stone-200 bg-stone-100 text-stone-700 cursor-not-allowed opacity-90',
             )}
           >
-            <MapPin className="size-3.5 text-[#dc5000]" />
-            <span className="truncate max-w-[150px] md:max-w-[200px]">
+            <MapPin className="size-3.5 text-[#ea580c]" />
+            <span className="truncate max-w-[150px] md:max-w-[210px] font-semibold">
               {selectedDistrict === 'ALL'
-                ? '🌟 ALL 24 DISTRICTS (JHARKHAND)'
-                : `${selectedDistrict.toUpperCase()} DISTRICT${user?.role === 'DISTRICT_CMO' ? ' (CMO COMMAND)' : ''}`}
+                ? '🌟 All 24 Districts (Statewide)'
+                : `${selectedDistrict} District${user?.role === 'DISTRICT_CMO' ? ' (CMO Command)' : ''}`}
             </span>
             {canSwitchDistrict && <ChevronDown className="size-3 text-[#ffedd7]" />}
           </button>
 
           {distOpen && canSwitchDistrict && (
-            <div className="absolute left-0 top-full mt-2 z-[100] w-72 max-h-96 overflow-y-auto rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
-              <div className="px-2 py-1 text-[9px] font-mono font-bold text-slate-400 uppercase">
-                STATEWIDE OVERVIEW
+            <div className="absolute left-0 top-full mt-2 z-[100] w-72 max-h-96 overflow-y-auto rounded-2xl border border-stone-200 bg-white p-2 shadow-xl space-y-1">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                Statewide Overview
               </div>
               <button
                 type="button"
@@ -156,16 +156,16 @@ export function TopBar({
                   setDistOpen(false)
                 }}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-mono font-bold text-left cursor-pointer',
-                  selectedDistrict === 'ALL' ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-[#f7f2ea] text-slate-800',
+                  'flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-left cursor-pointer transition-colors',
+                  selectedDistrict === 'ALL' ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-stone-50 text-stone-800',
                 )}
               >
-                <span>🌟 ALL 24 DISTRICTS (STATEWIDE)</span>
-                {selectedDistrict === 'ALL' && <Check className="size-3.5 text-[#dc5000]" />}
+                <span>🌟 All 24 Districts (Statewide)</span>
+                {selectedDistrict === 'ALL' && <Check className="size-3.5 text-[#ea580c]" />}
               </button>
 
-              <div className="px-2 pt-2 pb-1 text-[9px] font-mono font-bold text-slate-400 uppercase border-t border-slate-100">
-                24 JHARKHAND DISTRICTS
+              <div className="px-2.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-t border-stone-100">
+                24 Jharkhand Districts
               </div>
               {[
                 'Ranchi', 'East Singhbhum (Jamshedpur)', 'Dhanbad', 'Bokaro', 'Hazaribagh',
@@ -181,12 +181,12 @@ export function TopBar({
                     setDistOpen(false)
                   }}
                   className={cn(
-                    'flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-mono text-left cursor-pointer',
-                    selectedDistrict === dName ? 'bg-[#382416] text-[#ffedd7] font-bold' : 'hover:bg-[#f7f2ea] text-slate-700',
+                    'flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-xs text-left cursor-pointer transition-colors',
+                    selectedDistrict === dName ? 'bg-[#382416] text-[#ffedd7] font-bold' : 'hover:bg-stone-50 text-stone-700 font-medium',
                   )}
                 >
                   <span>{dName}</span>
-                  {selectedDistrict === dName && <Check className="size-3.5 text-[#dc5000]" />}
+                  {selectedDistrict === dName && <Check className="size-3.5 text-[#ea580c]" />}
                 </button>
               ))}
 
@@ -199,15 +199,18 @@ export function TopBar({
           <button
             type="button"
             onClick={() => setHospOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-1.5 font-mono text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#382416] hover:bg-stone-50 cursor-pointer shadow-xs transition-colors"
           >
-            <Building2 className="size-3.5 text-[#dc5000]" />
-            <span className="truncate max-w-[160px]">{selectedHospital?.name ?? 'Select Hospital'}</span>
-            <ChevronDown className="size-3 text-slate-400" />
+            <Building2 className="size-3.5 text-[#ea580c]" />
+            <span className="truncate max-w-[170px]">{selectedHospital?.name ?? 'Select Hospital'}</span>
+            <ChevronDown className="size-3 text-stone-400" />
           </button>
 
           {hospOpen && (
-            <div className="absolute left-0 top-full mt-2 z-[100] w-72 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+            <div className="absolute left-0 top-full mt-2 z-[100] w-80 max-h-96 overflow-y-auto rounded-2xl border border-stone-200 bg-white p-2 shadow-xl space-y-1">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                Connected Facilities ({hospitals.length})
+              </div>
               {hospitals.map((h) => (
                 <button
                   key={h.id}
@@ -217,14 +220,14 @@ export function TopBar({
                     setHospOpen(false)
                   }}
                   className={cn(
-                    'flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-mono text-left cursor-pointer',
+                    'flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs text-left cursor-pointer transition-colors',
                     h.id === selectedHospitalId
                       ? 'bg-[#382416] text-[#ffedd7] font-bold'
-                      : 'text-slate-700 hover:bg-[#f7f2ea]',
+                      : 'text-stone-700 hover:bg-stone-50 font-medium',
                   )}
                 >
-                  <span>{h.name}</span>
-                  {h.id === selectedHospitalId && <Check className="size-3.5 text-[#dc5000]" />}
+                  <span className="truncate">{h.name}</span>
+                  {h.id === selectedHospitalId && <Check className="size-3.5 text-[#ea580c] shrink-0" />}
                 </button>
               ))}
             </div>

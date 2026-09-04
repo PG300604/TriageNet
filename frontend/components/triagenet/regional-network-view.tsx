@@ -30,6 +30,9 @@ import {
   Radio,
   Sliders,
   Send,
+  Building2,
+  Flame,
+  Check,
 } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
@@ -44,8 +47,8 @@ const LeafletMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[520px] w-full rounded-2xl bg-slate-100 animate-pulse flex items-center justify-center font-mono text-xs text-slate-400">
-        Loading Jharkhand Spatial Map...
+      <div className="h-[520px] w-full rounded-2xl bg-stone-100 animate-pulse flex items-center justify-center font-sans text-xs text-stone-500 font-medium">
+        Loading Jharkhand Spatial Map Telemetry...
       </div>
     ),
   },
@@ -147,7 +150,7 @@ export function RegionalNetworkView({
   const [heartRate, setHeartRate] = useState(138)
   const [systolicBp, setSystolicBp] = useState(84)
   const [gcs, setGcs] = useState(10)
-  
+
   // GPS Location & Hotspot Presets
   const [originLat, setOriginLat] = useState<number>(23.4832)
   const [originLng, setOriginLng] = useState<number>(85.4611)
@@ -244,6 +247,11 @@ export function RegionalNetworkView({
     if (gcs < 11) score += 15
     return Math.min(99, score)
   }, [spo2, heartRate, systolicBp, gcs])
+
+  // Total available ICU beds across candidate facilities
+  const totalCandidateIcuAvail = useMemo(() => {
+    return rankedCandidateHospitals.reduce((sum, h) => sum + h.availIcu, 0)
+  }, [rankedCandidateHospitals])
 
   const handleExecute108Dispatch = () => {
     if (!targetHospital) return
@@ -347,175 +355,254 @@ export function RegionalNetworkView({
 
   const layoutMap = getLayoutPositions(hospitals)
   const activeTransfers = transfers.filter((t) => t.active)
+  const inFlightCount = activeDispatches.filter((d) => d.status !== 'ARRIVED_TRAUMA_BAY').length
 
   return (
-    <div className="flex flex-col gap-5 font-sans text-[#2c1b0e]">
+    <div className="flex flex-col gap-6 font-sans text-stone-900">
+      {/* Alert Notification Toast */}
       {lastDispatchAlert && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-300 bg-gradient-to-r from-red-600 to-rose-700 p-4 text-white shadow-lg animate-bounce">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-gradient-to-r from-red-600 to-rose-700 p-4 text-white shadow-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
-            <Radio className="size-6 animate-pulse text-[#ffedd7]" />
-            <span className="font-mono text-xs font-bold uppercase tracking-wider">{lastDispatchAlert}</span>
+            <Radio className="size-5 animate-pulse text-[#ffedd7]" />
+            <span className="text-xs font-semibold uppercase tracking-wide">{lastDispatchAlert}</span>
           </div>
           <button
             type="button"
             onClick={() => setLastDispatchAlert(null)}
-            className="rounded-lg bg-black/20 px-2 py-1 text-[10px] font-mono font-bold hover:bg-black/30 cursor-pointer"
+            className="rounded-lg bg-black/20 px-2.5 py-1 text-xs font-bold hover:bg-black/30 cursor-pointer"
           >
             DISMISS
           </button>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#382416]/15 pb-4">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold tracking-tight text-[#382416] uppercase font-mono flex items-center gap-2">
-              <Truck className="size-5 text-[#dc5000]" />
-              108 AMBULANCE TACTICAL DISPATCH & SPATIAL ROUTING COMMAND
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#ea580c]">
+              <Truck className="size-5" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-[#382416]">
+              108 Ambulance Dispatch & Regional Spatial Routing
             </h2>
-            <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
-              [LIVE TELEMETRY READY]
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              Live Telemetry
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Real-time GPS incident positioning, multi-criteria Dijkstra hospital matching, pre-booked ICU beds, and live fleet handover
+          <p className="text-xs text-stone-600 mt-1">
+            Real-time GPS incident positioning, multi-criteria Dijkstra hospital matching, pre-booked ICU beds, and live fleet handover.
           </p>
         </div>
 
-        <div className="inline-flex p-1 bg-white border border-[#382416]/15 rounded-xl shadow-2xs">
+        {/* Spatial Map / Topology Tab Switcher */}
+        <div className="inline-flex p-1 bg-stone-100 border border-stone-200 rounded-xl shadow-2xs self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab('map')}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
               activeTab === 'map'
                 ? 'bg-[#382416] text-[#ffedd7] shadow-xs'
-                : 'text-slate-600 hover:text-[#382416] hover:bg-slate-100',
+                : 'text-stone-600 hover:text-[#382416] hover:bg-stone-200/60',
             )}
           >
-            <MapPin className="size-3.5 text-[#dc5000]" />
-            SPATIAL MAP
+            <MapPin className="size-3.5 text-[#ea580c]" />
+            Spatial GIS Map
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('graph')}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5',
+              'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
               activeTab === 'graph'
                 ? 'bg-[#382416] text-[#ffedd7] shadow-xs'
-                : 'text-slate-600 hover:text-[#382416] hover:bg-slate-100',
+                : 'text-stone-600 hover:text-[#382416] hover:bg-stone-200/60',
             )}
           >
-            <Route className="size-3.5 text-[#dc5000]" />
-            DIJKSTRA TOPOLOGY
+            <Route className="size-3.5 text-[#ea580c]" />
+            Dijkstra Topology
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-[#382416]/15 rounded-2xl p-3.5 shadow-2xs">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">ACTIVE DISTRICT COMMAND:</span>
-            <span className="inline-flex items-center gap-1.5 bg-[#382416] text-[#ffedd7] text-xs font-mono font-bold py-1 px-3 rounded-xl shadow-2xs">
-              <MapPin className="size-3 text-[#dc5000]" />
-              {selectedDistrict === 'ALL' ? '🌟 ALL 24 DISTRICTS (JHARKHAND STATEWIDE)' : `${selectedDistrict.toUpperCase()} DISTRICT`}
+      {/* 4-Card Boltshift/Starline Metric Summary Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Active In-Flight Dispatches (Hero Terracotta) */}
+        <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-[#ea580c] to-[#c2410c] p-5 text-white shadow-md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-orange-100">
+              Active Dispatches
             </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-white/20">
+              <Radio className="size-4 text-white animate-pulse" />
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-bold text-[#382416] uppercase">FACILITY TIER:</span>
-            <select
-              value={filterTier}
-              onChange={(e) => setFilterTier(e.target.value)}
-              className="bg-[#FAF6F0] border border-[#382416]/20 text-[#382416] text-xs font-mono font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
-            >
-              <option value="ALL">ALL FACILITY TIERS</option>
-              <option value="TERTIARY">TERTIARY (Medical Colleges & Apex)</option>
-              <option value="DISTRICT">DISTRICT (Sadar Hospitals)</option>
-              <option value="SUB_DIVISIONAL">SUB-DIVISIONAL (SDH Referral)</option>
-              <option value="CHC">CHC (Community Health Centers)</option>
-            </select>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-tight">{inFlightCount}</span>
+            <span className="text-xs font-medium text-orange-100">Units In Transit</span>
           </div>
+          <p className="mt-2 text-xs text-orange-100/80">
+            {inFlightCount > 0 ? 'Live GPS beacon telemetry transmitting' : 'All fleet units at bay readiness'}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="bg-red-50 border border-red-200 text-red-700 px-3 py-1 rounded-xl font-bold">
-            ACTIVE 108 DISPATCHES: {activeDispatches.filter((d) => d.status !== 'ARRIVED_TRAUMA_BAY').length}
-          </span>
-          <span className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-xl font-bold">
-            CANDIDATE FACILITIES: {rankedCandidateHospitals.length}
-          </span>
+        {/* Card 2: Connected Candidate Facilities */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              Candidate Facilities
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-stone-100 text-stone-700">
+              <Building2 className="size-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-tight text-[#382416]">
+              {rankedCandidateHospitals.length}
+            </span>
+            <span className="text-xs font-medium text-stone-500">Nodes Synced</span>
+          </div>
+          <p className="mt-2 text-xs text-stone-600">
+            {selectedDistrict === 'ALL' ? 'Statewide Net (Jharkhand)' : `${selectedDistrict} District Scope`}
+          </p>
+        </div>
+
+        {/* Card 3: Regional ICU Bed Pool */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              Regional ICU Pool
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-red-50 text-red-600">
+              <BedDouble className="size-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-tight text-red-700">
+              {totalCandidateIcuAvail}
+            </span>
+            <span className="text-xs font-medium text-stone-500">Available Beds</span>
+          </div>
+          <p className="mt-2 text-xs text-stone-600">
+            Pre-reservation hold capability active
+          </p>
+        </div>
+
+        {/* Card 4: Shortest Route Transit Latency */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+              Fastest ETA Match
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+              <Clock className="size-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-tight text-emerald-700">
+              {topMatch?.etaMinutes ?? 12}
+            </span>
+            <span className="text-xs font-medium text-stone-500">Mins ({topMatch?.distanceKm ?? 14} km)</span>
+          </div>
+          <p className="mt-2 text-xs text-stone-600">
+            To {topMatch?.hospital.short ?? 'Nearest Apex Facility'}
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_1fr]">
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-red-200 bg-gradient-to-r from-red-50/80 via-white to-amber-50/50 p-3.5 shadow-2xs space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="flex size-6 items-center justify-center rounded-lg bg-red-600 text-white font-mono text-[10px] font-bold">
-                  108
-                </span>
-                <span className="font-mono text-xs font-bold text-red-950 uppercase">
-                  HIGHWAY & INDUSTRIAL INCIDENT HOTSPOTS
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-slate-500">
-                Click hotspot to snap GPS beacon & compute optimal hospital routing
+      {/* Scope Filter Ribbon & Incident Hotspots */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">Command Scope:</span>
+              <span className="inline-flex items-center gap-1.5 bg-[#382416] text-[#ffedd7] text-xs font-semibold py-1 px-3 rounded-xl shadow-2xs">
+                <MapPin className="size-3 text-[#ea580c]" />
+                {selectedDistrict === 'ALL' ? 'Statewide (All 24 Districts)' : `${selectedDistrict.toUpperCase()} District`}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-              {[
-                { key: 'ormanjhi', label: 'NH-33 Toll Crash (Ormanjhi)', lat: 23.4832, lng: 85.4611 },
-                { key: 'bundu', label: 'Bundu NH-33 Rural Polytrauma', lat: 23.1678, lng: 85.5891 },
-                { key: 'jharia', label: 'Dhanbad Jharia Colliery Surge', lat: 23.7501, lng: 86.4162 },
-                { key: 'jamshedpur', label: 'Adityapur Industrial Blast', lat: 22.7801, lng: 86.1950 },
-                { key: 'deoghar', label: 'Jasidih Railway Line Trauma', lat: 24.5120, lng: 86.6450 },
-                { key: 'barhi', label: 'Barhi GT Road Highway Pileup', lat: 24.2980, lng: 85.4230 },
-              ].map((spot) => (
-                <button
-                  key={spot.key}
-                  type="button"
-                  onClick={() => triggerEmergencyHotspot(spot.key, spot.label, spot.lat, spot.lng)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
-                    activeHotspot === spot.key
-                      ? 'bg-red-700 text-white border-red-800 shadow-xs ring-2 ring-red-400/40'
-                      : 'bg-white text-slate-700 border-red-200 hover:bg-red-50',
-                  )}
-                >
-                  <Truck className="size-3.5 text-red-500" />
-                  <span>{spot.label}</span>
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">Facility Tier:</span>
+              <select
+                value={filterTier}
+                onChange={(e) => setFilterTier(e.target.value)}
+                className="bg-stone-50 border border-stone-200 text-stone-800 text-xs font-semibold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea580c]"
+              >
+                <option value="ALL">All Facility Tiers</option>
+                <option value="TERTIARY">Tertiary (Medical Colleges & Apex)</option>
+                <option value="DISTRICT">District (Sadar Hospitals)</option>
+                <option value="SUB_DIVISIONAL">Sub-Divisional (SDH Referral)</option>
+                <option value="CHC">CHC (Community Health Centers)</option>
+              </select>
             </div>
           </div>
 
+          <div className="text-xs text-stone-500 font-medium">
+            Click an incident hotspot below to snap GPS coordinates & recompute Dijkstra optimal routing:
+          </div>
+        </div>
+
+        {/* Hotspot Presets */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-stone-100">
+          {[
+            { key: 'ormanjhi', label: 'NH-33 Toll Crash (Ormanjhi)', lat: 23.4832, lng: 85.4611 },
+            { key: 'bundu', label: 'Bundu NH-33 Rural Polytrauma', lat: 23.1678, lng: 85.5891 },
+            { key: 'jharia', label: 'Dhanbad Jharia Colliery Surge', lat: 23.7501, lng: 86.4162 },
+            { key: 'jamshedpur', label: 'Adityapur Industrial Blast', lat: 22.7801, lng: 86.1950 },
+            { key: 'deoghar', label: 'Jasidih Railway Line Trauma', lat: 24.5120, lng: 86.6450 },
+            { key: 'barhi', label: 'Barhi GT Road Highway Pileup', lat: 24.2980, lng: 85.4230 },
+          ].map((spot) => (
+            <button
+              key={spot.key}
+              type="button"
+              onClick={() => triggerEmergencyHotspot(spot.key, spot.label, spot.lat, spot.lng)}
+              className={cn(
+                'px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                activeHotspot === spot.key
+                  ? 'bg-[#382416] text-[#ffedd7] border-[#382416] shadow-xs'
+                  : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100',
+              )}
+            >
+              <Flame className={cn('size-3.5', activeHotspot === spot.key ? 'text-[#ea580c]' : 'text-stone-400')} />
+              <span>{spot.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid: Spatial Map & Intake Telemetry vs Ranked Facilities & Fleet */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr_1fr]">
+        {/* Left Column: Spatial Map / Topology + Floating Telemetry HUD */}
+        <div className="space-y-4">
           {activeTab === 'map' ? (
-            <LeafletMap
-              hospitals={mapNodes}
-              selectedHospitalId={selectedHospitalId}
-              onSelectHospital={setSelectedHospitalId}
-              ambulanceLocation={{ lat: originLat, lng: originLng }}
-            />
+            <div className="rounded-2xl border border-stone-200/80 bg-white p-2 shadow-sm overflow-hidden">
+              <LeafletMap
+                hospitals={mapNodes}
+                selectedHospitalId={selectedHospitalId}
+                onSelectHospital={setSelectedHospitalId}
+                ambulanceLocation={{ lat: originLat, lng: originLng }}
+              />
+            </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-[#382416]/15 bg-white p-4 shadow-md space-y-2">
-              <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-100 font-mono text-[11px]">
+            <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-emerald-500"></span>
-                  <span className="font-bold text-[#382416]">DIJKSTRA MINIMUM-TIME TRANSFER TOPOLOGY</span>
+                  <span className="size-2.5 rounded-full bg-emerald-500"></span>
+                  <span className="font-bold text-[#382416]">Dijkstra Minimum-Time Transfer Topology</span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-slate-500">
-                  <span>🟢 Normal (&lt;80%)</span>
-                  <span>🟡 Elevated (&gt;80%)</span>
-                  <span>🔴 Critical / Surge (&gt;95%)</span>
+                <div className="flex items-center gap-3 text-stone-500 text-[11px] font-medium">
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-emerald-500"></span> Normal (&lt;80%)</span>
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-amber-500"></span> Elevated (&gt;80%)</span>
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-red-500 animate-pulse"></span> Surge (&gt;95%)</span>
                 </div>
               </div>
 
               <svg
                 viewBox={`0 0 ${W} ${H}`}
-                className="h-[480px] w-full bg-gradient-to-br from-[#FAF6F0]/40 via-white to-[#f7f2ea]/30 rounded-xl"
+                className="h-[480px] w-full bg-gradient-to-br from-stone-50/60 via-white to-[#f7f2ea]/40 rounded-xl"
                 role="img"
                 aria-label="Regional hospital transfer network graph"
               >
@@ -533,7 +620,7 @@ export function RegionalNetworkView({
                   </marker>
                 </defs>
 
-                {/* Base network road edges */}
+                {/* Base road network edges */}
                 {(state.edges && state.edges.length > 0 ? state.edges : EDGES).map((edge) => {
                   const pa = layoutMap.get(edge.fromId)
                   const pb = layoutMap.get(edge.toId)
@@ -552,29 +639,29 @@ export function RegionalNetworkView({
                         y1={pa.y}
                         x2={pb.x}
                         y2={pb.y}
-                        stroke="#94a3b8"
-                        strokeWidth={2.5}
+                        stroke="#cbd5e1"
+                        strokeWidth={2}
                         strokeDasharray="4 2"
-                        opacity={0.7}
+                        opacity={0.8}
                       />
                       <g className="cursor-pointer">
                         <rect
-                          x={mx - 32}
-                          y={my - 11}
-                          width={64}
-                          height={22}
-                          rx={11}
+                          x={mx - 30}
+                          y={my - 10}
+                          width={60}
+                          height={20}
+                          rx={10}
                           fill="#ffffff"
                           stroke="#cbd5e1"
-                          strokeWidth={1.5}
-                          className="shadow-xs"
+                          strokeWidth={1}
+                          className="shadow-2xs"
                         />
                         <text
                           x={mx}
                           y={my + 2}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          className="fill-slate-700 font-mono text-[10px] font-bold"
+                          className="fill-stone-700 font-sans text-[10px] font-semibold"
                         >
                           ⏱ {edge.minutes}m
                         </text>
@@ -597,7 +684,7 @@ export function RegionalNetworkView({
                       x2={pb.x}
                       y2={pb.y}
                       stroke="#dc2626"
-                      strokeWidth={isHovered ? 5 : 3.5}
+                      strokeWidth={isHovered ? 4.5 : 3}
                       markerEnd="url(#arrow)"
                       className="edge-active animate-pulse"
                       opacity={hovered && !isHovered ? 0.35 : 1}
@@ -633,29 +720,29 @@ export function RegionalNetworkView({
                           className="node-pulse"
                           style={
                             {
-                              ['--pulse-min' as string]: '28px',
-                              ['--pulse-max' as string]: '48px',
+                              ['--pulse-min' as string]: '26px',
+                              ['--pulse-max' as string]: '44px',
                             } as React.CSSProperties
                           }
                         />
                       )}
 
-                      {/* Selection Aura */}
+                      {/* Selection Ring */}
                       {isSelected && (
                         <circle
                           cx={x}
                           cy={y}
-                          r={34}
+                          r={32}
                           fill="none"
-                          stroke="#2563eb"
+                          stroke="#ea580c"
                           strokeWidth={2.5}
                           strokeDasharray="4 2"
                         />
                       )}
 
-                      {/* Outer Status Ring */}
-                      <circle cx={x} cy={y} r={26} fill="#ffffff" stroke={token} strokeWidth={4.5} />
-                      <circle cx={x} cy={y} r={18} fill={token} opacity={0.12} />
+                      {/* Outer Status Circle */}
+                      <circle cx={x} cy={y} r={24} fill="#ffffff" stroke={token} strokeWidth={4} />
+                      <circle cx={x} cy={y} r={16} fill={token} opacity={0.12} />
 
                       {/* Short Code */}
                       <text
@@ -664,41 +751,41 @@ export function RegionalNetworkView({
                         textAnchor="middle"
                         dominantBaseline="middle"
                         fill={token}
-                        style={{ fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-mono)' }}
+                        style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-sans)' }}
                       >
                         {h.short.substring(0, 5)}
                       </text>
 
-                      {/* Info Card Badge Below Node */}
-                      <g transform={`translate(${x}, ${y + 34})`}>
+                      {/* Node Label Card */}
+                      <g transform={`translate(${x}, ${y + 32})`}>
                         <rect
-                          x={-85}
+                          x={-80}
                           y={0}
-                          width={170}
-                          height={38}
+                          width={160}
+                          height={36}
                           rx={8}
                           fill="#ffffff"
-                          stroke={isSelected ? '#2563eb' : '#e2e8f0'}
-                          strokeWidth={isSelected ? 2 : 1}
-                          className="shadow-sm"
+                          stroke={isSelected ? '#ea580c' : '#e2e8f0'}
+                          strokeWidth={isSelected ? 1.5 : 1}
+                          className="shadow-2xs"
                         />
                         <text
                           x={0}
                           y={13}
                           textAnchor="middle"
-                          className="fill-slate-900 font-sans font-bold"
+                          className="fill-stone-900 font-sans font-bold"
                           style={{ fontSize: 10 }}
                         >
-                          {h.name.length > 24 ? `${h.name.substring(0, 22)}...` : h.name}
+                          {h.name.length > 22 ? `${h.name.substring(0, 20)}...` : h.name}
                         </text>
                         <text
                           x={0}
-                          y={27}
+                          y={26}
                           textAnchor="middle"
-                          className="fill-slate-500 font-mono"
+                          className="fill-stone-500 font-sans"
                           style={{ fontSize: 9 }}
                         >
-                          Occ: <tspan className="font-bold text-slate-800">{occPercent}%</tspan> ({usedBeds}/{totalBeds}) · ICU: <tspan className="font-bold text-emerald-600">{availIcu}</tspan>
+                          Load: <tspan className="font-semibold text-stone-800">{occPercent}%</tspan> · ICU: <tspan className="font-semibold text-emerald-600">{availIcu} Open</tspan>
                         </text>
                       </g>
                     </g>
@@ -708,46 +795,53 @@ export function RegionalNetworkView({
             </div>
           )}
 
-
-          <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Sliders className="size-4 text-[#dc5000]" />
-                <h3 className="text-xs font-mono font-bold uppercase text-[#382416]">
-                  108 EMERGENCY INCIDENT INTAKE & ONBOARD TELEMETRY
+          {/* Incident Intake & Real-time Telemetry Console (Globetrans Bottom HUD) */}
+          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-orange-50 text-[#ea580c]">
+                  <Sliders className="size-4" />
+                </div>
+                <h3 className="text-sm font-bold text-[#382416]">
+                  108 Emergency Incident Intake & Onboard Telemetry
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    'px-2.5 py-1 rounded-full font-mono text-[10px] font-bold border',
+                    'px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5',
                     liveAcuityScore >= 80
                       ? 'bg-red-100 text-red-800 border-red-300 animate-pulse'
                       : 'bg-amber-100 text-amber-800 border-amber-300',
                   )}
                 >
-                  LIVE SEVERITY: {liveAcuityScore}/100 {liveAcuityScore >= 80 ? '🔴 ICU MANDATORY' : '🟡 URGENT'}
+                  <Activity className="size-3" />
+                  Live Severity: {liveAcuityScore}/100 {liveAcuityScore >= 80 ? '(ICU Mandatory)' : '(Urgent)'}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="font-mono text-[10px] font-bold text-slate-500 uppercase">Patient Name / Caller:</label>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 block mb-1">
+                  Patient Name / Caller:
+                </label>
                 <input
                   type="text"
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-[#FAF6F0] px-3 py-2 text-xs font-mono font-bold text-[#382416] focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-900 focus:ring-2 focus:ring-[#ea580c] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-mono text-[10px] font-bold text-slate-500 uppercase">Emergency Incident Nature:</label>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 block mb-1">
+                  Emergency Incident Nature:
+                </label>
                 <select
                   value={incidentNature}
                   onChange={(e) => setIncidentNature(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-[#FAF6F0] px-3 py-2 text-xs font-mono font-bold text-[#382416] focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-900 focus:ring-2 focus:ring-[#ea580c] focus:outline-none"
                 >
                   <option value="High-Speed Highway Polytrauma (NH-33)">High-Speed Highway Polytrauma (NH-33)</option>
                   <option value="Coal Mine Colliery Inundation & Crush">Coal Mine Colliery Inundation & Crush</option>
@@ -758,11 +852,12 @@ export function RegionalNetworkView({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#FAF6F0] p-3 rounded-xl border border-[#382416]/10">
+            {/* Vitals Range Sliders */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-50/80 p-3.5 rounded-xl border border-stone-200/80">
               <div>
-                <div className="flex justify-between text-[10px] font-mono font-bold">
-                  <span className="text-slate-500">SpO₂:</span>
-                  <span className={spo2 < 88 ? 'text-red-600 font-bold' : 'text-emerald-700'}>{spo2}%</span>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="text-stone-500">SpO₂</span>
+                  <span className={spo2 < 88 ? 'text-red-600 font-bold' : 'text-emerald-700 font-bold'}>{spo2}%</span>
                 </div>
                 <input
                   type="range"
@@ -770,14 +865,14 @@ export function RegionalNetworkView({
                   max="100"
                   value={spo2}
                   onChange={(e) => setSpo2(Number(e.target.value))}
-                  className="w-full accent-red-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-[#ea580c] h-1.5 bg-stone-200 rounded-lg cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-[10px] font-mono font-bold">
-                  <span className="text-slate-500">Heart Rate:</span>
-                  <span className={heartRate > 120 ? 'text-red-600 font-bold' : 'text-emerald-700'}>{heartRate} bpm</span>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="text-stone-500">Heart Rate</span>
+                  <span className={heartRate > 120 ? 'text-red-600 font-bold' : 'text-emerald-700 font-bold'}>{heartRate} bpm</span>
                 </div>
                 <input
                   type="range"
@@ -785,14 +880,14 @@ export function RegionalNetworkView({
                   max="180"
                   value={heartRate}
                   onChange={(e) => setHeartRate(Number(e.target.value))}
-                  className="w-full accent-red-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-[#ea580c] h-1.5 bg-stone-200 rounded-lg cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-[10px] font-mono font-bold">
-                  <span className="text-slate-500">Systolic BP:</span>
-                  <span className={systolicBp < 90 ? 'text-red-600 font-bold' : 'text-emerald-700'}>{systolicBp} mmHg</span>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="text-stone-500">Systolic BP</span>
+                  <span className={systolicBp < 90 ? 'text-red-600 font-bold' : 'text-emerald-700 font-bold'}>{systolicBp} mmHg</span>
                 </div>
                 <input
                   type="range"
@@ -800,14 +895,14 @@ export function RegionalNetworkView({
                   max="200"
                   value={systolicBp}
                   onChange={(e) => setSystolicBp(Number(e.target.value))}
-                  className="w-full accent-red-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-[#ea580c] h-1.5 bg-stone-200 rounded-lg cursor-pointer"
                 />
               </div>
 
               <div>
-                <div className="flex justify-between text-[10px] font-mono font-bold">
-                  <span className="text-slate-500">GCS (Coma):</span>
-                  <span className={gcs < 10 ? 'text-red-600 font-bold' : 'text-emerald-700'}>{gcs}/15</span>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span className="text-stone-500">GCS (Coma)</span>
+                  <span className={gcs < 10 ? 'text-red-600 font-bold' : 'text-emerald-700 font-bold'}>{gcs}/15</span>
                 </div>
                 <input
                   type="range"
@@ -815,18 +910,19 @@ export function RegionalNetworkView({
                   max="15"
                   value={gcs}
                   onChange={(e) => setGcs(Number(e.target.value))}
-                  className="w-full accent-red-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                  className="w-full accent-[#ea580c] h-1.5 bg-stone-200 rounded-lg cursor-pointer"
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            {/* Bottom Row: Assigned Unit & Location Info */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] font-bold text-slate-500 uppercase">Assigned Unit:</span>
+                <span className="text-stone-500 font-semibold uppercase tracking-wider text-[11px]">Assigned Unit:</span>
                 <select
                   value={assignedAmbulance}
                   onChange={(e) => setAssignedAmbulance(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#382416]"
+                  className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800"
                 >
                   <option value="JH-01-ALS-1081">JH-01-ALS-1081 (Ventilator + Defibrillator)</option>
                   <option value="JH-01-ALS-1084">JH-01-ALS-1084 (Trauma Resuscitation Unit)</option>
@@ -834,30 +930,32 @@ export function RegionalNetworkView({
                 </select>
               </div>
 
-              <div className="text-[10px] font-mono text-slate-500">
-                Origin: <strong className="text-[#382416]">{originName}</strong>
+              <div className="text-xs text-stone-500">
+                Origin Beacon: <strong className="text-stone-800">{originName}</strong>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Right Column: Dijkstra Multi-Criteria Hospital Matches & Active Dispatches */}
         <div className="space-y-4">
-          <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          {/* Dijkstra Multi-Criteria Ranked Facilities */}
+          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
-                <span className="font-mono text-[10px] font-bold text-[#dc5000] uppercase">
-                  DIJKSTRA MULTI-CRITERIA ENGINE
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#ea580c]">
+                  Dijkstra Multi-Criteria Engine
                 </span>
-                <h3 className="text-sm font-bold text-[#382416] font-mono uppercase">
-                  RANKED CANDIDATE HOSPITALS
+                <h3 className="text-sm font-bold text-[#382416]">
+                  Ranked Candidate Hospitals
                 </h3>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                TOP: {topMatch?.totalScore ?? 96}/100
+              <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                Top Match: {topMatch?.totalScore ?? 96}/100 pts
               </span>
             </div>
 
-            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
               {rankedCandidateHospitals.slice(0, 4).map((cand, idx) => {
                 const isSelected = cand.hospital.id === selectedHospitalId
                 return (
@@ -867,50 +965,50 @@ export function RegionalNetworkView({
                     className={cn(
                       'p-3.5 rounded-xl border transition-all cursor-pointer space-y-2',
                       isSelected
-                        ? 'bg-[#FAF6F0] border-[#382416] ring-2 ring-[#382416]/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+                        ? 'bg-orange-50/50 border-[#ea580c] ring-2 ring-[#ea580c]/20 shadow-2xs'
+                        : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/50',
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <span
                           className={cn(
-                            'size-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold text-white',
-                            idx === 0 ? 'bg-[#dc5000]' : 'bg-slate-400',
+                            'size-6 rounded-full flex items-center justify-center text-xs font-bold text-white',
+                            idx === 0 ? 'bg-[#ea580c]' : 'bg-stone-400',
                           )}
                         >
                           #{idx + 1}
                         </span>
                         <div>
-                          <h4 className="text-xs font-bold text-[#382416] leading-tight">{cand.hospital.name}</h4>
-                          <span className="text-[10px] font-mono text-slate-500 uppercase">{cand.tier} · {selectedDistrict}</span>
+                          <h4 className="text-xs font-bold text-[#382416] leading-snug">{cand.hospital.name}</h4>
+                          <span className="text-[11px] text-stone-500 font-medium">{cand.tier} · {selectedDistrict === 'ALL' ? 'Jharkhand' : selectedDistrict}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="font-mono text-xs font-bold text-emerald-700">{cand.totalScore} pts</span>
-                        <div className="text-[10px] font-mono text-slate-500 font-bold">
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-bold text-emerald-700 block">{cand.totalScore} pts</span>
+                        <span className="text-[11px] text-stone-500 font-medium">
                           ⏱ {cand.etaMinutes}m ({cand.distanceKm}km)
-                        </div>
+                        </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 text-[10px] font-mono">
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100 text-[11px]">
                       <div>
-                        <span className="text-slate-400">ICU BEDS:</span>{' '}
+                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">ICU Beds:</span>
                         <strong className={cand.availIcu > 0 ? 'text-emerald-700' : 'text-red-600'}>
-                          {cand.availIcu} Avail
+                          {cand.availIcu} Open
                         </strong>
                       </div>
                       <div>
-                        <span className="text-slate-400">TRAUMA:</span>{' '}
-                        <strong className={cand.hasTraumaSurgeon ? 'text-blue-700' : 'text-slate-500'}>
-                          {cand.hasTraumaSurgeon ? 'READY' : 'NO'}
+                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">Trauma:</span>
+                        <strong className={cand.hasTraumaSurgeon ? 'text-blue-700' : 'text-stone-500'}>
+                          {cand.hasTraumaSurgeon ? 'Ready' : 'None'}
                         </strong>
                       </div>
                       <div>
-                        <span className="text-slate-400">VENTILATORS:</span>{' '}
-                        <strong className={cand.hasVentilators ? 'text-emerald-700' : 'text-slate-500'}>
-                          {cand.hasVentilators ? 'ACTIVE' : 'NO'}
+                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">Ventilators:</span>
+                        <strong className={cand.hasVentilators ? 'text-emerald-700' : 'text-stone-500'}>
+                          {cand.hasVentilators ? 'Active' : 'None'}
                         </strong>
                       </div>
                     </div>
@@ -919,61 +1017,63 @@ export function RegionalNetworkView({
               })}
             </div>
 
+            {/* Primary Dispatch CTA Button */}
             <button
               type="button"
               onClick={handleExecute108Dispatch}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md cursor-pointer transition-transform active:scale-98"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-transform active:scale-98"
             >
               <Send className="size-4" />
-              <span>🚨 DISPATCH 108 AMBULANCE (PRE-BOOK BED AT {targetHospital?.hospital.short ?? 'HOSPITAL'})</span>
+              <span>Dispatch 108 Ambulance (Pre-Book Bed at {targetHospital?.hospital.short ?? 'Target Facility'})</span>
             </button>
           </div>
 
-          <div className="rounded-2xl border border-[#382416]/15 bg-white p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-xs font-bold font-mono text-[#382416] uppercase">
+          {/* Active In-Flight Dispatches Fleet Panel */}
+          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="flex items-center gap-2 text-xs font-bold text-[#382416] uppercase tracking-wider">
                 <Activity className="size-4 text-red-600" />
-                ACTIVE IN-FLIGHT 108 DISPATCHES ({activeDispatches.length})
+                Active Fleet Dispatches ({activeDispatches.length})
               </h3>
               <span className="size-2 rounded-full bg-emerald-500 animate-ping"></span>
             </div>
 
-            <div className="space-y-2.5 max-h-[260px] overflow-y-auto">
+            <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
               {activeDispatches.map((disp) => (
-                <div key={disp.id} className="p-3 rounded-xl border border-red-200 bg-red-50/40 space-y-2">
+                <div key={disp.id} className="p-3.5 rounded-xl border border-red-200 bg-red-50/40 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-md">
                       {disp.token}
                     </span>
-                    <span className="font-mono text-[10px] font-bold text-slate-700">
+                    <span className="text-xs font-semibold text-stone-700">
                       {disp.ambulanceNumber}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-xs font-bold text-[#382416]">
                     <span>{disp.patientName}</span>
-                    <span className="text-red-700 font-mono">ETA: {disp.remainingMinutes} Mins</span>
+                    <span className="text-red-700 font-semibold">ETA: {disp.remainingMinutes} Mins</span>
                   </div>
 
-                  <div className="text-[10px] text-slate-600 font-mono truncate">
+                  <div className="text-xs text-stone-600 truncate">
                     Destination: <strong>{disp.destinationHospitalName}</strong>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-red-100">
-                    <span className="text-[9px] font-mono text-slate-500">
+                  <div className="flex items-center justify-between pt-2 border-t border-red-100 text-xs">
+                    <span className="text-[11px] text-stone-500">
                       SpO₂: {disp.vitals.spo2}% · HR: {disp.vitals.heartRate} · BP: {disp.vitals.systolicBp}
                     </span>
                     {disp.status !== 'ARRIVED_TRAUMA_BAY' ? (
                       <button
                         type="button"
                         onClick={() => handleMarkArrived(disp.id)}
-                        className="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-mono text-[9px] font-bold cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold cursor-pointer"
                       >
-                        ⚡ MARK ARRIVED (BED HANDOVER)
+                        Mark Arrived (Handover)
                       </button>
                     ) : (
-                      <span className="text-[10px] font-mono font-bold text-emerald-700 flex items-center gap-1">
-                        <CheckCircle2 className="size-3" /> ADMITTED
+                      <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="size-3.5" /> Admitted
                       </span>
                     )}
                   </div>
@@ -986,5 +1086,3 @@ export function RegionalNetworkView({
     </div>
   )
 }
-
-

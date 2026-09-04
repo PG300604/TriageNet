@@ -33,7 +33,7 @@ import { TopBar } from './top-bar'
 import { TriageQueueView } from './triage-queue-view'
 import { PatientsView } from './patients-view'
 import { AiCdsView } from './aicds-view'
-import { AppointmentsView } from './appointments-view'
+import { DoctorsView } from './doctors-view'
 import { ClinicalView } from './clinical-view'
 import { BillingView } from './billing-view'
 import { DocsView } from './docs-view'
@@ -149,7 +149,7 @@ const VIEW_TITLES: Record<string, string> = {
   queue: 'Triage Priority Heap Queue',
   network: 'Regional Network & Dijkstra Overflow',
   aicds: 'AI Clinical Decision Support (CDS)',
-  appointments: 'Appointments & Triage Schedule',
+  doctors: 'Doctor & Specialist Availability',
   clinical: 'Clinical Operations & Bed Management',
   billing: 'Billing & Financial Revenue Triage',
   docs: 'Medical Records & EHR Documents',
@@ -550,16 +550,52 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#382416]/15 pb-3">
-              <h1 className="text-lg font-bold tracking-tight text-[#382416] uppercase md:text-xl font-mono">
-                {VIEW_TITLES[view] ?? 'Dashboard'}
-              </h1>
-              {scenario !== 'steady' && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 border border-red-300 px-3 py-1 text-xs font-bold text-red-800 uppercase font-mono">
-                  <Siren className="size-3.5" />
-                  {scenario === 'mass-casualty' ? 'Mass Casualty Event' : 'Regional Surge'} active
-                </span>
-              )}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-semibold text-stone-400">
+                  <span>TriageNet Command</span>
+                  <span>/</span>
+                  <span className="text-[#ea580c] font-bold">{selectedDistrict} District</span>
+                </div>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#382416]">
+                  {VIEW_TITLES[view] ?? 'Clinical Dashboard'}
+                </h1>
+              </div>
+
+              {/* Simulation Scenario Pill Switcher (Inspired by Boltshift) */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white p-1 shadow-2xs">
+                  <span className="px-2.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider hidden sm:inline-block">
+                    Scenario:
+                  </span>
+                  {[
+                    { key: 'steady', label: 'Steady State' },
+                    { key: 'mass-casualty', label: 'Mass Casualty' },
+                    { key: 'regional-surge', label: 'Regional Surge' },
+                  ].map((sc) => (
+                    <button
+                      key={sc.key}
+                      type="button"
+                      onClick={() => runScenario(sc.key as ScenarioKey)}
+                      className={cn(
+                        'rounded-xl px-3 py-1 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
+                        scenario === sc.key
+                          ? 'bg-[#382416] text-[#ffedd7] shadow-2xs'
+                          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                      )}
+                    >
+                      {sc.label}
+                    </button>
+                  ))}
+                </div>
+
+                {scenario !== 'steady' && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-bold text-rose-700">
+                    <Siren className="size-3.5 animate-pulse text-rose-600" />
+                    {scenario === 'mass-casualty' ? 'Mass Casualty Event' : 'Regional Surge'} Active
+                  </span>
+                )}
+              </div>
             </div>
 
 
@@ -602,7 +638,7 @@ export function Dashboard() {
 
             {(view as string) === 'patients' && <PatientsView state={state} />}
             {(view as string) === 'aicds' && <AiCdsView state={state} />}
-            {(view as string) === 'appointments' && <AppointmentsView />}
+            {(view as string) === 'doctors' && <DoctorsView state={state} selectedHospitalId={selectedHospitalId} />}
             {(view as string) === 'clinical' && <ClinicalView state={state} onStateChange={setState} />}
             {(view as string) === 'billing' && <BillingView />}
             {(view as string) === 'docs' && <DocsView />}

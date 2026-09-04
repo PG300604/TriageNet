@@ -3,7 +3,23 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { type TriageState, getAverageWaitTillAssigned } from '@/lib/triage-data'
-import { Building2, BedDouble, AlertTriangle, TrendingUp, Play, Pause, FastForward, Activity, Clock } from 'lucide-react'
+import {
+  Building2,
+  BedDouble,
+  AlertTriangle,
+  TrendingUp,
+  Play,
+  Pause,
+  FastForward,
+  Activity,
+  Clock,
+  Wind,
+  ShieldCheck,
+  Stethoscope,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface CapacityViewProps {
   state: TriageState
@@ -27,154 +43,303 @@ export function CapacityView({
   const selectedHospital = state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0]
   const totalBeds = state.hospitals.reduce((acc, h) => acc + (h.beds?.total ?? 30), 0)
   const totalOccupied = state.hospitals.reduce((acc, h) => acc + (h.beds?.used ?? 0), 0)
+  const availableBeds = Math.max(0, totalBeds - totalOccupied)
   const occupancyPercent = Math.round((totalOccupied / (totalBeds || 1)) * 100)
 
+  const totalIcuBeds = state.hospitals.reduce((acc, h) => acc + (h.icuBeds?.total ?? 4), 0)
+  const usedIcuBeds = state.hospitals.reduce((acc, h) => acc + (h.icuBeds?.used ?? 0), 0)
+  const availableIcu = Math.max(0, totalIcuBeds - usedIcuBeds)
+  const icuOccupancyPercent = Math.round((usedIcuBeds / (totalIcuBeds || 1)) * 100)
+
+  const totalVents = state.hospitals.reduce((acc, h) => acc + (h.ventilators?.total ?? 4), 0)
+  const usedVents = state.hospitals.reduce((acc, h) => acc + (h.ventilators?.used ?? 0), 0)
+  const availableVents = Math.max(0, totalVents - usedVents)
+
+  const waitingPatientsCount = state.patients.filter((p) => p.status === 'Waiting').length
   const avgWaitTillAssigned = getAverageWaitTillAssigned(state.patients)
+
+  // Boltshift Segmented Arc Radial Gauge calculations
+  // Arc of 24 segments (180 degree semi-circle)
+  const numSegments = 24
+  const activeSegments = Math.round((occupancyPercent / 100) * numSegments)
 
   return (
     <div className="space-y-6 font-sans text-[#2c1b0e]">
-      {/* Feature Card: Continuous Auto-Play Simulation Engine */}
-      <div className="rounded-2xl border border-[#382416]/20 bg-gradient-to-r from-[#f7f2ea] to-[#ffffff] p-6 shadow-xs relative overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 items-center justify-center rounded-xl bg-[#382416] text-[#ffedd7] font-bold shadow-xs">
-              <Activity className="size-6 text-[#dc5000]" />
+      {/* 4-Card Top Metric Grid (Inspired by Boltshift & Starline) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Card 1: Hero Primary Brand Card */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#ea580c] to-[#c2410c] p-5 text-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide backdrop-blur-xs">
+              TOTAL CAPACITY
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-white/15">
+              <BedDouble className="size-4 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#dc5000]">
-                  AUTOMATED SIMULATION ENGINE
-                </span>
-                {isPlaying && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full animate-pulse">
-                    <span className="size-1.5 rounded-full bg-emerald-600"></span>
-                    SIMULATION RUNNING LIVE
-                  </span>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold tracking-tight">{availableBeds}</p>
+              <span className="text-xs font-semibold text-white/80">/ {totalBeds} Free</span>
+            </div>
+            <p className="mt-1 text-xs font-medium text-white/85">
+              Emergency & Inpatient Beds Available
+            </p>
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-white/90">
+            <span>Occupancy Rate</span>
+            <span className="rounded-full bg-white/25 px-2 py-0.2">{occupancyPercent}% Active</span>
+          </div>
+        </div>
+
+        {/* Card 2: ICU Critical Reserve */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              CRITICAL ICU RESERVE
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+              <Activity className="size-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold tracking-tight text-[#382416]">{availableIcu}</p>
+              <span className="text-xs font-semibold text-stone-400">/ {totalIcuBeds} Free</span>
+            </div>
+            <p className="mt-1 text-xs font-medium text-stone-500">
+              {usedIcuBeds} Acute ICU Beds Occupied
+            </p>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  icuOccupancyPercent >= 80 ? 'bg-rose-500' : 'bg-amber-500'
                 )}
-              </div>
-              <h2 className="text-lg font-bold uppercase text-[#382416] font-mono mt-0.5">
-                CONTINUOUS AUTO-PLAY TRIAGE ENGINE
-              </h2>
-              <p className="text-xs text-slate-600 max-w-xl">
-                Automatically steps time forward, processes incoming patient vitals, triggers Hungarian bed matching, and re-routes regional overflow.
+                style={{ width: `${icuOccupancyPercent}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-stone-600">{icuOccupancyPercent}%</span>
+          </div>
+        </div>
+
+        {/* Card 3: Ventilator Pool */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              VENTILATOR POOL
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+              <Wind className="size-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold tracking-tight text-[#382416]">{availableVents}</p>
+              <span className="text-xs font-semibold text-stone-400">/ {totalVents} Free</span>
+            </div>
+            <p className="mt-1 text-xs font-medium text-stone-500">
+              {usedVents} Units In Clinical Use
+            </p>
+          </div>
+          <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+            ↑ Adequate Regional Buffer
+          </div>
+        </div>
+
+        {/* Card 4: Triage Queue Latency */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              TRIAGE QUEUE WAIT
+            </span>
+            <div className="flex size-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+              <Clock className="size-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold tracking-tight text-[#382416]">
+                {avgWaitTillAssigned} <span className="text-base font-semibold text-stone-400">min</span>
               </p>
             </div>
+            <p className="mt-1 text-xs font-medium text-stone-500">
+              {waitingPatientsCount} Patients Waiting in Queue
+            </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            {onTogglePlay && (
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.96 }}
-                type="button"
-                onClick={onTogglePlay}
-                className={`px-5 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
-                  isPlaying
-                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                    : 'bg-[#382416] hover:bg-[#2c1b0e] text-[#ffedd7]'
-                }`}
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="size-4 fill-white" />
-                    <span>PAUSE AUTO-PLAY</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="size-4 fill-[#ffedd7]" />
-                    <span>START AUTO-PLAY SIMULATION</span>
-                  </>
-                )}
-              </motion.button>
-            )}
-
-            {onFastForward && (
-              <motion.button
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.96 }}
-                type="button"
-                onClick={() => onFastForward(15)}
-                className="px-4 py-2.5 rounded-xl border border-[#382416]/20 bg-white hover:bg-slate-100 text-[#382416] font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <FastForward className="size-4" />
-                <span>+15M STEP</span>
-              </motion.button>
-            )}
+          <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+            Hungarian Auto-Assign Active
           </div>
         </div>
       </div>
 
-      {/* Upper KPI Stat Band — 5 Column Metric Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
-            <span>REGIONAL OCCUPANCY</span>
-            <TrendingUp className="size-4 text-emerald-600" />
+      {/* Middle Section: Radial Gauge + Simulation Controller (Boltshift & Starline pattern) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Boltshift-Style Radial Arc Capacity Gauge */}
+        <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-[#382416]">District Capacity Load</h3>
+              <p className="text-[11px] text-stone-400">Real-time aggregate resource strain</p>
+            </div>
+            <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-semibold text-stone-600">
+              Live Gauge
+            </span>
           </div>
-          <p className="mt-2 text-3xl font-extrabold text-[#382416] font-mono">{occupancyPercent}%</p>
-          <span className="mt-1 text-xs font-medium text-slate-600 block font-mono">
-            {totalOccupied} / {totalBeds} BEDS IN USE
-          </span>
+
+          {/* Segmented Arc SVG */}
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="relative flex items-center justify-center">
+              <svg className="w-48 h-28 overflow-visible" viewBox="0 0 200 110">
+                {Array.from({ length: numSegments }).map((_, i) => {
+                  const angle = Math.PI - (i * Math.PI) / (numSegments - 1)
+                  const r = 80
+                  const cx = 100, cy = 95
+                  const x1 = cx + (r - 12) * Math.cos(angle)
+                  const y1 = cy - (r - 12) * Math.sin(angle)
+                  const x2 = cx + r * Math.cos(angle)
+                  const y2 = cy - r * Math.sin(angle)
+                  const isFilled = i < activeSegments
+
+                  return (
+                    <line
+                      key={i}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke={isFilled ? (occupancyPercent >= 80 ? '#e11d48' : occupancyPercent >= 65 ? '#ea580c' : '#059669') : '#e7e5e4'}
+                      strokeWidth={5}
+                      strokeLinecap="round"
+                    />
+                  )
+                })}
+              </svg>
+              <div className="absolute top-10 flex flex-col items-center">
+                <span className="text-3xl font-extrabold tracking-tight text-[#382416]">
+                  {occupancyPercent}%
+                </span>
+                <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+                  Occupied
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 w-full text-center">
+              <div className="rounded-xl bg-stone-50 p-2.5">
+                <span className="text-[10px] uppercase font-semibold text-stone-400">Total In Use</span>
+                <p className="text-base font-bold text-stone-900">{totalOccupied} Beds</p>
+              </div>
+              <div className="rounded-xl bg-stone-50 p-2.5">
+                <span className="text-[10px] uppercase font-semibold text-stone-400">Remaining</span>
+                <p className="text-base font-bold text-emerald-700">{availableBeds} Beds</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* NEW METRIC: WAIT TIME TILL ASSIGNED */}
-        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
-            <span>WAIT TILL ASSIGNED</span>
-            <Clock className="size-4 text-[#dc5000]" />
+        {/* Continuous Simulation Engine Control Bar */}
+        <div className="lg:col-span-2 rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-xl bg-[#382416] text-[#ffedd7]">
+                <Activity className="size-4 text-[#ea580c]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#382416]">Continuous Simulation Engine</h3>
+                <p className="text-[11px] text-stone-400">
+                  Automated time forward step & Hungarian hospital rebalancing
+                </p>
+              </div>
+            </div>
+            {isPlaying && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                Live Continuous Mode
+              </span>
+            )}
           </div>
-          <p className="mt-2 text-3xl font-extrabold text-[#382416] font-mono">
-            {avgWaitTillAssigned} <span className="text-sm font-bold text-slate-500">MIN</span>
-          </p>
-          <span className="mt-1 text-xs font-medium text-emerald-700 block font-mono">
-            REAL-TIME COMPUTED QUEUE LATENCY
-          </span>
-        </div>
 
-        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
-            <span>REGIONAL HOSPITALS</span>
-            <Building2 className="size-4 text-blue-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-[#382416] font-mono">{state.hospitals.length}</p>
-          <span className="mt-1 text-xs font-medium text-slate-600 block font-mono">CONNECTED GRAPH NODES</span>
-        </div>
+          <div className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-100 bg-stone-50/70 p-4">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-stone-800">
+                Simulation Step Interval: <span className="font-bold text-[#ea580c]">7 Minutes</span>
+              </p>
+              <p className="text-[11px] text-stone-500">
+                Advances vitals decay, Hungarian bed reassignment, and step-down discharge.
+              </p>
+            </div>
 
-        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
-            <span>CRITICAL ICU OCCUPANCY</span>
-            <BedDouble className="size-4 text-red-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-red-600 font-mono">
-            {state.patients.filter((p) => p.status === 'Assigned' && p.bedType === 'ICU').length}
-          </p>
-          <span className="mt-1 text-xs font-medium text-slate-600 block font-mono">ACTIVE ICU PATIENTS</span>
-        </div>
+            <div className="flex items-center gap-2.5">
+              {onTogglePlay && (
+                <button
+                  type="button"
+                  onClick={onTogglePlay}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-xs',
+                    isPlaying
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-[#382416] hover:bg-[#28180d] text-[#ffedd7]'
+                  )}
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause className="size-3.5 fill-white" />
+                      <span>Pause Auto-Play</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="size-3.5 fill-[#ffedd7]" />
+                      <span>Start Auto-Play</span>
+                    </>
+                  )}
+                </button>
+              )}
 
-        <div className="rounded-2xl border border-[#382416]/15 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-500 uppercase">
-            <span>WAITING IN QUEUE</span>
-            <AlertTriangle className="size-4 text-amber-600" />
+              {onFastForward && (
+                <button
+                  type="button"
+                  onClick={() => onFastForward(15)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-50 cursor-pointer shadow-2xs transition-colors"
+                >
+                  <FastForward className="size-3.5 text-[#ea580c]" />
+                  <span>+15m Step</span>
+                </button>
+              )}
+            </div>
           </div>
-          <p className="mt-2 text-3xl font-extrabold text-amber-600 font-mono">
-            {state.patients.filter((p) => p.status === 'Waiting').length}
-          </p>
-          <span className="mt-1 text-xs font-medium text-slate-600 block font-mono">DYNAMIC HEAP CANDIDATES</span>
+
+          <div className="flex items-center justify-between text-xs text-stone-500">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 text-emerald-600" />
+              Real-time Dijkstra shortest-path rerouting enabled
+            </span>
+            <span className="font-semibold text-stone-600">
+              Active Connected Nodes: {state.hospitals.length} Facilities
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Hospital Capacity Matrix */}
-      <div className="rounded-2xl border border-[#382416]/15 bg-white p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-[#382416]/15 pb-3">
-          <h3 className="text-sm font-bold uppercase text-[#382416] tracking-wider font-mono">
-            REGIONAL HOSPITAL CAPACITY MATRIX
-          </h3>
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-mono">
-            REAL-TIME TELEMETRY ACTIVE
+      {/* Connected Regional Facilities Matrix (Boltshift & Bright Table Cards) */}
+      <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-[#382416]">
+              Connected District Healthcare Facilities
+            </h3>
+            <p className="text-[11px] text-stone-400">
+              Click facility node to scope clinical queue and Hungarian allocation
+            </p>
+          </div>
+          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
+            {state.hospitals.length} Facilities Active
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
           {state.hospitals.map((h) => {
             const isSelected = h.id === selectedHospitalId
             const used = h.beds?.used ?? 0
@@ -187,29 +352,52 @@ export function CapacityView({
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelectHospital(h.id)}
-                className={`rounded-xl border p-5 transition-all cursor-pointer ${
+                className={cn(
+                  'rounded-2xl border p-4.5 transition-all cursor-pointer',
                   isSelected
-                    ? 'border-[#382416] bg-[#f7f2ea]/60 shadow-sm ring-1 ring-[#382416]'
-                    : 'border-[#382416]/15 bg-slate-50/80 hover:border-[#382416]/30'
-                }`}
+                    ? 'border-[#382416] bg-stone-50/80 shadow-xs ring-1 ring-[#382416]'
+                    : 'border-stone-200/80 bg-white hover:border-stone-300 hover:shadow-xs'
+                )}
               >
-                <div className="flex items-center justify-between font-mono">
-                  <span className="text-sm font-bold uppercase text-[#382416]">{h.name}</span>
-                  <span className={`text-xs font-bold ${percent >= 85 ? 'text-red-600' : 'text-emerald-700'}`}>
-                    {percent}% LOAD
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 line-clamp-1">
+                      {h.name}
+                    </span>
+                    <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
+                      {h.short} · {h.district || 'District Facility'}
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0',
+                      percent >= 85
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : percent >= 70
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    )}
+                  >
+                    {percent}% Load
                   </span>
                 </div>
-                <div className="mt-3 w-full h-2.5 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+
+                {/* Progress Bar */}
+                <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
                   <div
-                    className={`h-full transition-all duration-500 ${
-                      percent >= 85 ? 'bg-red-500' : percent >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`}
+                    className={cn(
+                      'h-full rounded-full transition-all duration-500',
+                      percent >= 85 ? 'bg-rose-500' : percent >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                    )}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <div className="mt-3 flex justify-between text-xs font-mono text-slate-600">
-                  <span>BEDS: <strong>{used} / {total}</strong></span>
-                  <span>ICU: <strong>{h.icuBeds?.used ?? 0}/{h.icuBeds?.total ?? 4}</strong> | GENERAL: <strong>{h.generalBeds?.used ?? 0}/{h.generalBeds?.total ?? 20}</strong></span>
+
+                {/* Details Breakdown */}
+                <div className="mt-3 flex items-center justify-between text-[11px] text-stone-500 font-medium">
+                  <span>General: <strong>{h.generalBeds?.used ?? 0}/{h.generalBeds?.total ?? 20}</strong></span>
+                  <span>ICU: <strong>{h.icuBeds?.used ?? 0}/{h.icuBeds?.total ?? 4}</strong></span>
+                  <span>Vents: <strong>{h.ventilators?.used ?? 0}/{h.ventilators?.total ?? 4}</strong></span>
                 </div>
               </motion.div>
             )

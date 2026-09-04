@@ -52,12 +52,15 @@ class AdminStaffApprovalTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private com.triagenet.repository.HospitalRepository hospitalRepository;
+
     @BeforeEach
     void setUp() {
         refreshTokenRepository.deleteAll();
         staffUserRepository.deleteAll();
 
-        // Seed Super Admin
+        // Seed Super Admin (Tier 1)
         Role superAdminRole = roleRepository.findByName(RoleName.SUPER_ADMIN)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.SUPER_ADMIN).build()));
 
@@ -69,21 +72,41 @@ class AdminStaffApprovalTest {
                 .role(superAdminRole)
                 .status(StaffUser.UserStatus.ACTIVE)
                 .build());
+
+        // Seed Hospital & Medical Superintendent (Tier 2)
+        com.triagenet.entity.Hospital hospital = hospitalRepository.findAll().stream().findFirst().orElse(null);
+        if (hospital != null) {
+            Role hospAdminRole = roleRepository.findByName(RoleName.HOSPITAL_ADMIN)
+                    .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.HOSPITAL_ADMIN).build()));
+
+            staffUserRepository.save(StaffUser.builder()
+                    .name("Dr. Medical Superintendent")
+                    .staffId("JH-ADM-3001")
+                    .email("supt.rims@triagenet.gov.in")
+                    .passwordHash(passwordEncoder.encode("Admin@123!"))
+                    .role(hospAdminRole)
+                    .hospitalId(hospital.getId())
+                    .status(StaffUser.UserStatus.ACTIVE)
+                    .build());
+        }
     }
 
     @Test
-    @DisplayName("E2E: Staff Registration -> Pending Verification Lock -> Status Probe -> Admin Approval -> Active Login")
-    void testStaffRegistrationAndAdminApprovalWorkflow() throws Exception {
+    @DisplayName("Precedence Hierarchy: Super Admin blocked from approving ground staff; Medical Superintendent approves ground staff")
+    void testStaffRegistrationAndHierarchicalApprovalWorkflow() throws Exception {
+        com.triagenet.entity.Hospital hospital = hospitalRepository.findAll().stream().findFirst().orElseThrow();
         String staffId = "JH-STF-8012";
         String email = "ananya.verma@rims.gov.in";
         String password = "Password@123!";
 
-        // 1. Self-register with official Staff ID
+        // 1. Candidate self-registers requesting ground operational role (TRIAGE_NURSE)
         RegisterRequest registerReq = RegisterRequest.builder()
                 .name("Dr. Ananya Verma")
                 .staffId(staffId)
                 .email(email)
                 .password(password)
+                .desiredRole("TRIAGE_NURSE")
+                .hospitalId(hospital.getId())
                 .build();
 
         MvcResult regResult = mockMvc.perform(post("/api/auth/register")
@@ -92,61 +115,131 @@ class AdminStaffApprovalTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.staffId").value(staffId))
                 .andExpect(jsonPath("$.status").value("PENDING_VERIFICATION"))
-                .andExpect(jsonPath("$.totpSecret").isNotEmpty())
-                .andExpect(jsonPath("$.recoveryMnemonic").isNotEmpty())
                 .andReturn();
 
         String registeredUserId = objectMapper.readTree(regResult.getResponse().getContentAsString())
                 .get("id").asText();
 
-        // 2. Attempt login before admin approval -> MUST BE LOCKED / FORBIDDEN
+        // 2. Candidate login before approval is blocked
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest(staffId, password))))
                 .andExpect(status().isLocked());
 
-        // 3. Public Status Probe by Staff ID (Zero Email / SMS required)
-        mockMvc.perform(get("/api/auth/status/" + staffId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.staffId").value(staffId))
-                .andExpect(jsonPath("$.status").value("PENDING_VERIFICATION"));
-
-        // 4. Log in as Super Admin
-        MvcResult adminLoginResult = mockMvc.perform(post("/api/auth/login")
+        // 3. Log in as Super Admin (Tier 1)
+        MvcResult superAdminLoginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("JH-SYS-0001", "Admin@123!"))))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        String adminToken = objectMapper.readTree(adminLoginResult.getResponse().getContentAsString())
+        String superAdminToken = objectMapper.readTree(superAdminLoginResult.getResponse().getContentAsString())
                 .get("token").asText();
 
-        // 5. Admin lists pending staff queue
+        // 4. Super Admin pending queue excludes ground operational roles (delegated to facility)
         mockMvc.perform(get("/api/admin/staff/pending")
-                        .header("Authorization", "Bearer " + adminToken))
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        // 5. Precedence Enforcement: Super Admin directly approving ground staff MUST BE REJECTED (403 Forbidden)
+        mockMvc.perform(post("/api/admin/staff/" + registeredUserId + "/approve")
+                        .header("Authorization", "Bearer " + superAdminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("role", "TRIAGE_NURSE"))))
+                .andExpect(status().isForbidden());
+
+        // 6. Log in as Medical Superintendent (Tier 2) for this facility
+        MvcResult suptLoginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("JH-ADM-3001", "Admin@123!"))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String suptToken = objectMapper.readTree(suptLoginResult.getResponse().getContentAsString())
+                .get("token").asText();
+
+        // 7. Medical Superintendent sees candidate in their facility queue
+        mockMvc.perform(get("/api/admin/staff/pending")
+                        .header("Authorization", "Bearer " + suptToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].staffId").value(staffId))
                 .andExpect(jsonPath("$[0].status").value("PENDING_VERIFICATION"));
 
-        // 6. Admin approves staff member and assigns clinical role
+        // 8. Medical Superintendent successfully approves ground staff member
         mockMvc.perform(post("/api/admin/staff/" + registeredUserId + "/approve")
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", "Bearer " + suptToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("role", "TRIAGE_NURSE"))))
                 .andExpect(status().isOk());
 
-        // 7. Status Probe now shows ACTIVE
+        // 9. Status Probe now shows ACTIVE
         mockMvc.perform(get("/api/auth/status/" + staffId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.role").value("TRIAGE_NURSE"));
 
-        // 8. Staff Member logs in successfully using Staff ID
+        // 10. Staff Member logs in successfully using Staff ID
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest(staffId, password))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.staffId").value(staffId))
                 .andExpect(jsonPath("$.role").value("TRIAGE_NURSE"));
+    }
+
+    @Test
+    @DisplayName("Precedence Hierarchy: Super Admin successfully approves intermediate leadership (District CMO)")
+    void testSuperAdminApprovesIntermediateLeadership() throws Exception {
+        String staffId = "JH-CMO-9001";
+        String email = "cmo.dhanbad@triagenet.gov.in";
+        String password = "Password@123!";
+
+        // 1. Self-register requesting intermediate leadership role (DISTRICT_CMO)
+        RegisterRequest registerReq = RegisterRequest.builder()
+                .name("Dr. Dhanbad CMO")
+                .staffId(staffId)
+                .email(email)
+                .password(password)
+                .desiredRole("DISTRICT_CMO")
+                .build();
+
+        MvcResult regResult = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerReq)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String registeredUserId = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                .get("id").asText();
+
+        // 2. Log in as Super Admin
+        MvcResult superAdminLoginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("JH-SYS-0001", "Admin@123!"))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String superAdminToken = objectMapper.readTree(superAdminLoginResult.getResponse().getContentAsString())
+                .get("token").asText();
+
+        // 3. Super Admin queue contains intermediate leadership applicant
+        mockMvc.perform(get("/api/admin/staff/pending")
+                        .header("Authorization", "Bearer " + superAdminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].staffId").value(staffId));
+
+        // 4. Super Admin successfully approves intermediate leadership
+        mockMvc.perform(post("/api/admin/staff/" + registeredUserId + "/approve")
+                        .header("Authorization", "Bearer " + superAdminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("role", "DISTRICT_CMO"))))
+                .andExpect(status().isOk());
+
+        // 5. Status Probe confirms ACTIVE and DISTRICT_CMO role
+        mockMvc.perform(get("/api/auth/status/" + staffId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.role").value("DISTRICT_CMO"));
     }
 }

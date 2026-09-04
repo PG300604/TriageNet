@@ -17,6 +17,7 @@ import com.triagenet.util.JwtUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -349,41 +350,106 @@ public class AuthService {
                 .build();
     }
 
+    // Precedence Hierarchy Helpers
+    private boolean isTier1Role(RoleName role) {
+        return role == RoleName.SUPER_ADMIN || role == RoleName.STATE_HEALTH_DEPT;
+    }
+
+    private boolean isTier2Role(RoleName role) {
+        return role == RoleName.DISTRICT_CMO || role == RoleName.HOSPITAL_ADMIN || role == RoleName.REGIONAL_COORDINATOR;
+    }
+
+    private boolean isTier3Role(RoleName role) {
+        return role == RoleName.TRIAGE_NURSE || role == RoleName.HOSPITAL_STAFF || role == RoleName.AMBULANCE_DISPATCH;
+    }
+
+    private RoleName resolveRole(StaffUser u) {
+        if (u.getDesiredRole() != null && !u.getDesiredRole().isBlank()) {
+            try {
+                return RoleName.valueOf(u.getDesiredRole().trim());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return u.getRole() != null ? u.getRole().getName() : RoleName.HOSPITAL_STAFF;
+    }
+
+    private String getAdminDistrict(CustomUserDetails adminUser) {
+        if (adminUser.getHospitalId() == null) return null;
+        return hospitalRepository.findById(adminUser.getHospitalId())
+                .map(com.triagenet.entity.Hospital::getDistrictName)
+                .orElse(null);
+    }
+
+    private boolean isInDistrict(StaffUser u, String districtName) {
+        if (u.getHospitalId() == null || districtName == null) return false;
+        return hospitalRepository.findById(u.getHospitalId())
+                .map(h -> h.getDistrictName() != null && h.getDistrictName().equalsIgnoreCase(districtName))
+                .orElse(false);
+    }
+
+    private com.triagenet.dto.ShiftAuthDto.PendingStaffDto toPendingStaffDto(StaffUser u) {
+        String hospName = "Unassigned";
+        if (u.getHospitalId() != null) {
+            hospName = hospitalRepository.findById(u.getHospitalId())
+                    .map(com.triagenet.entity.Hospital::getName)
+                    .orElse("Hospital #" + u.getHospitalId());
+        }
+        return com.triagenet.dto.ShiftAuthDto.PendingStaffDto.builder()
+                .id(u.getId().toString())
+                .staffId(u.getStaffId())
+                .name(u.getName())
+                .email(u.getEmail())
+                .role(u.getDesiredRole() != null ? u.getDesiredRole() : (u.getRole() != null ? u.getRole().getName().name() : "HOSPITAL_STAFF"))
+                .hospitalId(u.getHospitalId() != null ? u.getHospitalId().toString() : null)
+                .hospitalName(hospName)
+                .status(u.getStatus().name())
+                .createdAt(u.getCreatedAt())
+                .build();
+    }
+
     public List<com.triagenet.dto.ShiftAuthDto.PendingStaffDto> getPendingStaff(CustomUserDetails adminUser) {
         boolean isSuperAdmin = adminUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_STATE_HEALTH_DEPT"));
+        boolean isDistrictCmo = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_DISTRICT_CMO"));
+        boolean isHospitalAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HOSPITAL_ADMIN"));
 
-        List<StaffUser> pendingList;
+        List<StaffUser> allPending = staffUserRepository.findByStatus(StaffUser.UserStatus.PENDING_VERIFICATION);
+        List<StaffUser> filtered;
+
         if (isSuperAdmin) {
-            pendingList = staffUserRepository.findByStatus(StaffUser.UserStatus.PENDING_VERIFICATION);
-        } else if (adminUser.getHospitalId() != null) {
-            pendingList = staffUserRepository.findByHospitalIdAndStatus(
-                    adminUser.getHospitalId(),
-                    StaffUser.UserStatus.PENDING_VERIFICATION
-            );
+            // State Health Command only verifies Intermediate Leadership (Tier 2: DISTRICT_CMO, HOSPITAL_ADMIN)
+            filtered = allPending.stream()
+                    .filter(u -> isTier2Role(resolveRole(u)))
+                    .toList();
+        } else if (isDistrictCmo) {
+            // District CMO sees HOSPITAL_ADMIN and AMBULANCE_DISPATCH within their district
+            String cmoDistrict = getAdminDistrict(adminUser);
+            filtered = allPending.stream()
+                    .filter(u -> {
+                        RoleName reqRole = resolveRole(u);
+                        boolean allowedRole = (reqRole == RoleName.HOSPITAL_ADMIN || reqRole == RoleName.AMBULANCE_DISPATCH);
+                        if (!allowedRole) return false;
+                        if (cmoDistrict == null) return true;
+                        return isInDistrict(u, cmoDistrict);
+                    })
+                    .toList();
+        } else if (isHospitalAdmin) {
+            // Medical Superintendent only sees Ground Operational Staff (Tier 3) for their assigned hospital
+            UUID adminHospitalId = adminUser.getHospitalId();
+            filtered = allPending.stream()
+                    .filter(u -> {
+                        RoleName reqRole = resolveRole(u);
+                        if (!isTier3Role(reqRole)) return false;
+                        if (adminHospitalId == null) return true;
+                        return adminHospitalId.equals(u.getHospitalId());
+                    })
+                    .toList();
         } else {
-            pendingList = staffUserRepository.findByStatus(StaffUser.UserStatus.PENDING_VERIFICATION);
+            return List.of();
         }
 
-        return pendingList.stream().map(u -> {
-            String hospName = "Unassigned";
-            if (u.getHospitalId() != null) {
-                hospName = hospitalRepository.findById(u.getHospitalId())
-                        .map(com.triagenet.entity.Hospital::getName)
-                        .orElse("Hospital #" + u.getHospitalId());
-            }
-            return com.triagenet.dto.ShiftAuthDto.PendingStaffDto.builder()
-                    .id(u.getId().toString())
-                    .staffId(u.getStaffId())
-                    .name(u.getName())
-                    .email(u.getEmail())
-                    .role(u.getDesiredRole() != null ? u.getDesiredRole() : (u.getRole() != null ? u.getRole().getName().name() : "HOSPITAL_STAFF"))
-                    .hospitalId(u.getHospitalId() != null ? u.getHospitalId().toString() : null)
-                    .hospitalName(hospName)
-                    .status(u.getStatus().name())
-                    .createdAt(u.getCreatedAt())
-                    .build();
-        }).toList();
+        return filtered.stream().map(this::toPendingStaffDto).toList();
     }
 
     @Transactional
@@ -391,16 +457,64 @@ public class AuthService {
         StaffUser user = staffUserRepository.findById(staffUserId)
                 .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff user not found with id: " + staffUserId));
 
-        user.setStatus(StaffUser.UserStatus.ACTIVE);
-        if (assignedRole != null) {
-            Role role = roleRepository.findByName(assignedRole)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid role: " + assignedRole));
-            user.setRole(role);
+        if (user.getStatus() != StaffUser.UserStatus.PENDING_VERIFICATION) {
+            throw new IllegalStateException("Staff user is not pending verification (current status: " + user.getStatus() + ")");
         }
+
+        boolean isSuperAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_STATE_HEALTH_DEPT"));
+        boolean isDistrictCmo = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_DISTRICT_CMO"));
+        boolean isHospitalAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HOSPITAL_ADMIN"));
+
+        RoleName targetRole = assignedRole != null ? assignedRole : resolveRole(user);
+
+        if (isSuperAdmin) {
+            // Super Admin CANNOT approve ground operational staff (Tier 3)
+            if (isTier3Role(targetRole)) {
+                throw new AccessDeniedException(
+                        "Precedence Violation: Higher-level State Health Command cannot directly verify ground operational staff (" +
+                        targetRole + "). Operational staff approvals are delegated to facility Medical Superintendents and District CMOs.");
+            }
+            if (targetRole == RoleName.SUPER_ADMIN || targetRole == RoleName.STATE_HEALTH_DEPT) {
+                throw new AccessDeniedException("Super Admin accounts cannot be provisioned via self-service verification.");
+            }
+        } else if (isDistrictCmo) {
+            if (isTier1Role(targetRole) || targetRole == RoleName.DISTRICT_CMO) {
+                throw new AccessDeniedException(
+                        "Precedence Violation: District CMO cannot verify higher or peer administrative authorities (" + targetRole + ").");
+            }
+            if (targetRole == RoleName.TRIAGE_NURSE || targetRole == RoleName.HOSPITAL_STAFF) {
+                throw new AccessDeniedException(
+                        "Precedence Violation: District CMO delegates clinical ward and triage staff verification to the facility Medical Superintendent.");
+            }
+            String cmoDistrict = getAdminDistrict(adminUser);
+            if (cmoDistrict != null && !isInDistrict(user, cmoDistrict)) {
+                throw new AccessDeniedException(
+                        "Jurisdiction Violation: District CMO can only verify staff within their assigned district (" + cmoDistrict + ").");
+            }
+        } else if (isHospitalAdmin) {
+            if (isTier1Role(targetRole) || isTier2Role(targetRole)) {
+                throw new AccessDeniedException(
+                        "Precedence Violation: Medical Superintendents cannot approve administrative peers or higher authorities (" + targetRole + ").");
+            }
+            if (adminUser.getHospitalId() != null && !adminUser.getHospitalId().equals(user.getHospitalId())) {
+                throw new AccessDeniedException(
+                        "Jurisdiction Violation: Medical Superintendents can only verify staff assigned to their own hospital facility.");
+            }
+        } else {
+            throw new AccessDeniedException("Ground operational staff do not possess administrative approval privileges.");
+        }
+
+        user.setStatus(StaffUser.UserStatus.ACTIVE);
+        Role role = roleRepository.findByName(targetRole)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid role: " + targetRole));
+        user.setRole(role);
         staffUserRepository.save(user);
 
         securityAuditService.logEvent(SecurityEventType.AUTH_STAFF_APPROVED, adminUser.getEmail(), "/api/admin/staff/approve",
-                "Approved Staff ID: " + user.getStaffId() + ", Role: " + user.getRole().getName());
+                "Approved Staff ID: " + user.getStaffId() + ", Target Role: " + targetRole + ", Approver: " + adminUser.getUsername());
     }
 
     @Transactional
@@ -408,11 +522,44 @@ public class AuthService {
         StaffUser user = staffUserRepository.findById(staffUserId)
                 .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("Staff user not found with id: " + staffUserId));
 
+        boolean isSuperAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN") || a.getAuthority().equals("ROLE_STATE_HEALTH_DEPT"));
+        boolean isDistrictCmo = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_DISTRICT_CMO"));
+        boolean isHospitalAdmin = adminUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_HOSPITAL_ADMIN"));
+
+        RoleName targetRole = resolveRole(user);
+
+        if (isSuperAdmin) {
+            if (isTier3Role(targetRole)) {
+                throw new AccessDeniedException(
+                        "Precedence Violation: Higher-level State Health Command cannot reject ground operational staff. Delegated to local leadership.");
+            }
+        } else if (isDistrictCmo) {
+            if (isTier1Role(targetRole) || targetRole == RoleName.DISTRICT_CMO) {
+                throw new AccessDeniedException("District CMO cannot reject higher or peer authorities.");
+            }
+            String cmoDistrict = getAdminDistrict(adminUser);
+            if (cmoDistrict != null && !isInDistrict(user, cmoDistrict)) {
+                throw new AccessDeniedException("District CMO can only reject staff within their assigned district.");
+            }
+        } else if (isHospitalAdmin) {
+            if (isTier1Role(targetRole) || isTier2Role(targetRole)) {
+                throw new AccessDeniedException("Medical Superintendents cannot reject administrative authorities.");
+            }
+            if (adminUser.getHospitalId() != null && !adminUser.getHospitalId().equals(user.getHospitalId())) {
+                throw new AccessDeniedException("Medical Superintendents can only reject staff at their own facility.");
+            }
+        } else {
+            throw new AccessDeniedException("Unauthorized staff rejection attempt.");
+        }
+
         user.setStatus(StaffUser.UserStatus.REJECTED);
         staffUserRepository.save(user);
 
         securityAuditService.logEvent(SecurityEventType.AUTH_STAFF_REJECTED, adminUser.getEmail(), "/api/admin/staff/reject",
-                "Rejected Staff ID: " + user.getStaffId());
+                "Rejected Staff ID: " + user.getStaffId() + ", Rejected by: " + adminUser.getUsername());
     }
 
     public UserDto getCurrentUser(CustomUserDetails userDetails) {

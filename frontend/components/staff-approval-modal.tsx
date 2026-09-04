@@ -55,14 +55,63 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
 
   if (!isOpen) return null;
 
+  const approverRole = user?.role || 'HOSPITAL_ADMIN';
+
+  const getAuthorityTierConfig = () => {
+    if (approverRole === 'SUPER_ADMIN' || approverRole === 'STATE_HEALTH_DEPT') {
+      return {
+        tierName: 'State Health Command Tier (Intermediate Leadership Only)',
+        subtitle:
+          'Under state administrative precedence, State Command appoints intermediate leadership (District CMOs and Medical Superintendents). Routine ground operational staff are delegated to local hospital superintendents.',
+        emptyNotice:
+          'No pending intermediate leadership registrations (District CMO / Medical Superintendent) awaiting verification.',
+        options: [
+          { value: 'DISTRICT_CMO', label: 'District Chief Medical Officer (District Level)' },
+          { value: 'HOSPITAL_ADMIN', label: 'Medical Superintendent (Hospital Level)' },
+        ],
+      };
+    }
+    if (approverRole === 'DISTRICT_CMO') {
+      return {
+        tierName: 'District CMO Tier (Superintendents & 108 Fleet Dispatch)',
+        subtitle:
+          'District Command verifies hospital medical superintendents and district 108 ambulance dispatchers within your district.',
+        emptyNotice:
+          'No pending superintendent or 108 ambulance dispatch registrations within your district.',
+        options: [
+          { value: 'HOSPITAL_ADMIN', label: 'Medical Superintendent (Hospital Facility Command)' },
+          { value: 'AMBULANCE_DISPATCH', label: '108 Central Ambulance Dispatcher (District Fleet)' },
+        ],
+      };
+    }
+    // Default to HOSPITAL_ADMIN (Medical Superintendent)
+    return {
+      tierName: 'Hospital Facility Tier (Ground Operational Staff Queue)',
+      subtitle:
+        'As Medical Superintendent, you physically verify and activate ground clinical and station staff (Triage Nurses, Ward Medical Officers, Facility Dispatchers) assigned to your hospital.',
+      emptyNotice:
+        'No pending clinical or operational staff registrations for your hospital facility.',
+      options: [
+        { value: 'TRIAGE_NURSE', label: 'Lead Emergency Triage Nurse (ED Triage & MEWS Lead)' },
+        { value: 'HOSPITAL_STAFF', label: 'Medical Officer (Ward Admissions & Bed Tracking)' },
+        { value: 'AMBULANCE_DISPATCH', label: '108 Ambulance Dispatcher (Hospital Base)' },
+      ],
+    };
+  };
+
+  const tierConfig = getAuthorityTierConfig();
+
   const handleApprove = async (staff: PendingStaffUser) => {
     setActionLoading(staff.id);
     setError(null);
     setSuccess(null);
     try {
-      const role = selectedRoles[staff.id] || staff.role || 'HOSPITAL_STAFF';
+      const defaultRole = tierConfig.options.some((o) => o.value === staff.role)
+        ? staff.role
+        : tierConfig.options[0]?.value || 'HOSPITAL_STAFF';
+      const role = selectedRoles[staff.id] || defaultRole;
       await ApiClient.approveStaff(staff.id, role);
-      setSuccess(`Verified and granted active clinical status to ${staff.name} (${staff.staffId})!`);
+      setSuccess(`Verified and granted active clinical status to ${staff.name} (${staff.staffId}) as ${role}!`);
       setPendingList((prev) => prev.filter((item) => item.id !== staff.id));
       if (onApproved) onApproved();
     } catch (err: unknown) {
@@ -105,11 +154,11 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
                   Hospital Staff Verification & Authorization Queue
                 </h2>
                 <span className="font-mono text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                  [DUAL-CONTROL ONBOARDING]
+                  [PRECEDENCE CHAIN]
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Inspect government credentials and authorize official hospital staff access.
+                Inspect government credentials and authorize official hospital staff access according to administrative authority.
               </p>
             </div>
           </div>
@@ -120,6 +169,17 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Authority Precedence Banner */}
+        <div className="mb-4 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-xs">
+          <div className="flex items-center gap-2 text-amber-900 font-bold mb-0.5">
+            <ShieldCheck className="h-4 w-4 text-amber-700 shrink-0" />
+            <span>{tierConfig.tierName}</span>
+          </div>
+          <p className="text-[11px] text-amber-800/80 leading-relaxed">
+            {tierConfig.subtitle}
+          </p>
         </div>
 
         {/* Alerts */}
@@ -149,8 +209,8 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <p className="text-xs font-bold text-slate-700">All Registrations Cleared</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                There are no pending staff accounts awaiting badge verification at this time.
+              <p className="text-[11px] text-slate-500 mt-1 max-w-md text-center">
+                {tierConfig.emptyNotice}
               </p>
             </div>
           ) : (
@@ -184,18 +244,22 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
                 {/* Right: Role selection & Action buttons */}
                 <div className="flex items-center gap-2 shrink-0">
                   <select
-                    value={selectedRoles[staff.id] || staff.role}
+                    value={
+                      selectedRoles[staff.id] ||
+                      (tierConfig.options.some((o) => o.value === staff.role)
+                        ? staff.role
+                        : tierConfig.options[0]?.value)
+                    }
                     onChange={(e) =>
                       setSelectedRoles((prev) => ({ ...prev, [staff.id]: e.target.value }))
                     }
                     className="text-xs font-bold bg-white border border-[#382416]/20 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#382416]"
                   >
-                    <option value="SUPER_ADMIN">State Health Command (Super Admin)</option>
-                    <option value="DISTRICT_CMO">District CMO</option>
-                    <option value="HOSPITAL_ADMIN">Medical Superintendent</option>
-                    <option value="TRIAGE_NURSE">Lead Emergency Triage Nurse</option>
-                    <option value="AMBULANCE_DISPATCH">108 Central Ambulance Dispatcher</option>
-                    <option value="HOSPITAL_STAFF">Medical Officer (Ward In-Charge)</option>
+                    {tierConfig.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
 
                   <button

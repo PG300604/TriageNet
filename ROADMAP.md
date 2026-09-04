@@ -134,6 +134,27 @@ graph TD
 
 ---
 
+### ✅ Phase 9.3: Clinical SaaS UI Modernization & Doctor Availability (Completed)
+- **Design System Overhaul**:
+  - Synthesized modern clinical dashboard design patterns (Boltshift, Globetrans, Transaction History, Bright Leads, Starline) with Plus Jakarta Sans geometric typography.
+  - De-cluttered Top Bar by removing duplicate simulation steps and unauthenticated redirect links.
+- **Doctor & Specialist Availability Roster**:
+  - Replaced legacy appointment booking with on-duty specialist capacity tracking across departments.
+  - Interactive physician profile inspection and 1-click emergency paging to trauma bays.
+
+---
+
+### 🔮 Phase 9.4: Clinician & Doctor Profile Customization System (Next Sprint)
+- **Individualized Profile Cards for Every Health Professional**:
+  - Dedicated personal profile card for each user and staff member with qualifications, medical council registration, affiliated facility, active shift hours, and comms extensions.
+  - User-configurable card layout allowing clinicians to personalize their information.
+- **Universal Cross-User Profile Inspection**:
+  - Clicking any doctor, triage nurse, or administrator anywhere in TriageNet opens their standardized credential card.
+- **Decoupled Auth & Clean Navigation**:
+  - Dedicated login entry point; session termination strictly returns to `/login`.
+
+---
+
 ### 🔮 Phase 10: FIDO2 / WebAuthn Hardware Security Keys (Planned)
 - **Physical YubiKey & Biometric Passkey Support**:
   - Add W3C WebAuthn API support allowing hospital staff to tap a USB-C/NFC hardware key (YubiKey 5 Series) or scan a hospital-issued fingerprint/Windows Hello sensor.

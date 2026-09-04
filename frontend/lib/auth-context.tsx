@@ -319,6 +319,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setIsShiftActive(false);
     setIsScreenLocked(false);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   };
 
   const hasRoleAccess = (allowedRoles: UserRole[]) => {

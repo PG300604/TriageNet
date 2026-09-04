@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { useAuth, UserRole } from '@/lib/auth-context'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutGrid,
   ListOrdered,
@@ -25,6 +25,8 @@ import {
   Search,
   LogOut,
   Radio,
+  X,
+  ShieldCheck,
 } from 'lucide-react'
 
 export type ViewKey =
@@ -108,6 +110,7 @@ export function Sidebar({
   criticalCount?: number
 }) {
   const { user, logout } = useAuth()
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [navSearch, setNavSearch] = useState('')
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
@@ -261,13 +264,16 @@ export function Sidebar({
 
       {/* Modern User Profile Card (Bright Leads & Boltshift pattern) */}
       <div className="border-t border-stone-100 p-3">
-        <div className="hidden md:flex items-center gap-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 p-2.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] shadow-2xs">
+        <div
+          onClick={() => setProfileModalOpen(true)}
+          className="hidden md:flex items-center gap-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 p-2.5 hover:bg-stone-100/90 cursor-pointer transition-all shadow-2xs group"
+        >
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] shadow-2xs group-hover:scale-105 transition-transform">
             {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'PG'}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-xs font-bold text-stone-800">
+              <span className="truncate text-xs font-bold text-stone-800 group-hover:text-[#382416]">
                 {user?.name || 'Dr. Prabhat Kumar'}
               </span>
             </div>
@@ -282,9 +288,12 @@ export function Sidebar({
           </div>
           <button
             type="button"
-            onClick={logout}
-            title="Lock shift / Logout"
-            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              logout()
+            }}
+            title="End Shift / Logout"
+            className="rounded-lg p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-700 cursor-pointer transition-colors"
           >
             <LogOut className="size-3.5" />
           </button>
@@ -292,11 +301,128 @@ export function Sidebar({
 
         {/* Mobile icon-only user circle */}
         <div className="flex justify-center md:hidden">
-          <div className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7]">
+          <button
+            type="button"
+            onClick={() => setProfileModalOpen(true)}
+            className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] hover:scale-105 transition-transform cursor-pointer"
+          >
             {user?.name ? user.name.slice(0, 2).toUpperCase() : 'TN'}
-          </div>
+          </button>
         </div>
       </div>
+
+      {/* User Profile Card Modal */}
+      <AnimatePresence>
+        {profileModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl space-y-4 text-stone-900"
+            >
+              {/* Header with Avatar & Close */}
+              <div className="flex items-start justify-between border-b border-stone-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-[#382416] text-[#ffedd7] text-base font-bold shadow-md">
+                    {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'PG'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-[#382416]">
+                        {user?.name || 'Dr. Prabhat Kumar'}
+                      </h3>
+                      <ShieldCheck className="size-4 text-emerald-600" />
+                    </div>
+                    <p className="text-xs text-stone-500 font-medium">
+                      {user?.roleTitle || 'Hospital Staff & Command Officer'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="rounded-xl p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Profile Attributes Card */}
+              <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-4 text-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 font-medium">Assigned Role:</span>
+                  <span className={cn('rounded-full px-2.5 py-0.5 text-[10px] font-bold border', roleConfig.color)}>
+                    {roleConfig.badge}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 font-medium">Jurisdiction Scope:</span>
+                  <span className="font-semibold text-stone-800">
+                    {user?.districtName ? `${user.districtName} District (CMO Command)` : 'Statewide Command (All 24 Districts)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 font-medium">Primary Facility:</span>
+                  <span className="font-semibold text-stone-800">
+                    {user?.hospitalName || 'Sadar Hospital Ranchi'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 font-medium">Staff Email / ID:</span>
+                  <span className="font-semibold text-stone-800">
+                    {user?.email || 'staff@triagenet.org'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 font-medium">Shift Session:</span>
+                  <span className="font-semibold text-emerald-700 flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    Active Clinical Shift (8h Duty)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1.5 border-t border-stone-200/60">
+                  <span className="text-stone-500 font-medium">Security & 2FA:</span>
+                  <span className="font-semibold text-stone-700">TOTP RFC 6238 Verified</span>
+                </div>
+              </div>
+
+              {/* Future Customization Notice */}
+              <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-3 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-[#ea580c]">
+                  <Sparkles className="size-3.5" />
+                  <span>Profile Customization Coming in Next Sprint</span>
+                </div>
+                <p className="text-[11px] text-stone-600 leading-relaxed">
+                  Individual profile cards with customizable credentials, contact extensions, rotation shifts, and digital signature verification will be editable here.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileModalOpen(false)
+                    logout()
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 px-3.5 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>End Shift & Log Out</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="rounded-xl bg-[#382416] hover:bg-[#28180d] text-[#ffedd7] px-4 py-2 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </aside>
   )
 }

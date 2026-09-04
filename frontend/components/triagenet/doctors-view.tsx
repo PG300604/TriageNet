@@ -208,6 +208,7 @@ export function DoctorsView({ state, selectedHospitalId }: DoctorsViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
   const [doctorsList, setDoctorsList] = useState<DoctorStaffRecord[]>(INITIAL_DOCTORS)
   const [pagingDoctor, setPagingDoctor] = useState<DoctorStaffRecord | null>(null)
+  const [selectedDoctorProfile, setSelectedDoctorProfile] = useState<DoctorStaffRecord | null>(null)
   const [pageMessage, setPageMessage] = useState('')
   const [pageSentToast, setPageSentToast] = useState<string | null>(null)
 
@@ -480,17 +481,18 @@ export function DoctorsView({ state, selectedHospitalId }: DoctorsViewProps) {
                 return (
                   <tr
                     key={doc.id}
-                    className="hover:bg-stone-50/60 transition-colors group"
+                    onClick={() => setSelectedDoctorProfile(doc)}
+                    className="hover:bg-orange-50/40 cursor-pointer transition-colors group"
                   >
                     {/* Specialist */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#382416]/10 text-xs font-bold text-[#382416]">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#382416]/10 text-xs font-bold text-[#382416] group-hover:bg-[#382416] group-hover:text-[#ffedd7] transition-colors">
                           {doc.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-stone-900">{doc.name}</span>
+                            <span className="font-bold text-stone-900 group-hover:text-[#ea580c] transition-colors">{doc.name}</span>
                             {doc.isLeadSpecialist && (
                               <span className="rounded bg-[#ea580c]/10 px-1.5 py-0.2 text-[10px] font-bold text-[#ea580c]">
                                 Lead
@@ -569,7 +571,10 @@ export function DoctorsView({ state, selectedHospitalId }: DoctorsViewProps) {
                     <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
-                        onClick={() => setPagingDoctor(doc)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPagingDoctor(doc)
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-[#382416]/20 bg-white px-3 py-1.5 text-xs font-semibold text-[#382416] transition-all hover:bg-[#382416] hover:text-[#ffedd7] cursor-pointer shadow-2xs"
                       >
                         <Bell className="size-3 text-[#ea580c]" />
@@ -667,6 +672,152 @@ export function DoctorsView({ state, selectedHospitalId }: DoctorsViewProps) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Interactive Doctor Profile Modal */}
+        {selectedDoctorProfile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl space-y-4 text-stone-900"
+            >
+              {/* Header with Doctor Avatar & Close */}
+              <div className="flex items-start justify-between border-b border-stone-100 pb-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="flex size-14 items-center justify-center rounded-2xl bg-[#382416] text-[#ffedd7] text-lg font-bold shadow-md">
+                    {selectedDoctorProfile.name.replace('Dr. ', '').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-[#382416]">
+                        {selectedDoctorProfile.name}
+                      </h3>
+                      {selectedDoctorProfile.isLeadSpecialist && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300">
+                          <Sparkles className="size-2.5 text-[#ea580c]" />
+                          Lead Specialist
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-500 font-medium mt-0.5">
+                      {selectedDoctorProfile.qualification}
+                    </p>
+                    <span className="font-mono text-[10px] text-stone-400">
+                      Reg. No: JMC-{selectedDoctorProfile.id.replace('DOC-', '')}4920 · Medical Council of Jharkhand
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDoctorProfile(null)}
+                  className="rounded-xl p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Status & Department Quick Badges */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider">
+                    Duty Status
+                  </span>
+                  <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border', getStatusBadge(selectedDoctorProfile.status))}>
+                    <span className="size-1.5 rounded-full bg-current"></span>
+                    {selectedDoctorProfile.status}
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider">
+                    Department
+                  </span>
+                  <span className="text-xs font-bold text-stone-800 block">
+                    {selectedDoctorProfile.department}
+                  </span>
+                </div>
+              </div>
+
+              {/* Detailed Operational Attributes */}
+              <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-4 text-xs space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-500 font-medium">Affiliated Hospital:</span>
+                  <span className="font-semibold text-stone-800 text-right max-w-[240px] truncate">
+                    {selectedDoctorProfile.hospitalName}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-500 font-medium">Assigned Station / Bay:</span>
+                  <span className="font-semibold text-stone-800">
+                    {selectedDoctorProfile.roomOrBay}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-500 font-medium">Active Shift Schedule:</span>
+                  <span className="font-semibold text-stone-800">
+                    {selectedDoctorProfile.shiftHours}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-500 font-medium">Internal Communication:</span>
+                  <span className="font-mono font-bold text-[#ea580c]">
+                    {selectedDoctorProfile.phoneExtension}
+                  </span>
+                </div>
+
+                {/* Case Load Bar */}
+                <div className="pt-2 border-t border-stone-200/60 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-500 font-medium">Inpatient Case Load:</span>
+                    <span className="font-bold text-stone-800">
+                      {selectedDoctorProfile.currentCaseLoad} / {selectedDoctorProfile.maxCapacity} Patients ({Math.round((selectedDoctorProfile.currentCaseLoad / (selectedDoctorProfile.maxCapacity || 1)) * 100)}%)
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all',
+                        (selectedDoctorProfile.currentCaseLoad / selectedDoctorProfile.maxCapacity) >= 0.8
+                          ? 'bg-rose-500'
+                          : (selectedDoctorProfile.currentCaseLoad / selectedDoctorProfile.maxCapacity) >= 0.5
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                      )}
+                      style={{ width: `${Math.round((selectedDoctorProfile.currentCaseLoad / (selectedDoctorProfile.maxCapacity || 1)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const docToPage = selectedDoctorProfile
+                    setSelectedDoctorProfile(null)
+                    setPagingDoctor(docToPage)
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#ea580c] hover:bg-[#c2410c] text-white px-4 py-2 text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                >
+                  <Bell className="size-3.5" />
+                  <span>Page Doctor to Bay</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDoctorProfile(null)}
+                  className="rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

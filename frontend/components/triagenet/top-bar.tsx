@@ -287,22 +287,25 @@ export function TopBar({
         </div>
       </div>
 
-      {/* Right: Simulation Controls & User Lockup */}
+      {/* Right: Scenario Switcher */}
       <div className="flex items-center gap-3">
         {/* Scenario Selector Dropdown */}
         <div ref={scenRef} className="relative z-50">
           <button
             type="button"
             onClick={() => setScenOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#382416]/20 bg-white px-3.5 py-1.5 text-xs font-bold text-[#382416] hover:bg-[#f7f2ea] cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-[#382416] hover:bg-stone-50 cursor-pointer shadow-xs transition-colors"
           >
-            <Sparkles className="size-3.5 text-[#dc5000]" />
-            <span className="hidden md:inline">{SCENARIOS.find((s) => s.key === scenario)?.label}</span>
-            <ChevronDown className="size-3 text-slate-400" />
+            <Sparkles className="size-3.5 text-[#ea580c]" />
+            <span className="font-semibold">{SCENARIOS.find((s) => s.key === scenario)?.label}</span>
+            <ChevronDown className="size-3 text-stone-400" />
           </button>
 
           {scenOpen && (
-            <div className="absolute right-0 top-full mt-2 z-[100] w-72 rounded-xl border border-[#382416]/20 bg-white p-2 shadow-2xl space-y-1">
+            <div className="absolute right-0 top-full mt-2 z-[100] w-72 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl space-y-1">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                Simulation Scenarios
+              </div>
               {SCENARIOS.map((s) => (
                 <button
                   key={s.key}
@@ -312,53 +315,19 @@ export function TopBar({
                     setScenOpen(false)
                   }}
                   className={cn(
-                    'flex w-full items-start gap-3 rounded-lg p-2 text-xs font-mono text-left cursor-pointer',
-                    s.key === scenario ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-[#f7f2ea] text-slate-800',
+                    'flex w-full items-start gap-3 rounded-xl p-2.5 text-xs text-left cursor-pointer transition-colors',
+                    s.key === scenario ? 'bg-[#382416] text-[#ffedd7]' : 'hover:bg-stone-50 text-stone-800',
                   )}
                 >
-                  <s.icon className="size-4 shrink-0 text-[#dc5000] mt-0.5" />
+                  <s.icon className="size-4 shrink-0 text-[#ea580c] mt-0.5" />
                   <div>
                     <p className="font-bold">{s.label}</p>
-                    <p className="text-[10px] text-slate-400">{s.desc}</p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">{s.desc}</p>
                   </div>
                 </button>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Fast-Forward Simulation Button */}
-        {onFastForward && (
-          <button
-            type="button"
-            onClick={() => onFastForward(15)}
-            className="rounded-xl bg-[#382416] hover:bg-[#2c1b0e] px-3.5 py-1.5 text-xs font-bold text-[#ffedd7] shadow-2xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <FastForward className="size-3.5" />
-            <span>+15M STEP</span>
-          </button>
-        )}
-
-        {/* Operator Profile & Role Badge */}
-        <div className="flex items-center gap-2">
-          <a
-            href="/login"
-            className="hidden sm:flex flex-col items-end text-right hover:opacity-80 transition-opacity"
-          >
-            <span className="text-xs font-bold text-[#382416]">
-              {user ? user.name : 'Dr. Priyanshu Ghosh'}
-            </span>
-            <span className="font-mono text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded uppercase">
-              [{user ? user.role.replace(/_/g, ' ') : 'SUPER ADMIN'}]
-            </span>
-          </a>
-          <a
-            href="/login"
-            title="Switch User Role / Logout"
-            className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-[#ffedd7] font-mono text-xs font-bold shadow-2xs hover:bg-blue-950 cursor-pointer transition-colors"
-          >
-            {user ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2) : 'PG'}
-          </a>
         </div>
       </div>
     </header>

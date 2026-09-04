@@ -54,18 +54,76 @@ public class AuthService {
                 roleRepository.save(Role.builder().name(roleName).build());
             }
         }
+        seedOfficialCommandAccounts();
+    }
 
-        if (staffUserRepository.count() == 0) {
-            Role superAdminRole = roleRepository.findByName(RoleName.SUPER_ADMIN).orElse(null);
-            if (superAdminRole != null) {
-                staffUserRepository.save(StaffUser.builder()
-                        .name("System Super Admin")
-                        .staffId("JH-SYS-0001")
-                        .email("superadmin@triagenet.gov.in")
-                        .passwordHash(passwordEncoder.encode("Admin@123!"))
-                        .role(superAdminRole)
-                        .status(StaffUser.UserStatus.ACTIVE)
-                        .build());
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    @Transactional
+    public void seedOfficialCommandAccounts() {
+        UUID rimsId = hospitalRepository.findAll().stream()
+                .filter(h -> h.getName() != null && h.getName().toLowerCase().contains("rims"))
+                .map(com.triagenet.entity.Hospital::getId)
+                .findFirst().orElse(null);
+
+        UUID sadarId = hospitalRepository.findAll().stream()
+                .filter(h -> h.getName() != null && h.getName().toLowerCase().contains("sadar hospital ranchi"))
+                .map(com.triagenet.entity.Hospital::getId)
+                .findFirst().orElse(null);
+
+        createSeedStaffIfMissing("JH-SYS-0001", "State Health Command (Super Admin)", "superadmin@triagenet.gov.in", RoleName.SUPER_ADMIN, null);
+        createSeedStaffIfMissing("JH-CMO-2001", "Dr. Prabhat Kumar (District CMO Ranchi)", "cmo.ranchi@triagenet.gov.in", RoleName.DISTRICT_CMO, sadarId);
+        createSeedStaffIfMissing("JH-ADM-3001", "Dr. Kameshwar Prasad (Medical Superintendent)", "supt.rims@triagenet.gov.in", RoleName.HOSPITAL_ADMIN, rimsId);
+        createSeedStaffIfMissing("JH-NUR-4001", "Sunita Soren (Lead Emergency Triage Nurse)", "triage.lead@triagenet.gov.in", RoleName.TRIAGE_NURSE, rimsId);
+        createSeedStaffIfMissing("JH-DSP-5001", "Rajesh Murmu (108 Central Ambulance Dispatcher)", "dispatch.108@triagenet.gov.in", RoleName.AMBULANCE_DISPATCH, rimsId);
+        createSeedStaffIfMissing("JH-MED-6001", "Dr. Ananya Verma (Medical Officer)", "mo.sadar@triagenet.gov.in", RoleName.HOSPITAL_STAFF, sadarId);
+    }
+
+    private void createSeedStaffIfMissing(String staffId, String name, String email, RoleName roleName, UUID hospitalId) {
+        StaffUser existing = staffUserRepository.findByStaffId(staffId).orElse(null);
+        if (existing == null) {
+            existing = staffUserRepository.findByEmail(email).orElse(null);
+        }
+
+        Role role = roleRepository.findByName(roleName)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
+
+        if (existing == null) {
+            staffUserRepository.save(StaffUser.builder()
+                    .name(name)
+                    .staffId(staffId)
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode("Triage@2026!"))
+                    .hospitalId(hospitalId)
+                    .role(role)
+                    .status(StaffUser.UserStatus.ACTIVE)
+                    .totpEnabled(false)
+                    .build());
+        } else {
+            boolean changed = false;
+            if (existing.getStaffId() == null) {
+                existing.setStaffId(staffId);
+                changed = true;
+            }
+            if (existing.getStatus() != StaffUser.UserStatus.ACTIVE) {
+                existing.setStatus(StaffUser.UserStatus.ACTIVE);
+                changed = true;
+            }
+            if (hospitalId != null && existing.getHospitalId() == null) {
+                existing.setHospitalId(hospitalId);
+                changed = true;
+            }
+            if (existing.getRole() == null || existing.getRole().getName() != roleName) {
+                existing.setRole(role);
+                changed = true;
+            }
+            // Ensure default password can authenticate with Triage@2026! if needed
+            if (!passwordEncoder.matches("Triage@2026!", existing.getPasswordHash()) &&
+                !passwordEncoder.matches("Admin@123!", existing.getPasswordHash())) {
+                existing.setPasswordHash(passwordEncoder.encode("Triage@2026!"));
+                changed = true;
+            }
+            if (changed) {
+                staffUserRepository.save(existing);
             }
         }
     }

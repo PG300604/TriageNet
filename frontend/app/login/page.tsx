@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   RefreshCw,
   BadgeCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 import Image from 'next/image';
@@ -241,45 +242,69 @@ export default function LoginPage() {
     setTimeout(() => setCopiedMnemonic(false), 3000);
   };
 
-  const handleDemoPreset = (role: UserRole) => {
-    loginAsDemoRole(role);
+  const handleAutofillAccount = (staffId: string) => {
+    setActiveTab('signin');
+    setLoginStep('credentials');
+    setLoginIdentifier(staffId);
+    setPassword('Triage@2026!');
+    setError(null);
+    setSuccess(`Autofilled credentials for ${staffId}. Click 'Sign In to Command Terminal' to authenticate against database.`);
   };
 
-  const rolePresets: { role: UserRole; title: string; subtitle: string; icon: React.ElementType }[] = [
+  const rolePresets: {
+    role: UserRole;
+    staffId: string;
+    title: string;
+    subtitle: string;
+    jurisdiction: string;
+    icon: React.ElementType;
+  }[] = [
     {
       role: 'SUPER_ADMIN',
+      staffId: 'JH-SYS-0001',
       title: 'State Health Command (Super Admin)',
       subtitle: 'Statewide triage routing, node management & system audit logs',
+      jurisdiction: 'Statewide (24 Districts)',
       icon: Shield,
     },
     {
       role: 'DISTRICT_CMO',
+      staffId: 'JH-CMO-2001',
       title: 'District CMO (Ranchi District)',
       subtitle: 'District-wide bed quotas, surge overrides & emergency escrow',
+      jurisdiction: 'Ranchi District HQ',
       icon: Activity,
     },
     {
       role: 'HOSPITAL_ADMIN',
+      staffId: 'JH-ADM-3001',
       title: 'Medical Superintendent (RIMS)',
       subtitle: 'Hospital ICU/Oxygen inventory, staff verification & transfer requests',
+      jurisdiction: 'RIMS Ranchi Command',
       icon: Building2,
     },
     {
       role: 'TRIAGE_NURSE',
-      title: 'Emergency Triage Nurse (RIMS ED)',
+      staffId: 'JH-NUR-4001',
+      title: 'Emergency Triage Lead Nurse (RIMS ED)',
       subtitle: 'Rapid bedside MEWS scoring, queue priority & clinical shifts',
+      jurisdiction: 'RIMS ED Triage Desk',
       icon: Stethoscope,
     },
     {
       role: 'AMBULANCE_DISPATCH',
+      staffId: 'JH-DSP-5001',
       title: '108 Ambulance Dispatcher',
       subtitle: 'Live fleet positioning, automated patient routing & field dispatch',
+      jurisdiction: 'Central Fleet Routing Desk',
       icon: Truck,
     },
     {
       role: 'HOSPITAL_STAFF',
+      staffId: 'JH-MED-6001',
       title: 'Medical Officer (Sadar Hospital)',
       subtitle: 'General ward admissions, bed tracking & patient intake',
+      jurisdiction: 'Sadar Hospital Ward In-Charge',
       icon: Hospital,
     },
   ];
@@ -909,42 +934,84 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Right Card: Instant RBAC Demo Presets */}
+          {/* Right Card: Pre-Configured Command Credentials (Real DB Logins) */}
           <div className="md:col-span-6 bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-7 shadow-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-lg font-bold text-[#382416]">Instant RBAC Roles</h2>
-                <span className="font-mono text-[10px] font-bold text-[#dc5000] bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
-                  <Sparkles className="inline h-3 w-3 mr-1" />
-                  ONE-CLICK DEMO
+                <h2 className="text-lg font-bold text-[#382416]">Pre-Configured Command IDs</h2>
+                <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                  <ShieldCheck className="inline h-3 w-3 mr-1" />
+                  GENUINE DB ACCOUNTS
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mb-4">
-                Click any pre-configured role to inspect specific RBAC dashboard views & permissions:
+              <p className="text-xs text-slate-500 mb-2.5">
+                These 6 leadership accounts are pre-seeded in the database. Click any account to autofill its official Staff ID and execute genuine backend authentication:
               </p>
 
+              {/* Master Test Password Banner */}
+              <div className="p-2.5 mb-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 text-amber-900">
+                  <Lock className="h-3.5 w-3.5 text-amber-700" />
+                  <span className="text-[11px] font-medium">Master Password for all 6 pre-seeded accounts:</span>
+                </div>
+                <code className="font-mono text-xs font-bold text-amber-950 bg-white px-2 py-0.5 rounded border border-amber-300 select-all">
+                  Triage@2026!
+                </code>
+              </div>
+
               <div className="space-y-2">
-                {rolePresets.map(({ role, title, subtitle, icon: Icon }) => (
-                  <button
+                {rolePresets.map(({ role, staffId, title, subtitle, jurisdiction, icon: Icon }) => (
+                  <div
                     key={role}
-                    type="button"
-                    onClick={() => handleDemoPreset(role)}
-                    className="group w-full p-2.5 rounded-xl bg-[#FAF6F0] border border-[#382416]/10 hover:border-[#382416]/30 hover:bg-[#f2eae0] transition-all text-left flex items-center gap-3 cursor-pointer"
+                    onClick={() => handleAutofillAccount(staffId)}
+                    className="group p-2.5 rounded-xl bg-[#FAF6F0] border border-[#382416]/10 hover:border-[#dc5000]/40 hover:bg-[#f5ece0] transition-all text-left flex items-center justify-between gap-2.5 cursor-pointer"
                   >
-                    <div className="p-2 rounded-lg bg-white border border-[#382416]/10 group-hover:bg-[#382416] group-hover:text-[#ffedd7] text-[#382416] transition-colors shrink-0">
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#382416] group-hover:text-[#dc5000] transition-colors truncate">
-                          {title}
-                        </span>
-                        <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#382416] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-lg bg-white border border-[#382416]/10 group-hover:bg-[#382416] group-hover:text-[#ffedd7] text-[#382416] transition-colors shrink-0">
+                        <Icon className="h-4 w-4" />
                       </div>
-                      <p className="text-[10px] text-slate-500 truncate mt-0.5">{subtitle}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-[10px] font-bold text-[#dc5000] bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded">
+                            {staffId}
+                          </span>
+                          <span className="text-xs font-bold text-[#382416] group-hover:text-[#dc5000] transition-colors truncate">
+                            {title}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{subtitle}</p>
+                        <span className="inline-block text-[9px] font-mono text-slate-400 mt-0.5">
+                          Scope: {jurisdiction}
+                        </span>
+                      </div>
                     </div>
-                  </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAutofillAccount(staffId);
+                      }}
+                      className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white group-hover:bg-[#dc5000] group-hover:text-white text-[#382416] border border-[#382416]/15 group-hover:border-[#dc5000] transition-all shadow-2xs"
+                    >
+                      Fill ID
+                    </button>
+                  </div>
                 ))}
+              </div>
+
+              {/* How to Test Onboarding with 100% Synthetic Details */}
+              <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>How to Test Onboarding with 100% Synthetic Details</span>
+                </div>
+                <ul className="text-[10px] text-slate-600 space-y-1 list-disc pl-4 leading-relaxed">
+                  <li><strong>Zero External Data:</strong> Enter dummy test info (e.g. <em>Dr. Test Persona</em>, ID: <em>JH-STF-9901</em>, Email: <em>test@triagenet.local</em>).</li>
+                  <li><strong>Zero Email / SMS:</strong> The system has NO third-party mail/SMS gateways — nothing is ever sent over telecom networks.</li>
+                  <li><strong>Status Probe:</strong> After registration, the account enters <code className="text-amber-800 font-mono">PENDING_VERIFICATION</code>. Click <strong>[Check ID Status]</strong> on the sign-in form.</li>
+                  <li><strong>Admin Approval:</strong> Sign in with pre-seeded Super Admin (<code className="font-mono">JH-SYS-0001</code>) or Supt (<code className="font-mono">JH-ADM-3001</code>), open the pulsating <strong>[ 👥 STAFF QUEUE ]</strong> in the header, and click <strong>Approve</strong>!</li>
+                </ul>
               </div>
             </div>
 

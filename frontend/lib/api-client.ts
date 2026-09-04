@@ -163,6 +163,8 @@ export interface AuthResponse {
   name: string;
   role: string;
   hospitalId?: string;
+  hospitalName?: string;
+  districtName?: string;
   twoFactorRequired?: boolean;
   challengeToken?: string;
   shiftActive?: boolean;
@@ -329,8 +331,13 @@ export const ApiClient = {
   getDistrictDetails: (districtName: string): Promise<{ district: DistrictSummary; hospitals: HospitalApiData[]; facilityCount: number }> =>
     apiFetch(`/dashboard/district/${encodeURIComponent(districtName)}`),
 
-  getHospitals: (): Promise<HospitalApiData[]> =>
-    apiFetch<HospitalApiData[]>('/hospitals'),
+  getHospitals: (params?: { district?: string; includeTertiary?: boolean }): Promise<HospitalApiData[]> => {
+    const query = new URLSearchParams()
+    if (params?.district) query.append('district', params.district)
+    if (params?.includeTertiary) query.append('includeTertiary', 'true')
+    const qs = query.toString() ? `?${query.toString()}` : ''
+    return apiFetch<HospitalApiData[]>(`/hospitals${qs}`)
+  },
 
   getHospitalById: (id: string): Promise<HospitalApiData> =>
     apiFetch<HospitalApiData>(`/hospitals/${id}`),

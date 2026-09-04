@@ -63,6 +63,7 @@ function mapApiHospitalToLocal(h: HospitalApiData, idx: number, total: number): 
     id: h.id,
     name: h.name,
     short: h.shortCode || h.name.replace(/[^A-Z]/g, '').slice(0, 5) || h.name.slice(0, 8),
+    district: h.districtName || h.region,
     x: cx + radius * Math.cos(angle),
     y: cy + radius * Math.sin(angle),
     beds: { used: h.usedBeds, total: h.totalBeds },
@@ -234,18 +235,44 @@ export function Dashboard() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastEventMessage, setLastEventMessage] = useState<string | null>(null)
 
+  // Auto-lock district for DISTRICT_CMO or HOSPITAL_ADMIN
+  useEffect(() => {
+    if (user?.districtName && (user.role === 'DISTRICT_CMO' || user.role === 'HOSPITAL_ADMIN')) {
+      if (selectedDistrict !== user.districtName) {
+        setSelectedDistrict(user.districtName)
+        const nextState = buildDistrictState(user.districtName, scenario)
+        setState(nextState)
+        if (nextState.hospitals.length > 0) {
+          setSelectedHospitalId(nextState.hospitals[0].id)
+        }
+      }
+    }
+  }, [user?.districtName, user?.role, scenario, selectedDistrict])
+
   // When live backend becomes available, merge live hospital data into the state
   useEffect(() => {
     if (dataSourceMode === 'live' && liveHospitals.length > 0) {
+      const isRestrictedRole = user?.role === 'DISTRICT_CMO' || user?.role === 'HOSPITAL_ADMIN'
+      const targetDistrict = isRestrictedRole && user?.districtName ? user.districtName : selectedDistrict
+
+      const filtered = targetDistrict !== 'ALL'
+        ? liveHospitals.filter((h) =>
+            (h.district && h.district.toLowerCase() === targetDistrict.toLowerCase()) ||
+            h.name.toLowerCase().includes(targetDistrict.toLowerCase())
+          )
+        : liveHospitals
+
+      const effectiveHospitals = filtered.length > 0 ? filtered : liveHospitals
+
       setState((prev) => ({
         ...prev,
-        hospitals: liveHospitals,
+        hospitals: effectiveHospitals,
       }))
-      if (liveHospitals.length > 0 && !liveHospitals.find((h) => h.id === selectedHospitalId)) {
-        setSelectedHospitalId(liveHospitals[0].id)
+      if (effectiveHospitals.length > 0 && !effectiveHospitals.find((h) => h.id === selectedHospitalId)) {
+        setSelectedHospitalId(effectiveHospitals[0].id)
       }
     }
-  }, [dataSourceMode, liveHospitals])
+  }, [dataSourceMode, liveHospitals, selectedDistrict, user?.role, user?.districtName, selectedHospitalId])
 
 
 
@@ -279,15 +306,31 @@ export function Dashboard() {
 
   // Handle District Switch
   const handleSelectDistrict = useCallback((newDistrict: string) => {
+    // Prevent restricted roles from switching districts
+    if ((user?.role === 'DISTRICT_CMO' || user?.role === 'HOSPITAL_ADMIN') && user?.districtName && newDistrict !== user.districtName) {
+      return
+    }
+
     setSelectedDistrict(newDistrict)
     const nextState = buildDistrictState(newDistrict, scenario)
+    if (dataSourceMode === 'live' && liveHospitals.length > 0) {
+      const filtered = newDistrict !== 'ALL'
+        ? liveHospitals.filter((h) =>
+            (h.district && h.district.toLowerCase() === newDistrict.toLowerCase()) ||
+            h.name.toLowerCase().includes(newDistrict.toLowerCase())
+          )
+        : liveHospitals
+      if (filtered.length > 0) {
+        nextState.hospitals = filtered
+      }
+    }
     setState(nextState)
     if (nextState.hospitals.length > 0) {
       setSelectedHospitalId(nextState.hospitals[0].id)
     }
     setLastEventMessage(`Switched district view to ${newDistrict === 'ALL' ? 'Statewide Jharkhand (79 Facilities)' : `${newDistrict} District (${nextState.hospitals.length} Facilities)`}`)
     setTimeout(() => setLastEventMessage(null), 5000)
-  }, [scenario])
+  }, [scenario, dataSourceMode, liveHospitals, user?.role, user?.districtName])
 
   const selectedHospital = useMemo(
     () => state.hospitals.find((h) => h.id === selectedHospitalId) ?? state.hospitals[0],

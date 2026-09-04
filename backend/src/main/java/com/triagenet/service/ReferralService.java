@@ -108,9 +108,32 @@ public class ReferralService {
                         .findFirst()
                         .orElse(null);
 
+                boolean isInterDistrictTertiary = false;
+                if (targetH == null) {
+                    // Inter-district referral provision: expand candidate search to state TERTIARY centers
+                    targetH = hospitals.stream()
+                            .filter(h -> !h.getId().equals(fromH.getId()))
+                            .filter(h -> hospitalAuthService.isTertiaryHospital(h.getId()))
+                            .filter(h -> (h.getBedsTotal() - h.getBedsUsed()) >= 2)
+                            .filter(h -> hungarianMatcher.checkCompatibility(severeWaiting, sevResult.getScore(), h, List.of()).isCompatible())
+                            .sorted((a, b) -> Integer.compare(b.getBedsTotal() - b.getBedsUsed(), a.getBedsTotal() - a.getBedsUsed()))
+                            .findFirst()
+                            .orElse(null);
+                    if (targetH != null) {
+                        isInterDistrictTertiary = true;
+                    }
+                }
+
                 if (targetH != null) {
                     DijkstraRouter.RouteResult route = dijkstraRouter.findShortestRoute(fromH.getId(), targetH.getId(), edges);
                     HungarianMatcher.MatchResult compat = hungarianMatcher.checkCompatibility(severeWaiting, sevResult.getScore(), targetH, List.of());
+
+                    String matchReason = isInterDistrictTertiary
+                            ? "Dijkstra Inter-District Tertiary Referral (State Specialty Escalation)"
+                            : compat.getMatchReason();
+                    String reason = isInterDistrictTertiary
+                            ? fromH.getName() + " has " + severeCount + " severe cases with no local district beds available. Escalated across district boundary to State Tertiary Facility " + targetH.getName() + "."
+                            : fromH.getName() + " has " + severeCount + " severe cases with only " + openBeds + " open beds. Target " + targetH.getName() + " has verified open beds, equipment, and specialist availability.";
 
                     return ReferralRecommendationDto.builder()
                             .fromHospitalId(fromH.getId())
@@ -121,8 +144,8 @@ public class ReferralService {
                             .patientName(severeWaiting.getName())
                             .patientSeverity(sevResult.getScore())
                             .travelMinutes(route.getTotalMinutes())
-                            .reason(fromH.getName() + " has " + severeCount + " severe cases with only " + openBeds + " open beds. Target " + targetH.getName() + " has verified open beds, equipment, and specialist availability.")
-                            .matchReason(compat.getMatchReason())
+                            .reason(reason)
+                            .matchReason(matchReason)
                             .build();
                 }
             }

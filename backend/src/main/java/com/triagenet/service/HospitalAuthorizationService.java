@@ -69,6 +69,41 @@ public class HospitalAuthorizationService {
      * Check if the current user can access the given hospital.
      * Throws AccessDeniedException if not authorized.
      */
+    /**
+     * Get the currently authenticated user's assigned district name (if any).
+     */
+    public Optional<String> getCurrentUserDistrictName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return Optional.empty();
+        }
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            if (userDetails.getDistrictName() != null && !userDetails.getDistrictName().isBlank()) {
+                return Optional.of(userDetails.getDistrictName());
+            }
+            if (userDetails.getHospitalId() != null) {
+                return hospitalRepository.findById(userDetails.getHospitalId())
+                        .map(h -> h.getDistrictName() != null ? h.getDistrictName() : h.getRegion());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Check if a hospital is a state-level tertiary care facility (for inter-district escalation).
+     */
+    public boolean isTertiaryHospital(UUID hospitalId) {
+        if (hospitalId == null) return false;
+        return hospitalRepository.findById(hospitalId)
+                .map(h -> "TERTIARY".equalsIgnoreCase(h.getFacilityTier()) ||
+                          (h.getName() != null && (h.getName().toLowerCase().contains("rims") || h.getName().toLowerCase().contains("medical college"))))
+                .orElse(false);
+    }
+
+    /**
+     * Check if the current user can access the given hospital.
+     * Throws AccessDeniedException if not authorized.
+     */
     public void assertCanAccessHospital(UUID hospitalId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
@@ -86,25 +121,23 @@ public class HospitalAuthorizationService {
             return;
         }
 
-        Optional<UUID> userHospitalId = getCurrentUserHospitalId();
-        if (userHospitalId.isEmpty()) {
-            throw new AccessDeniedException("Access denied: User has no assigned hospital");
-        }
-
         // DISTRICT_CMO can access hospitals in their district
         if (userRole.get() == RoleName.DISTRICT_CMO) {
-            UUID userHospId = userHospitalId.get();
-            Optional<Hospital> userHospital = hospitalRepository.findById(userHospId);
+            Optional<String> userDist = getCurrentUserDistrictName();
             Optional<Hospital> targetHospital = hospitalRepository.findById(hospitalId);
 
-            if (userHospital.isPresent() && targetHospital.isPresent()) {
-                String userDist = userHospital.get().getDistrictName() != null ? userHospital.get().getDistrictName() : userHospital.get().getRegion();
+            if (userDist.isPresent() && targetHospital.isPresent()) {
                 String targetDist = targetHospital.get().getDistrictName() != null ? targetHospital.get().getDistrictName() : targetHospital.get().getRegion();
-                if (userDist != null && userDist.equalsIgnoreCase(targetDist)) {
+                if (userDist.get().equalsIgnoreCase(targetDist)) {
                     return;
                 }
             }
             throw new AccessDeniedException("Access denied: Hospital not in your district");
+        }
+
+        Optional<UUID> userHospitalId = getCurrentUserHospitalId();
+        if (userHospitalId.isEmpty()) {
+            throw new AccessDeniedException("Access denied: User has no assigned hospital");
         }
 
         // HOSPITAL_ADMIN, TRIAGE_NURSE, HOSPITAL_STAFF: only their assigned hospital
@@ -137,27 +170,24 @@ public class HospitalAuthorizationService {
                     .collect(Collectors.toSet());
         }
 
-        Optional<UUID> userHospitalId = getCurrentUserHospitalId();
-        if (userHospitalId.isEmpty()) {
+        // DISTRICT_CMO: hospitals in their district
+        if (userRole.get() == RoleName.DISTRICT_CMO) {
+            Optional<String> userDist = getCurrentUserDistrictName();
+            if (userDist.isPresent()) {
+                String dist = userDist.get();
+                return hospitalRepository.findAll().stream()
+                        .filter(h -> {
+                            String hDist = h.getDistrictName() != null ? h.getDistrictName() : h.getRegion();
+                            return dist.equalsIgnoreCase(hDist);
+                        })
+                        .map(Hospital::getId)
+                        .collect(Collectors.toSet());
+            }
             return Set.of();
         }
 
-        // DISTRICT_CMO: hospitals in their district
-        if (userRole.get() == RoleName.DISTRICT_CMO) {
-            UUID userHospId = userHospitalId.get();
-            Optional<Hospital> userHospital = hospitalRepository.findById(userHospId);
-            if (userHospital.isPresent()) {
-                String userDist = userHospital.get().getDistrictName() != null ? userHospital.get().getDistrictName() : userHospital.get().getRegion();
-                if (userDist != null) {
-                    return hospitalRepository.findAll().stream()
-                            .filter(h -> {
-                                String hDist = h.getDistrictName() != null ? h.getDistrictName() : h.getRegion();
-                                return userDist.equalsIgnoreCase(hDist);
-                            })
-                            .map(Hospital::getId)
-                            .collect(Collectors.toSet());
-                }
-            }
+        Optional<UUID> userHospitalId = getCurrentUserHospitalId();
+        if (userHospitalId.isEmpty()) {
             return Set.of();
         }
 

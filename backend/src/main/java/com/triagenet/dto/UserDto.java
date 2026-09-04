@@ -20,6 +20,8 @@ public class UserDto {
     private StaffUser.UserStatus status;
     private RoleName role;
     private UUID hospitalId;
+    private String hospitalName;
+    private String districtName;
     private LocalDateTime createdAt;
     private String totpSecret;
     private String qrUri;
@@ -35,6 +37,7 @@ public class UserDto {
                 .status(user.getStatus())
                 .role(user.getRole() != null ? user.getRole().getName() : null)
                 .hospitalId(user.getHospitalId())
+                .districtName(user.getDistrictName())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

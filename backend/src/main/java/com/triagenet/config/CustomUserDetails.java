@@ -20,6 +20,7 @@ public class CustomUserDetails implements UserDetails {
     private final StaffUser.UserStatus status;
     private final String password;
     private final UUID hospitalId;
+    private final String districtName;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(StaffUser user) {
@@ -30,6 +31,7 @@ public class CustomUserDetails implements UserDetails {
         this.status = user.getStatus();
         this.password = user.getPasswordHash();
         this.hospitalId = user.getHospitalId();
+        this.districtName = user.getDistrictName();
         this.authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().getName().name())
         );

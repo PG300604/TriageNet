@@ -47,6 +47,9 @@ public class StaffUser {
     @Column(name = "hospital_id")
     private UUID hospitalId;
 
+    @Column(name = "district_name", length = 100)
+    private String districtName;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;

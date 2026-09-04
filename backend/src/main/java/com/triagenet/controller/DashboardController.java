@@ -60,7 +60,7 @@ public class DashboardController {
         // Multi-tenant: only show hospitals the user can access
         Set<UUID> authorizedHospitalIds = hospitalAuthService.getAuthorizedHospitalIds();
         List<Hospital> hospitals = hospitalRepository.findAll().stream()
-                .filter(h -> authorizedHospitalIds.isEmpty() || authorizedHospitalIds.contains(h.getId()))
+                .filter(h -> authorizedHospitalIds.contains(h.getId()))
                 .toList();
         
         List<District> districts = districtRepository.findAll().stream()
@@ -131,16 +131,14 @@ public class DashboardController {
                 .filter(h -> districtName.equalsIgnoreCase(h.getDistrictName()) || districtName.equalsIgnoreCase(h.getRegion()))
                 .toList();
 
-        if (!authorizedHospitalIds.isEmpty() && !allDistrictHospitals.isEmpty()) {
-            boolean hasAccess = allDistrictHospitals.stream()
-                    .anyMatch(h -> authorizedHospitalIds.contains(h.getId()));
-            if (!hasAccess) {
-                return ResponseEntity.status(403).body(Map.of("error", "Access denied: No hospitals in this district"));
-            }
+        boolean hasAccess = allDistrictHospitals.stream()
+                .anyMatch(h -> authorizedHospitalIds.contains(h.getId()));
+        if (!hasAccess && !allDistrictHospitals.isEmpty()) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied: No hospitals in this district"));
         }
         
         List<Hospital> dHospitals = allDistrictHospitals.stream()
-                .filter(h -> authorizedHospitalIds.isEmpty() || authorizedHospitalIds.contains(h.getId()))
+                .filter(h -> authorizedHospitalIds.contains(h.getId()))
                 .collect(Collectors.toList());
 
         Map<String, Object> resp = new HashMap<>();

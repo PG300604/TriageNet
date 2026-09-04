@@ -46,6 +46,7 @@ public class AuthService {
     private final MnemonicRecoveryService mnemonicRecoveryService;
     private final com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
     private final com.triagenet.repository.HospitalRepository hospitalRepository;
+    private final HospitalSeedService hospitalSeedService;
 
     @PostConstruct
     @Transactional
@@ -55,12 +56,15 @@ public class AuthService {
                 roleRepository.save(Role.builder().name(roleName).build());
             }
         }
-        seedOfficialCommandAccounts();
     }
 
+    @org.springframework.core.annotation.Order(2)
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     @Transactional
     public void seedOfficialCommandAccounts() {
+        // Ensure hospital dataset is seeded first
+        hospitalSeedService.seedJharkhandData();
+
         UUID rimsId = hospitalRepository.findAll().stream()
                 .filter(h -> h.getName() != null && h.getName().toLowerCase().contains("rims"))
                 .map(com.triagenet.entity.Hospital::getId)
@@ -71,15 +75,15 @@ public class AuthService {
                 .map(com.triagenet.entity.Hospital::getId)
                 .findFirst().orElse(null);
 
-        createSeedStaffIfMissing("JH-SYS-0001", "State Health Command (Super Admin)", "superadmin@triagenet.gov.in", RoleName.SUPER_ADMIN, null);
-        createSeedStaffIfMissing("JH-CMO-2001", "Dr. Prabhat Kumar (District CMO Ranchi)", "cmo.ranchi@triagenet.gov.in", RoleName.DISTRICT_CMO, sadarId);
-        createSeedStaffIfMissing("JH-ADM-3001", "Dr. Kameshwar Prasad (Medical Superintendent)", "supt.rims@triagenet.gov.in", RoleName.HOSPITAL_ADMIN, rimsId);
-        createSeedStaffIfMissing("JH-NUR-4001", "Sunita Soren (Lead Emergency Triage Nurse)", "triage.lead@triagenet.gov.in", RoleName.TRIAGE_NURSE, rimsId);
-        createSeedStaffIfMissing("JH-DSP-5001", "Rajesh Murmu (108 Central Ambulance Dispatcher)", "dispatch.108@triagenet.gov.in", RoleName.AMBULANCE_DISPATCH, rimsId);
-        createSeedStaffIfMissing("JH-MED-6001", "Dr. Ananya Verma (Medical Officer)", "mo.sadar@triagenet.gov.in", RoleName.HOSPITAL_STAFF, sadarId);
+        createSeedStaffIfMissing("JH-SYS-0001", "State Health Command (Super Admin)", "superadmin@triagenet.gov.in", RoleName.SUPER_ADMIN, null, "Statewide");
+        createSeedStaffIfMissing("JH-CMO-2001", "Dr. Prabhat Kumar (District CMO Ranchi)", "cmo.ranchi@triagenet.gov.in", RoleName.DISTRICT_CMO, sadarId, "Ranchi");
+        createSeedStaffIfMissing("JH-ADM-3001", "Dr. Kameshwar Prasad (Medical Superintendent)", "supt.rims@triagenet.gov.in", RoleName.HOSPITAL_ADMIN, rimsId, "Ranchi");
+        createSeedStaffIfMissing("JH-NUR-4001", "Sunita Soren (Lead Emergency Triage Nurse)", "triage.lead@triagenet.gov.in", RoleName.TRIAGE_NURSE, rimsId, "Ranchi");
+        createSeedStaffIfMissing("JH-DSP-5001", "Rajesh Murmu (108 Central Ambulance Dispatcher)", "dispatch.108@triagenet.gov.in", RoleName.AMBULANCE_DISPATCH, rimsId, "Ranchi");
+        createSeedStaffIfMissing("JH-MED-6001", "Dr. Ananya Verma (Medical Officer)", "mo.sadar@triagenet.gov.in", RoleName.HOSPITAL_STAFF, sadarId, "Ranchi");
     }
 
-    private void createSeedStaffIfMissing(String staffId, String name, String email, RoleName roleName, UUID hospitalId) {
+    private void createSeedStaffIfMissing(String staffId, String name, String email, RoleName roleName, UUID hospitalId, String districtName) {
         StaffUser existing = staffUserRepository.findByStaffId(staffId).orElse(null);
         if (existing == null) {
             existing = staffUserRepository.findByEmail(email).orElse(null);
@@ -95,6 +99,7 @@ public class AuthService {
                     .email(email)
                     .passwordHash(passwordEncoder.encode("Triage@2026!"))
                     .hospitalId(hospitalId)
+                    .districtName(districtName)
                     .role(role)
                     .status(StaffUser.UserStatus.ACTIVE)
                     .totpEnabled(false)
@@ -109,8 +114,12 @@ public class AuthService {
                 existing.setStatus(StaffUser.UserStatus.ACTIVE);
                 changed = true;
             }
-            if (hospitalId != null && existing.getHospitalId() == null) {
+            if (hospitalId != null && !hospitalId.equals(existing.getHospitalId())) {
                 existing.setHospitalId(hospitalId);
+                changed = true;
+            }
+            if (districtName != null && !districtName.equals(existing.getDistrictName())) {
+                existing.setDistrictName(districtName);
                 changed = true;
             }
             if (existing.getRole() == null || existing.getRole().getName() != roleName) {
@@ -127,6 +136,32 @@ public class AuthService {
                 staffUserRepository.save(existing);
             }
         }
+    }
+
+    public String resolveHospitalName(StaffUser user) {
+        if (user == null || user.getHospitalId() == null) {
+            return user != null && user.getRole() != null && (user.getRole().getName() == RoleName.SUPER_ADMIN || user.getRole().getName() == RoleName.STATE_HEALTH_DEPT)
+                    ? "State Command HQ" : "Unassigned / General Pool";
+        }
+        return hospitalRepository.findById(user.getHospitalId())
+                .map(com.triagenet.entity.Hospital::getName)
+                .orElse("Hospital #" + user.getHospitalId());
+    }
+
+    public String resolveDistrictName(StaffUser user) {
+        if (user == null) return null;
+        if (user.getDistrictName() != null && !user.getDistrictName().isBlank()) {
+            return user.getDistrictName();
+        }
+        if (user.getHospitalId() != null) {
+            return hospitalRepository.findById(user.getHospitalId())
+                    .map(h -> h.getDistrictName() != null ? h.getDistrictName() : h.getRegion())
+                    .orElse(null);
+        }
+        if (user.getRole() != null && (user.getRole().getName() == RoleName.SUPER_ADMIN || user.getRole().getName() == RoleName.STATE_HEALTH_DEPT)) {
+            return "Statewide";
+        }
+        return null;
     }
 
     @org.springframework.beans.factory.annotation.Value("${security.trusted-proxies:127.0.0.1,::1,0:0:0:0:0:0:0:1,localhost}")
@@ -262,6 +297,8 @@ public class AuthService {
                 .status(user.getStatus())
                 .role(user.getRole().getName())
                 .hospitalId(user.getHospitalId())
+                .hospitalName(resolveHospitalName(user))
+                .districtName(resolveDistrictName(user))
                 .build();
     }
 
@@ -565,7 +602,10 @@ public class AuthService {
     public UserDto getCurrentUser(CustomUserDetails userDetails) {
         StaffUser user = staffUserRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new com.triagenet.exception.ResourceNotFoundException("User not found with id: " + userDetails.getId()));
-        return UserDto.fromEntity(user);
+        UserDto dto = UserDto.fromEntity(user);
+        dto.setHospitalName(resolveHospitalName(user));
+        dto.setDistrictName(resolveDistrictName(user));
+        return dto;
     }
 
     /**
@@ -774,6 +814,8 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole().getName())
                 .hospitalId(user.getHospitalId())
+                .hospitalName(resolveHospitalName(user))
+                .districtName(resolveDistrictName(user))
                 .shiftActive(true)
                 .shiftDurationHours(duration)
                 .isScreenLocked(false)

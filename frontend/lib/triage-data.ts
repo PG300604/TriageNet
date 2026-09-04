@@ -34,6 +34,7 @@ export interface Hospital {
   ventilators: ResourcePool
   specialists: ResourcePool
   specialistRoster: SpecialistRoster
+  district?: string
 }
 
 export interface Patient {

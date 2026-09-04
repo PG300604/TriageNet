@@ -19,6 +19,8 @@ public class LoginResponse {
     private String email;
     private RoleName role;
     private UUID hospitalId;
+    private String hospitalName;
+    private String districtName;
     private String staffId;
     private com.triagenet.entity.StaffUser.UserStatus status;
     private String refreshToken;

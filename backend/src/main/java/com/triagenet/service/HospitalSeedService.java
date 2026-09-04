@@ -27,6 +27,7 @@ public class HospitalSeedService {
     private final DistrictRepository districtRepository;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.core.annotation.Order(1)
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void seedJharkhandData() {

@@ -2766,6 +2766,7 @@ export function convertFacilityToHospital(f: JharkhandHospitalFacility, index: n
     id: f.id,
     name: f.name,
     short: f.shortCode,
+    district: f.district,
     x,
     y,
     beds: { used: usedBeds, total: totalBeds },

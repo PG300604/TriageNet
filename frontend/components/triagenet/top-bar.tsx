@@ -139,7 +139,7 @@ export function TopBar({
             <span className="truncate max-w-[150px] md:max-w-[200px]">
               {selectedDistrict === 'ALL'
                 ? '🌟 ALL 24 DISTRICTS (JHARKHAND)'
-                : `${selectedDistrict.toUpperCase()} DISTRICT`}
+                : `${selectedDistrict.toUpperCase()} DISTRICT${user?.role === 'DISTRICT_CMO' ? ' (CMO COMMAND)' : ''}`}
             </span>
             {canSwitchDistrict && <ChevronDown className="size-3 text-[#ffedd7]" />}
           </button>

@@ -178,6 +178,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: (resp.role as UserRole) || 'TRIAGE_NURSE',
           roleTitle: resp.role || 'Hospital Staff',
           hospitalId: resp.hospitalId,
+          hospitalName: resp.hospitalName,
+          districtName: resp.districtName,
         };
         setUser(profile);
 
@@ -222,6 +224,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: (resp.role as UserRole) || 'TRIAGE_NURSE',
         roleTitle: resp.role || 'Hospital Staff',
         hospitalId: resp.hospitalId,
+        hospitalName: resp.hospitalName,
+        districtName: resp.districtName,
       };
 
       setToken(resp.token || null);
@@ -260,6 +264,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: (resp.role as UserRole) || 'TRIAGE_NURSE',
         roleTitle: resp.role || 'Hospital Staff',
         hospitalId: resp.hospitalId,
+        hospitalName: resp.hospitalName,
+        districtName: resp.districtName,
       };
 
       setToken(resp.token || null);

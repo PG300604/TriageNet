@@ -44,9 +44,13 @@
 
 ## Overview
 
-**TriageNet** is a state-wide healthcare emergency operations and spatial resource allocation platform designed as a **Final Year CSBS Project (PG300604)**. It connects **111 government healthcare facilities across all 24 districts of Jharkhand** (*Medical Colleges, Sadar Hospitals, Sub-Divisional Referral Centers, and CHCs*), enabling live spatial Dijkstra routing and traffic-aware ambulance dispatching when regional facilities face surge capacity overflow.
+**TriageNet** is an AI-powered emergency triage and spatial resource coordination platform engineered for statewide healthcare operations across Jharkhand. Connecting **111 government healthcare facilities across all 24 districts** (*Medical Colleges, Sadar Hospitals, Sub-Divisional Centers, and CHCs*), it bridges frontline clinical intake with state-level disaster and surge governance.
 
-The system uses **machine learning severity scoring**, **Haversine & OpenRouteService (ORS) spatial distance matrices**, **Dijkstra shortest-path regional load balancing**, **multi-resource clinical compatibility matching (Hungarian matching)**, **autonomous 24/7 AI supply & financial agents**, and **6-role RBAC security controls**.
+### Core Capabilities at a Glance
+- **AI Clinical Severity Scoring**: Real-time logistic regression inference trained on clinical vitals with explainable factor attribution and sepsis early warning alerts.
+- **GIS Spatial Routing & 108 Fleet Command**: Live Dijkstra shortest-path load balancing, authentic GPS hospital positioning, 3-tier surge capacity visual hierarchy, and multi-ambulance fleet tracking with coverage zones.
+- **Multi-Resource Clinical Matching**: 3-constraint Hungarian verification (`Available Bed ∧ Equipment Match ∧ Specialist On-Duty`) with 1-click bed pre-booking tokens (`#JH-108-DISPATCH-XXXX`).
+- **3-Tier Role-Scoped Governance**: Hierarchical operational workflows and budget allocations tailored for State Health Command, District CMOs, and Hospital Superintendents, supported by zero-email offline cryptographic authentication (TOTP + BIP-39).
 
 ---
 
@@ -685,7 +689,7 @@ graph TD
 | **ML Pipeline** | Python · scikit-learn · Logistic Regression |
 | **Database** | PostgreSQL 16 (H2 in-memory for local dev) |
 | **Infrastructure** | Docker Compose · Multi-container orchestration |
-| **Design System** | Panacea Healthcare SaaS — Walnut Shadow & Warm Cream Canvas |
+| **Design System** | Modern Clinical Workspace — Walnut Shadow & Warm Cream Canvas |
 | **SEO & PWA** | Sitemap · Robots.txt · Web Manifest · Schema.org JSON-LD · OpenGraph & Twitter Cards |
 
 ---
@@ -900,7 +904,7 @@ flowchart LR
 ## Development Progress
 
 ### ✅ Phase 1 — Frontend & ML Engine (Complete)
-- [x] Panacea Healthcare SaaS design system (light clinical canvas & Walnut Shadow theme)
+- [x] Modern clinical workspace design system (light clinical canvas & Walnut Shadow theme)
 - [x] Stylized TriageNet v2.0 branding
 - [x] ML Severity Scorer (Logistic Regression)
 - [x] All 12 sidebar operational pages
@@ -921,7 +925,7 @@ flowchart LR
 ### ✅ Phase 3 — Frontend Integration & 6-Role RBAC Portal (Complete)
 - [x] Type-safe REST client (`frontend/lib/api-client.ts`)
 - [x] 6-Role RBAC React AuthContext (`frontend/lib/auth-context.tsx`) with instant one-click demo presets
-- [x] Panacea SaaS login portal (`frontend/app/login/page.tsx`) with light warm linen canvas and Walnut Shadow theme
+- [x] Clinical staff login portal (`frontend/app/login/page.tsx`) with light warm linen canvas and Walnut Shadow theme
 - [x] RBAC navigation filtering (`sidebar.tsx`) and role context banner headers
 
 ### ✅ Phase 4 — OpenRouteService Spatial Routing & Interactive Maps (Complete)

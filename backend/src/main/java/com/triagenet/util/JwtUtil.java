@@ -55,6 +55,14 @@ public class JwtUtil {
 
     @PostConstruct
     public void validateJwtConfiguration() {
+        // SECURITY (B1): In dev/local profile, if JWT_SECRET is unset, dynamically generate an ephemeral 256-bit CSPRNG secret
+        if ((secret == null || secret.isBlank()) && environment != null && environment.acceptsProfiles(Profiles.of("dev", "local", "default"))) {
+            byte[] randomBytes = new byte[32];
+            new java.security.SecureRandom().nextBytes(randomBytes);
+            this.secret = java.util.HexFormat.of().formatHex(randomBytes);
+            log.info("SECURITY (B1): Generated ephemeral 256-bit CSPRNG secret for development profile.");
+        }
+
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalStateException("CRITICAL SECURITY ERROR: JWT Secret must be at least 256 bits (32 bytes) long!");
         }

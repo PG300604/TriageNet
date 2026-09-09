@@ -41,6 +41,7 @@ public class HospitalController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Hospital> getHospitalById(@PathVariable UUID id) {
+        hospitalAuthService.assertCanAccessHospital(id);
         Hospital hospital = hospitalService.getHospitalById(id);
         if (hospital == null) {
             return ResponseEntity.notFound().build();

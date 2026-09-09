@@ -8,11 +8,11 @@ This document tracks all security findings from the **Hermes Automated Security 
 
 | # | Issue Title | Severity | CWE | Component | Labels | Status |
 |---|---|---|---|---|---|---|
-| **B1** | [Dev Profile Fallback JWT Secret Vulnerability](#issue-b1--dev-profile-fallback-jwt-secret) | 🟠 `MEDIUM` | CWE-798 | Backend (Auth) | `security`, `sprint`, `backend` | 📋 Ready for Sprint |
-| **B2** | [Enforce Content-Security-Policy (CSP) Directives](#issue-b2--enforce-content-security-policy-csp) | 🟠 `MEDIUM` | CWE-693 | Backend (Headers) | `security`, `sprint`, `good-first-issue` | 📋 Ready for Sprint |
-| **B3** | [Permissive permitAll() Endpoints Without Hospital Tenant Scoping](#issue-b3--permissive-permitall-endpoints) | 🟠 `MEDIUM` | CWE-639 | Backend (RBAC) | `security`, `sprint`, `rbac` | 📋 Ready for Sprint |
-| **B4** | [application-local.yml.example Hardcoded Secret Cleansing](#issue-b4--application-localymlexample-secret-cleansing) | 🟡 `LOW` | CWE-522 | Config / Templates | `security`, `hygiene`, `good-first-issue` | 📋 Ready for Sprint |
-| **B5** | [Runtime Dynamic Test Profile CSPRNG Secret](#issue-b5--runtime-dynamic-test-profile-csprng-secret) | 🟡 `LOW` | CWE-330 | Testing / CI | `security`, `tests` | 📋 Ready for Sprint |
+| **B1** | [Dev Profile Fallback JWT Secret Vulnerability](#issue-b1--dev-profile-fallback-jwt-secret) | 🟠 `MEDIUM` | CWE-798 | Backend (Auth) | `security`, `sprint`, `backend` | ✅ Resolved (Sprint 10) |
+| **B2** | [Enforce Content-Security-Policy (CSP) Directives](#issue-b2--enforce-content-security-policy-csp) | 🟠 `MEDIUM` | CWE-693 | Backend (Headers) | `security`, `sprint`, `good-first-issue` | ✅ Resolved (Sprint 10) |
+| **B3** | [Permissive permitAll() Endpoints Without Hospital Tenant Scoping](#issue-b3--permissive-permitall-endpoints) | 🟠 `MEDIUM` | CWE-639 | Backend (RBAC) | `security`, `sprint`, `rbac` | ✅ Resolved (Sprint 10) |
+| **B4** | [application-local.yml.example Hardcoded Secret Cleansing](#issue-b4--application-localymlexample-secret-cleansing) | 🟡 `LOW` | CWE-522 | Config / Templates | `security`, `hygiene`, `good-first-issue` | ✅ Resolved (Sprint 10) |
+| **B5** | [Runtime Dynamic Test Profile CSPRNG Secret](#issue-b5--runtime-dynamic-test-profile-csprng-secret) | 🟡 `LOW` | CWE-330 | Testing / CI | `security`, `tests` | ✅ Resolved (Sprint 10) |
 
 ---
 
@@ -110,3 +110,8 @@ This document tracks all security findings from the **Hermes Automated Security 
 | **8** | Unsanitized Audit Logging | 🟠 `MEDIUM` | Phase 8.1 | ✅ Resolved (CWE-117 PII Sanitizer) |
 | **9** | Lack of Refresh Token Revocation | 🔴 `HIGH` | Phase 9 | ✅ Resolved (7-Day Cookie Rotation & Replay Defense) |
 | **10** | Third-Party Auth & SMS Gateway Dependence | 🔴 `HIGH` | Phase 9.1 & 9.2 | ✅ Resolved (Self-Sovereign Staff ID + TOTP/BIP-39) |
+| **11** | Dev Profile Fallback JWT Secret (B1) | 🟠 `MEDIUM` | Sprint 10 | ✅ Resolved (Dynamic Ephemeral CSPRNG Secret) |
+| **12** | Missing Content-Security-Policy Directives (B2) | 🟠 `MEDIUM` | Sprint 10 | ✅ Resolved (Strict CSP Header Enforcement) |
+| **13** | Unscoped Hospital Access Verification (B3) | 🟠 `MEDIUM` | Sprint 10 | ✅ Resolved (Asserted Multi-Tenant Scoping) |
+| **14** | Example Template Hardcoded Secret (B4) | 🟡 `LOW` | Sprint 10 | ✅ Resolved (Placeholder Instruction Cleansing) |
+| **15** | Dynamic Test Profile CSPRNG Hygiene (B5) | 🟡 `LOW` | Sprint 10 | ✅ Resolved (Isolated Test CSPRNG Documentation) |

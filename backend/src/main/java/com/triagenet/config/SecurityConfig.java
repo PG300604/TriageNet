@@ -105,6 +105,17 @@ public class SecurityConfig {
                 }
                 headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000));
                 headers.cacheControl(Customizer.withDefaults());
+                headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; " +
+                    "script-src 'self' 'unsafe-inline'; " +
+                    "style-src 'self' 'unsafe-inline'; " +
+                    "img-src 'self' data: https:; " +
+                    "font-src 'self' data:; " +
+                    "connect-src 'self' https://triagenet.vercel.app https://triagenet.gov.in http://localhost:3000 http://localhost:8080; " +
+                    "frame-ancestors 'none'; " +
+                    "base-uri 'self'; " +
+                    "form-action 'self'"
+                ));
             })
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(csrfGuardFilter, UsernamePasswordAuthenticationFilter.class)

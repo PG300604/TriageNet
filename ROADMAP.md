@@ -197,6 +197,22 @@ graph TD
 
 ---
 
+### ✅ Sprint 10: Security Hardening, CSP & Tenant Scoping (Completed — Sep 9, 2026)
+- **Elimination of Fallback Dev JWT Secret (Issue B1)**:
+  - Removed static fallback secret in `application-dev.yml` in favor of dynamic runtime generation.
+  - `JwtUtil.java` dynamically generates an ephemeral 256-bit CSPRNG secret if `JWT_SECRET` is unset in development profile, preventing token forgery across shared environments.
+- **Content-Security-Policy (CSP) Directives (Issue B2)**:
+  - Implemented strict CSP headers in `SecurityConfig.java` (`default-src 'self'`, `frame-ancestors 'none'`, restricted connect-src).
+- **Multi-Tenant Hospital Scoping on Facility Lookup (Issue B3)**:
+  - Added `hospitalAuthService.assertCanAccessHospital(id)` in `HospitalController.getHospitalById` to enforce tenant isolation.
+- **Config & Template Cleansing (Issue B4 & B5)**:
+  - Cleansed `application-local.yml.example` by replacing static keys with instructions (`CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32`).
+  - Documented automated test CSPRNG isolation in `application-test.yml`.
+- **71/71 Automated Backend Tests (100% BUILD SUCCESS)**:
+  - Added `testContentSecurityPolicyHeaderPresent` asserting active CSP headers on HTTP responses.
+
+---
+
 ### 🔮 Phase 10: FIDO2 / WebAuthn Hardware Security Keys (Planned)
 - **Physical YubiKey & Biometric Passkey Support**:
   - Add W3C WebAuthn API support allowing hospital staff to tap a USB-C/NFC hardware key (YubiKey 5 Series) or scan a hospital-issued fingerprint/Windows Hello sensor.

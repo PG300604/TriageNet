@@ -22,9 +22,9 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 jwt:
-  # SECURITY (V3): Uses DEFAULT_DEV_SECRET fallback only in local development profile.
-  # Production and staging MUST override this using JWT_SECRET env variable.
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  # SECURITY (B1): JWT_SECRET is loaded from environment variable.
+  # If unset in dev profile, an ephemeral 256-bit CSPRNG secret is generated at runtime.
+  secret: ${JWT_SECRET:}
   expiration-ms: 900000
   access-expiration-ms: 900000
   refresh-expiration-ms: 604800000

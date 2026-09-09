@@ -108,6 +108,7 @@
 | **Phase 9.4** | Clinician & Doctor Profile Customization | Individual editable profile cards, cross-user inspection, user-provided card layout | 🔮 Next Sprint |
 | **Phase 9.5** | AI Predictive Shortage & Proactive Pre-Fetch | Bottom-up shortage incident logging, AI pre-fetch recommendations, triage queue insight alerts | ✅ Architecture Embedded |
 | **Phase 9.6** | GIS Map Overhaul, Multi-Ambulance Fleet & 3-Tier Inventory | Real GPS hospital positioning, surge capacity coloring, 6-unit ALS/BLS fleet command, role-scoped inventory governance | ✅ Completed |
+| **Sprint 10** | Security Hardening & Patchworks (Hermes Audit B1-B5) | Dynamic dev CSPRNG JWT secret, Content-Security-Policy headers, hospital scoping, example secret cleansing | ✅ Completed |
 | **Phase 10** | FIDO2 / WebAuthn Hardware Security Keys | Physical YubiKey 5 NFC / USB-C & biometric fingerprint passkey support | 🔮 Planned |
 | **Phase 11** | Real-Time Bed & Oxygen IoT Telemetry | PSA oxygen plant telemetry, LMO pressure sensors, HL7/FHIR ventilator polling | 🔮 Planned |
 | **Phase 12** | 108 Ambulance Dedicated Field Mobile App | Flutter/React Native PWA, `< 2KB` payload, offline SQLite queue, glove-friendly UI | 🔮 Planned |

@@ -556,4 +556,14 @@ public class SecurityHardeningIntegrationTest {
         org.junit.jupiter.api.Assertions.assertEquals(10, updatedHospital.getUsedBeds(),
                 "Used beds must remain accurately accounted");
     }
+
+    @Test
+    @DisplayName("Security Hardening - Response contains Content-Security-Policy (CSP) header")
+    public void testContentSecurityPolicyHeaderPresent() throws Exception {
+        mockMvc.perform(get("/api/hospitals"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("Content-Security-Policy"))
+                .andExpect(header().string("Content-Security-Policy", containsString("default-src 'self'")))
+                .andExpect(header().string("Content-Security-Policy", containsString("frame-ancestors 'none'")));
+    }
 }

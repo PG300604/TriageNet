@@ -21,6 +21,6 @@ spring:
       path: /h2-console
 
 jwt:
-  # Generate a 256-bit or 512-bit secure hex key for local development
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  # Generate with: openssl rand -hex 32
+  secret: CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_HEX_32
   expiration-ms: 86400000

@@ -1277,13 +1277,13 @@ graph TD
 - **Phase 13: Zero-Email W3C Web Push & Acoustic Warning Beacons**: Native browser/mobile push via VAPID keys; WebSocket acoustic sirens for mass casualty events within 5km geofences.
 - **Phase 14: Ayushman Bharat Digital Mission (ABDM) Integration**: National Health Authority (NHA) 14-digit ABHA ID integration, FHIR/HL7 M1/M2/M3 compliance.
 
-### 🛡️ Security Audit Remediation Tracker (Hermes Agent Audit)
-The automated Hermes security audit findings have been cataloged in [`.github/SECURITY_AUDIT_TRACKER.md`](.github/SECURITY_AUDIT_TRACKER.md) with ready-to-implement specifications for the upcoming light sprints:
-- `Issue B1 (MEDIUM)`: Remove dev profile JWT secret fallback in `application-dev.yml`.
-- `Issue B2 (MEDIUM)`: Enforce Content-Security-Policy (CSP) headers in `SecurityConfig.java`.
-- `Issue B3 (MEDIUM)`: Eliminate permissive `permitAll()` endpoints without hospital tenant scoping.
-- `Issue B4 (LOW)`: Cleanse template secret in `application-local.yml.example`.
-- `Issue B5 (LOW)`: Document test profile fixed CSPRNG secret.
+### 🛡️ Security Audit Remediation (Sprint 10 — Completed)
+All automated Hermes security audit findings tracked in [`.github/SECURITY_AUDIT_TRACKER.md`](.github/SECURITY_AUDIT_TRACKER.md) have been resolved and verified with 71/71 automated backend tests passing (100% BUILD SUCCESS):
+- [x] `Issue B1 (MEDIUM)`: Removed dev profile JWT secret fallback in `application-dev.yml`; dynamically generates an ephemeral 256-bit CSPRNG secret if unset.
+- [x] `Issue B2 (MEDIUM)`: Enforced Content-Security-Policy (CSP) headers in `SecurityConfig.java` (`default-src 'self'`, `frame-ancestors 'none'`).
+- [x] `Issue B3 (MEDIUM)`: Enforced multi-tenant hospital scoping on `/api/hospitals/{id}` using `hospitalAuthService.assertCanAccessHospital()`.
+- [x] `Issue B4 (LOW)`: Cleansed example secret template in `application-local.yml.example` with placeholder instructions.
+- [x] `Issue B5 (LOW)`: Documented isolated test-profile CSPRNG secret in `application-test.yml`.
 
 ---
 

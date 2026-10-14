@@ -32,22 +32,31 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry:
     headers,
   });
 
-  // Automatic token refresh on 401 (except for auth endpoints)
+  // Automatic token refresh on 401 (only if an active authenticated backend session exists)
   if (response.status === 401 && !isRetry && !endpoint.startsWith('/auth/')) {
-    try {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      });
-      if (refreshResponse.ok) {
-        return apiFetch<T>(endpoint, options, true);
+    const hasSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+    if (hasSession) {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
+        if (refreshResponse.ok) {
+          return apiFetch<T>(endpoint, options, true);
+        } else {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('triagenet_session_active');
+          }
+        }
+      } catch {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('triagenet_session_active');
+        }
       }
-    } catch {
-      // Refresh failed, fall through to error handling
     }
   }
 

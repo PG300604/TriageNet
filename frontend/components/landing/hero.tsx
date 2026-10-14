@@ -107,6 +107,7 @@ export function Hero() {
           sizes="100vw"
           className="object-cover object-center"
           priority
+          loading="eager"
         />
       </div>
 

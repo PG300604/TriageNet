@@ -204,11 +204,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  // Proactive background silent refresh every 10 minutes (600,000 ms)
+  // Proactive background silent refresh every 10 minutes (600,000 ms) for active authenticated sessions
   useEffect(() => {
     if (!user) return;
+    const hasSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+    if (!hasSession) return;
+
     const refreshInterval = setInterval(() => {
-      ApiClient.refreshToken().catch(() => {});
+      ApiClient.refreshToken().catch(() => {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('triagenet_session_active');
+        }
+      });
     }, 600000);
 
     return () => clearInterval(refreshInterval);
@@ -315,8 +322,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(profile);
       setIsShiftActive(!!resp.shiftActive);
       setIsScreenLocked(!!resp.isScreenLocked);
-      localStorage.removeItem('triagenet_demo_active');
-      localStorage.removeItem('triagenet_demo_role');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('triagenet_session_active', 'true');
+        localStorage.removeItem('triagenet_demo_active');
+        localStorage.removeItem('triagenet_demo_role');
+      }
       setIsLoading(false);
       return resp;
     } catch (err) {
@@ -356,8 +366,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsShiftActive(true);
       setIsScreenLocked(false);
       setShiftDurationHours(durationHours);
-      localStorage.removeItem('triagenet_demo_active');
-      localStorage.removeItem('triagenet_demo_role');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('triagenet_session_active', 'true');
+        localStorage.removeItem('triagenet_demo_active');
+        localStorage.removeItem('triagenet_demo_role');
+      }
     } catch (err) {
       setIsLoading(false);
       throw err;
@@ -400,6 +413,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsScreenLocked(false);
     localStorage.setItem('triagenet_demo_active', 'true');
     localStorage.setItem('triagenet_demo_role', role);
+    localStorage.removeItem('triagenet_session_active');
   };
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
@@ -420,6 +434,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeAuthToken();
     localStorage.removeItem('triagenet_demo_active');
     localStorage.removeItem('triagenet_demo_role');
+    localStorage.removeItem('triagenet_session_active');
     setToken(null);
     setUser(null);
     setIsShiftActive(false);

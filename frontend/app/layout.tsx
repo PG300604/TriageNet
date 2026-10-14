@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
   display: 'swap',
-  preload: true,
+  preload: false,
 })
 
 export const metadata: Metadata = {

@@ -11,6 +11,7 @@ These are the operational working rules for the AI coding agent (**Google Antigr
 3. **Never Hallucinate Dataset Scope**: TriageNet is integrated with **100% authentic Jharkhand healthcare infrastructure data** (79 real facilities across 24 districts). Never revert to claiming data is purely synthetic or that real maps/geospatial coordinates are absent.
 4. **Traceability**: Before writing or refactoring any module, ensure your implementation directly aligns with the technical contracts specified in `TRD.md` and `ERD.md`.
 5. **Verification Requirement**: Never declare a task complete without executing concrete runtime verification (e.g. running unit tests or build commands).
+6. **DevOps Action & Decision Logging (Linux <-> Windows Sync)**: When performing any DevOps, containerization, deployment, or infrastructure task (primarily conducted on Linux), agents **MUST** inspect [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) before acting, and record all decisions, actions, and verification commands in [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) upon completion (enforced by [`.agents/rules/devops-log-synchronization.md`](file:///home/priyanshughosh/Projects/TriageNet/.agents/rules/devops-log-synchronization.md)).
 
 ---
 

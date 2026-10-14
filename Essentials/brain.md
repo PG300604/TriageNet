@@ -18,6 +18,7 @@ This file serves as the standing, persistent context for the AI coding agent (**
 - [`ERD.md`](file:///p:/TriageNet/Essentials/ERD.md) — Database schema, JPA entity definitions, foreign keys, and indexes (`DISTRICT`, `HOSPITAL`, `PATIENT`, `SEVERITY_SCORE`, `TRIAGE_QUEUE_ENTRY`, `RESOURCE`, `ALLOCATION_RECORD`, `HOSPITAL_EDGE`, `TRANSFER_REQUEST`, `STAFF_USER`, `ROLE`).
 - [`instructions.md`](file:///p:/TriageNet/Essentials/instructions.md) — Operational guidelines, coding standards, and verification steps for Antigravity.
 - [`DECISIONS.md`](file:///p:/TriageNet/DECISIONS.md) — Architectural decision log (Jharkhand dataset selection, Render/Vercel deployment, self-hosted OpenRouteService, 4-dataset ML benchmark).
+- [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) — Single source of truth for all DevOps actions, Docker configurations, infrastructure setups, and cross-platform synchronization between Linux and Windows agents.
 
 ---
 

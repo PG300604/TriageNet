@@ -76,7 +76,7 @@ docker-compose.override.yml
 graphify-out/
 
 # ──── Gemini / Antigravity Agent State ────
-.agents/
+.agents/*
 !.agents/rules/
 !.agents/workflows/
 .gemini/

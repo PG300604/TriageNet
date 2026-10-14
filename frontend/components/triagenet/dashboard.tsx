@@ -240,6 +240,12 @@ function buildDistrictState(districtName: string, scenarioKey: ScenarioKey = 'st
 }
 
 export function Dashboard() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const { user } = useAuth()
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
@@ -473,6 +479,19 @@ export function Dashboard() {
       ).length,
     [state.patients],
   )
+
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#181512] text-stone-100 font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-10 rounded-full border-2 border-[#ea580c] border-t-transparent animate-spin" />
+          <p className="text-xs font-mono font-semibold tracking-wider text-stone-400 uppercase">
+            Initializing TriageNet Command Network...
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/80 to-[#ffffff] text-[#2c1b0e] font-sans">

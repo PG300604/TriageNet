@@ -121,4 +121,23 @@ The project maintainer (@PG300604) established a dedicated Linux workstation for
   - Added `mounted` condition and `suppressHydrationWarning` on the `queue` badge and profile card text.
 - Verified build: `npm run build` passes with 0 errors across all 12 routes.
 
+### [LOG-004] — 2026-10-14: Dashboard Client-Mounting Hydration Barrier (Windows)
+
+- **Timestamp**: `2026-10-14T17:20:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`)
+- **Operator / Agent**: Google Antigravity (Windows Client Agent)
+- **Scope / Category**: Hydration Stability, Client Lifecycle Mounting
+- **Status**: Completed & Verified
+
+#### Context & Issue Addressed
+In `CapacityView` (`components/triagenet/capacity-view.tsx:168`), the dynamic metric `{waitingPatientsCount} Patients Waiting in Queue` evaluated to 1 on server SSR and 2 on the client as the simulation engine initialized, triggering a recoverable hydration warning.
+
+#### Actions Executed
+- Updated `frontend/components/triagenet/dashboard.tsx`:
+  - Added a client-mounting barrier (`const [mounted, setMounted] = useState(false)` with `useEffect`) that renders a matching command center loader on SSR and initial hydration, switching to the active live dashboard once mounted.
+- Updated `frontend/components/triagenet/capacity-view.tsx`:
+  - Added `suppressHydrationWarning` on dynamic queue wait and patient count elements.
+- Verified build: `npm run build` completed cleanly in Turbopack (`✓ Generating static pages using 13 workers (12/12) in 1939ms`).
+
+
 

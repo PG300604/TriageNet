@@ -161,11 +161,11 @@ export function CapacityView({
           </div>
           <div className="mt-4">
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-extrabold tracking-tight text-[#382416]">
+              <p suppressHydrationWarning className="text-3xl font-extrabold tracking-tight text-[#382416]">
                 {avgWaitTillAssigned} <span className="text-base font-semibold text-stone-400">min</span>
               </p>
             </div>
-            <p className="mt-1 text-xs font-medium text-stone-500">
+            <p suppressHydrationWarning className="mt-1 text-xs font-medium text-stone-500">
               {waitingPatientsCount} Patients Waiting in Queue
             </p>
           </div>

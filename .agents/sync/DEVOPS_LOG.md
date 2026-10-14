@@ -139,5 +139,30 @@ In `CapacityView` (`components/triagenet/capacity-view.tsx:168`), the dynamic me
   - Added `suppressHydrationWarning` on dynamic queue wait and patient count elements.
 - Verified build: `npm run build` completed cleanly in Turbopack (`✓ Generating static pages using 13 workers (12/12) in 1939ms`).
 
+### [LOG-005] — 2026-10-14: Landing Page Healthcare Localization & Console Bug Fixes (Windows)
+
+- **Timestamp**: `2026-10-14T21:35:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`)
+- **Operator / Agent**: Google Antigravity (Windows Client Agent)
+- **Scope / Category**: UI/UX Refinement, Console Error Resolution, Regional Localization
+- **Status**: Completed & Verified
+
+#### Context & Objectives Addressed
+1. **Console Warnings Cleared**:
+   - Fixed Next.js Image warning (`Image with src "/ember-waves.png" has "fill" but is missing "sizes" prop`) across `hero.tsx`, `interactive-graph-showcase.tsx`, and `cta-footer.tsx`.
+   - Prevented public landing page visitors from triggering unauthenticated `401 Unauthorized` network logs on `/api/auth/me` by checking `triagenet_session_active` in `auth-context.tsx`.
+2. **Authentic Regional Healthcare Names**:
+   - Replaced foreign placeholder names with realistic Jharkhand names: Rahul Mahato, Anita Soren, Sunil Birhor, Deepak Munda.
+   - Replaced simulated regional hospitals with actual Jharkhand healthcare facilities: RIMS Ranchi, Sadar Hospital Ranchi, MGM Medical College Jamshedpur, SNMMCH Dhanbad.
+   - Updated Dijkstra active route copy to `RIMS RANCHI ➔ MGM JAMSHEDPUR (18 MIN)`.
+3. **Queue Telemetry Column Alignment**:
+   - Replaced variable-width flex row in `hero.tsx` with structured fixed-width columns (`w-20` for Wait Time, `w-56 sm:w-64` for Matched Bed, `w-20` for Priority score), ensuring perfect vertical alignment across all cards.
+4. **Clean Design Language**:
+   - Removed technical pill badges (`O(N^2)`, `O(LOG N)`, `LOGISTIC REGRESSION`, etc.) and dead link arrow buttons.
+   - Replaced formulas (`P = Severity + 0.45(Wait Minutes)`) with clear clinical explanations.
+   - Removed personal student credits in hero card and footer while maintaining GitHub repository and Live Console navigation.
+5. **Build Verification**:
+   - `npm run build` completed with 0 errors across 12 static routes (`12/12 in 870ms`).
+
 
 

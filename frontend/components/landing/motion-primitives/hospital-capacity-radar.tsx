@@ -15,10 +15,10 @@ interface HospitalNode {
 }
 
 const REGIONAL_HOSPITALS: HospitalNode[] = [
-  { id: 'H1', name: 'City General Hospital', icuBeds: 2, generalBeds: 8, occupancy: 94, transitMin: 0, status: 'CRITICAL LOCK' },
-  { id: 'H2', name: 'St. Mary Trauma Center', icuBeds: 5, generalBeds: 12, occupancy: 78, transitMin: 8, status: 'HIGH LOAD' },
-  { id: 'H3', name: 'Riverside Medical Center', icuBeds: 8, generalBeds: 24, occupancy: 45, transitMin: 14, status: 'OPTIMAL' },
-  { id: 'H4', name: 'North District Hospital', icuBeds: 6, generalBeds: 18, occupancy: 60, transitMin: 19, status: 'OPTIMAL' },
+  { id: 'H1', name: 'RIMS Ranchi', icuBeds: 2, generalBeds: 8, occupancy: 94, transitMin: 0, status: 'CRITICAL LOCK' },
+  { id: 'H2', name: 'Sadar Hospital Ranchi', icuBeds: 5, generalBeds: 12, occupancy: 78, transitMin: 8, status: 'HIGH LOAD' },
+  { id: 'H3', name: 'MGM Medical College Jamshedpur', icuBeds: 8, generalBeds: 24, occupancy: 45, transitMin: 14, status: 'OPTIMAL' },
+  { id: 'H4', name: 'SNMMCH Dhanbad', icuBeds: 6, generalBeds: 18, occupancy: 60, transitMin: 19, status: 'OPTIMAL' },
 ]
 
 export function HospitalCapacityRadar() {
@@ -155,7 +155,7 @@ export function HospitalCapacityRadar() {
                 </span>
                 <p className="text-xs font-mono text-[#ffedd7]/80">
                   {selectedNode.id === 'H1'
-                    ? 'City General is 94% occupied. Algorithm routes severe overflow to Riverside Medical Center (H3) via Directed Edge (14 min).'
+                    ? 'RIMS Ranchi is 94% occupied. Algorithm routes severe overflow to MGM Medical College Jamshedpur (H3) via Directed Edge (14 min).'
                     : `Optimal referral pathway configured for ${selectedNode.name} (${selectedNode.transitMin} min transit time).`}
                 </p>
               </div>

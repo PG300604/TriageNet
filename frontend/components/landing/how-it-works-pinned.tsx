@@ -8,33 +8,29 @@ const STEPS = [
   {
     number: '01',
     title: 'PATIENT INTAKE & SEVERITY SCORING',
-    badge: 'LOGISTIC REGRESSION',
     description:
-      'Patient vitals (heart rate, SpO₂, blood pressure, age, symptoms) are evaluated through an embedded 7-feature logistic regression model. Outputs an explainable severity score (0–100) with top risk drivers.',
+      'Patient vital signs (heart rate, SpO₂, blood pressure, age, symptoms) are analyzed to generate an instant clinical acuity score with top risk factor explanations.',
     icon: Activity,
   },
   {
     number: '02',
-    title: 'DYNAMIC HEAP SCHEDULING',
-    badge: 'O(LOG N) HEAP SCHEDULER',
+    title: 'DYNAMIC QUEUE SCHEDULING',
     description:
-      'Patients enter a per-hospital priority queue ordered by effective priority: P = Severity + 0.45(Wait Minutes). Dynamic priority decay escalates long-waiting patients automatically.',
+      'Patients enter an intelligent priority queue where emergency urgency and waiting time dynamically escalate priority, ensuring delayed patients receive prompt medical attention.',
     icon: Cpu,
   },
   {
     number: '03',
     title: 'RESOURCE ASSIGNMENT ENGINE',
-    badge: 'HUNGARIAN MATCHING O(N³)',
     description:
-      'When beds, ventilators, or specialists free up, the Hungarian algorithm matches available resources against waiting patients in optimal clinical batches.',
+      'When intensive care beds, ventilators, or emergency physicians become available, the system matches clinical resources to waiting patients in optimal batches.',
     icon: Layers,
   },
   {
     number: '04',
     title: 'REGIONAL OVERFLOW ROUTING',
-    badge: 'DIJKSTRA SHORTEST PATH',
     description:
-      'When a local hospital reaches 100% capacity, the regional graph router evaluates directed hospital edges to compute the fastest transfer path to a nearby facility with verified open capacity.',
+      'When a local hospital reaches maximum capacity, the regional transfer router identifies the fastest transit route to a nearby facility with verified open capacity.',
     icon: Network,
   },
 ]
@@ -70,9 +66,6 @@ export function HowItWorksPinned() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-2xl font-mono font-bold text-[#dc5000]">{step.number}</span>
-                  <span className="text-[10px] font-mono text-[#dc5000] uppercase border border-[#40372e] px-2.5 py-1 rounded-[12px] bg-[#100904]">
-                    {step.badge}
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 mb-4">

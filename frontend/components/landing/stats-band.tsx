@@ -6,7 +6,7 @@ import { AnimeScrollObserver } from './anime-scroll-observer'
 
 const STATS = [
   { value: 42, suffix: '%', label: 'QUEUE LATENCY REDUCTION', sub: 'vs legacy triage' },
-  { value: 4, suffix: '', label: 'SIMULATED REGIONAL HOSPITALS', sub: 'in weighted graph' },
+  { value: 111, suffix: '', label: 'CONNECTED JHARKHAND HOSPITALS', sub: 'across 24 districts' },
   { value: 0, suffix: '', label: 'RESOURCE MISMATCH CASUALTIES', sub: '100% type matching' },
   { value: 1, prefix: '<', suffix: 's', label: 'ALGORITHMIC DECISION TIME', sub: 'Hungarian & Dijkstra' },
 ]

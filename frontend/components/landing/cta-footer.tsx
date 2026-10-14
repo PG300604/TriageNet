@@ -20,6 +20,7 @@ export function CtaFooter() {
               src="/ember-waves.png"
               alt="Ember Waves Texture"
               fill
+              sizes="100vw"
               className="object-cover object-center"
             />
           </div>
@@ -61,8 +62,6 @@ export function CtaFooter() {
               />
             </div>
             <span className="font-bold uppercase text-[#ffedd7] tracking-wider font-mono">TRIAGENET</span>
-            <span>·</span>
-            <span className="text-[#dc5000] uppercase font-mono">* DESIGNED & BUILT BY PRIYANSHU GHOSH (CSBS 2027)</span>
           </div>
 
 

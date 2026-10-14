@@ -237,48 +237,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, isShiftActive, isScreenLocked]);
 
   useEffect(() => {
-    // SECURITY (B9): Authenticate with backend /api/auth/me using HttpOnly cookie
-    // Server-verified user identity replaces mutable localStorage profile
+    // SECURITY (B9): Authenticate with backend /api/auth/me using HttpOnly cookie only if an active session exists
+    // Prevents noisy 401 console errors for unauthenticated guest visitors on public pages like the landing page
     const initializeAuth = async () => {
-      try {
-        const resp = await ApiClient.getCurrentUser();
-        const profile: UserProfile = {
-          id: resp.id,
-          name: resp.name,
-          email: resp.email,
-          role: (resp.role as UserRole) || 'TRIAGE_NURSE',
-          roleTitle: resp.role || 'Hospital Staff',
-          hospitalId: resp.hospitalId,
-          hospitalName: resp.hospitalName,
-          districtName: resp.districtName,
-        };
-        setUser(profile);
-
-        // Check active shift status
+      const hasSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+      if (hasSession) {
         try {
-          const shift = await ApiClient.getShiftStatus();
-          setIsShiftActive(shift.shiftActive);
-          setIsScreenLocked(shift.isLocked);
-          if (shift.durationHours) setShiftDurationHours(shift.durationHours);
-        } catch {}
-      } catch {
-        // If unauthenticated on server, check if offline demo mode is chosen
-        const isDemo = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') : null;
-        const demoRole = (localStorage.getItem('triagenet_demo_role') as UserRole) || 'SUPER_ADMIN';
-        const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
-        let finalProfile = defaultProfile;
-        if (typeof window !== 'undefined') {
+          const resp = await ApiClient.getCurrentUser();
+          const profile: UserProfile = {
+            id: resp.id,
+            name: resp.name,
+            email: resp.email,
+            role: (resp.role as UserRole) || 'TRIAGE_NURSE',
+            roleTitle: resp.role || 'Hospital Staff',
+            hospitalId: resp.hospitalId,
+            hospitalName: resp.hospitalName,
+            districtName: resp.districtName,
+          };
+          setUser(profile);
+
+          // Check active shift status
           try {
-            const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
-            if (saved) {
-              finalProfile = { ...defaultProfile, ...JSON.parse(saved) };
-            }
+            const shift = await ApiClient.getShiftStatus();
+            setIsShiftActive(shift.shiftActive);
+            setIsScreenLocked(shift.isLocked);
+            if (shift.durationHours) setShiftDurationHours(shift.durationHours);
           } catch {}
+          setIsLoading(false);
+          return;
+        } catch {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('triagenet_session_active');
+          }
         }
-        setUser(finalProfile);
-      } finally {
-        setIsLoading(false);
       }
+
+      // If unauthenticated or guest visitor, load default demo profile if selected or fallback
+      const demoRole = (typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_role') as UserRole : null) || 'SUPER_ADMIN';
+      const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
+      let finalProfile = defaultProfile;
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
+          if (saved) {
+            finalProfile = { ...defaultProfile, ...JSON.parse(saved) };
+          }
+        } catch {}
+      }
+      setUser(finalProfile);
+      setIsLoading(false);
     };
 
     initializeAuth();

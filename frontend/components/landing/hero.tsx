@@ -20,9 +20,9 @@ interface InteractivePatient {
 }
 
 const BASE_PATIENTS: InteractivePatient[] = [
-  { id: 'P-901', name: 'JOHN DOE (BLAST TRAUMA)', vitals: 'AIRWAY COMPROMISE · SpO₂ 78%', acuity: 96, waitMin: 4, status: 'Waiting', match: 'ICU BED #01 (PULMONOLOGIST)' },
-  { id: 'P-902', name: 'JANE DOE (CRUSH INJURY)', vitals: 'INTERNAL HEMORRHAGE · HR 145', acuity: 92, waitMin: 2, status: 'Waiting', match: 'VENTILATOR #02 (TRAUMA SURGEON)' },
-  { id: 'P-104', name: 'ALAN WHITFIELD', vitals: 'SpO₂ 88% · HR 105', acuity: 74, waitMin: 22, status: 'Waiting', match: 'ROUTE ➔ RIVERSIDE MEDICAL' },
+  { id: 'P-901', name: 'RAHUL MAHATO (MINING TRAUMA)', vitals: 'AIRWAY COMPROMISE · SpO₂ 78%', acuity: 96, waitMin: 4, status: 'Waiting', match: 'ICU BED #01 (PULMONOLOGIST)' },
+  { id: 'P-902', name: 'ANITA SOREN (CRUSH INJURY)', vitals: 'INTERNAL HEMORRHAGE · HR 145', acuity: 92, waitMin: 2, status: 'Waiting', match: 'VENTILATOR #02 (TRAUMA SURGEON)' },
+  { id: 'P-104', name: 'SUNIL BIRHOR (ACUTE HYPOXIA)', vitals: 'SpO₂ 88% · HR 105', acuity: 74, waitMin: 22, status: 'Waiting', match: 'ROUTE ➔ RIMS RANCHI' },
 ]
 
 export function Hero() {
@@ -68,14 +68,14 @@ export function Hero() {
   const simulateCriticalArrival = () => {
     const newPt: InteractivePatient = {
       id: 'P-999',
-      name: 'CARDIAC ARREST ARRIVAL',
+      name: 'DEEPAK MUNDA (CARDIAC ARREST)',
       vitals: 'VFIB · SpO₂ 72% · HR 165',
       acuity: 98,
       waitMin: 0,
       status: 'Assigned',
       match: 'ICU BED #01 (CARDIOLOGIST)',
     }
-    setPreemptionNotice('PREEMPTION LOGGED: CARDIAC ARREST ARRIVAL PREEMPTED BED #01 TO STEP-DOWN')
+    setPreemptionNotice('PREEMPTION LOGGED: DEEPAK MUNDA PREEMPTED BED #01 TO STEP-DOWN')
     setPatients((prev) => [newPt, ...prev])
   }
 
@@ -104,6 +104,7 @@ export function Hero() {
           src="/ember-waves.png"
           alt="Ember Waves Background Texture"
           fill
+          sizes="100vw"
           className="object-cover object-center"
           priority
         />
@@ -220,42 +221,38 @@ export function Hero() {
                   <motion.div
                     key={p.id}
                     whileHover={{ y: -2 }}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-[12px] border border-[#40372e] bg-[#382416]/20 p-4 transition-colors hover:border-[#ffedd7]/30"
+                    className="rounded-[12px] border border-[#40372e] bg-[#382416]/20 p-4 transition-colors hover:border-[#ffedd7]/30"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-bold text-[#dc5000]">#{idx + 1}</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium uppercase text-[#ffedd7]">{p.name}</span>
-                          <span className="text-xs text-[#6c5f51]">({p.id})</span>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                      <div className="lg:col-span-5 flex items-center gap-4 min-w-0">
+                        <span className="text-xs font-bold text-[#dc5000] shrink-0">#{idx + 1}</span>
+                        <div className="truncate">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium uppercase text-[#ffedd7] truncate">{p.name}</span>
+                            <span className="text-xs text-[#6c5f51] shrink-0">({p.id})</span>
+                          </div>
+                          <p className="text-xs text-[#6c5f51] mt-0.5 truncate">{p.vitals}</p>
                         </div>
-                        <p className="text-xs text-[#6c5f51] mt-0.5">{p.vitals}</p>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-6 text-xs">
-                      <div>
-                        <span className="text-[10px] text-[#6c5f51] uppercase block">WAIT TIME</span>
-                        <span className="text-[#ffedd7] font-medium">{p.waitMin} MIN</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#6c5f51] uppercase block">MATCHED BED</span>
-                        <span className="text-[#ffedd7] font-medium">{p.match}</span>
-                      </div>
-                      <div className="border border-[#40372e] px-3 py-1 rounded-[12px] bg-[#100904]">
-                        <span className="text-[10px] text-[#6c5f51] uppercase block">PRIORITY</span>
-                        <span className="text-[#dc5000] font-bold">P: {priority}</span>
+                      <div className="lg:col-span-7 flex flex-wrap items-center justify-between lg:justify-end gap-6 text-xs">
+                        <div className="w-20 shrink-0">
+                          <span className="text-[10px] text-[#6c5f51] uppercase block">WAIT TIME</span>
+                          <span className="text-[#ffedd7] font-medium">{p.waitMin} MIN</span>
+                        </div>
+                        <div className="w-56 sm:w-64 shrink-0">
+                          <span className="text-[10px] text-[#6c5f51] uppercase block">MATCHED BED</span>
+                          <span className="text-[#ffedd7] font-medium truncate block">{p.match}</span>
+                        </div>
+                        <div className="border border-[#40372e] px-3 py-1 rounded-[12px] bg-[#100904] shrink-0 w-20 text-center">
+                          <span className="text-[10px] text-[#6c5f51] uppercase block">PRIORITY</span>
+                          <span className="text-[#dc5000] font-bold">P: {priority}</span>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
                 )
               })}
-            </div>
-
-            {/* Micro Legal Footnote */}
-            <div className="mt-6 border-t border-dashed border-[#40372e] pt-4 flex justify-between items-center text-[8px] uppercase tracking-wider text-[#6c5f51] font-mono">
-              <span>* FINAL YEAR PROJECT PG300604 · AEC CSBS 2027</span>
-              <span>DESIGNED BY PRIYANSHU GHOSH</span>
             </div>
           </div>
         </div>

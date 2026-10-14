@@ -66,6 +66,7 @@ export function InteractiveGraphShowcase() {
                   src="/ember-waves.png"
                   alt="Ember Waves Background Texture"
                   fill
+                  sizes="100vw"
                   className="object-cover object-center"
                 />
               </div>
@@ -125,7 +126,7 @@ export function InteractiveGraphShowcase() {
 
               <div className="mt-4 text-center relative z-10">
                 <span className="text-[11px] font-mono font-medium text-[#dc5000] uppercase block">
-                  ACTIVE ROUTE: CITY GENERAL ➔ RIVERSIDE (14 MIN)
+                  ACTIVE ROUTE: RIMS RANCHI ➔ MGM JAMSHEDPUR (18 MIN)
                 </span>
                 <span className="text-[9px] font-mono text-[#6c5f51] uppercase">
                   WEIGHTED GRAPH: MINIMIZING OVERFLOW LATENCY

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import anime from 'animejs'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, AlertTriangle, FastForward, RotateCcw } from 'lucide-react'
@@ -98,18 +97,6 @@ export function Hero() {
       ref={heroRef}
       className="relative min-h-screen w-full bg-[#100904] text-[#ffedd7] pt-24 pb-14 md:pt-28 md:pb-20 flex flex-col justify-between overflow-hidden font-sans border-b border-dashed border-[#40372e]"
     >
-      {/* Subtle Warm Ember Waves Texture Blend */}
-      <div className="absolute inset-0 pointer-events-none opacity-10 overflow-hidden">
-        <Image
-          src="/ember-waves.png"
-          alt="Ember Waves Background Texture"
-          fill
-          sizes="100vw"
-          className="object-cover object-center"
-          priority
-        />
-      </div>
-
       {/* Edge Branding: Vertical Sidebar Label */}
       <div className="hidden lg:block absolute right-8 top-1/3 rotate-90 origin-right text-[11px] font-medium tracking-widest uppercase text-[#6c5f51] pointer-events-none">
         TRIAGENET // REGIONAL GRAPH SOLVER

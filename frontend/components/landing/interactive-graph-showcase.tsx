@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import Image from 'next/image'
 import anime from 'animejs'
 import { TextReveal } from './motion-primitives/text-reveal'
 import { InView } from './motion-primitives/in-view'
@@ -60,17 +59,6 @@ export function InteractiveGraphShowcase() {
           {/* Middle Column: Centered 3D Interactive Hospital Network Object */}
           <div className="lg:col-span-4 flex flex-col items-center">
             <div className="relative w-full max-w-sm rounded-[12px] border border-dashed border-[#40372e] bg-[#382416]/10 p-6 flex flex-col items-center overflow-hidden">
-              {/* Subtle Warm Waves Layer */}
-              <div className="absolute inset-0 pointer-events-none opacity-10">
-                <Image
-                  src="/ember-waves.png"
-                  alt="Ember Waves Background Texture"
-                  fill
-                  sizes="100vw"
-                  className="object-cover object-center"
-                />
-              </div>
-
               <svg
                 ref={svgRef}
                 viewBox="0 0 300 240"

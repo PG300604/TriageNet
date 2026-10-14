@@ -14,17 +14,6 @@ export function CtaFooter() {
       <InView className="mx-auto max-w-7xl px-6 w-full">
         {/* Main Editorial CTA Box */}
         <div className="relative rounded-[12px] border border-dashed border-[#40372e] bg-[#382416]/10 p-8 md:p-16 text-center flex flex-col items-center overflow-hidden">
-          {/* Subtle Warm Waves Backdrop */}
-          <div className="absolute inset-0 pointer-events-none opacity-10">
-            <Image
-              src="/ember-waves.png"
-              alt="Ember Waves Texture"
-              fill
-              sizes="100vw"
-              className="object-cover object-center"
-            />
-          </div>
-
           <div className="mx-auto max-w-3xl flex flex-col items-center text-center relative z-10">
             <span className="text-xs font-medium uppercase tracking-wider text-[#dc5000] block mb-3 text-center">
               * OPERATIONAL COMMAND CENTER

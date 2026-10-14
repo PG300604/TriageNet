@@ -43,16 +43,17 @@
 
 | Technology / Library | Purpose in TriageNet | Version / Spec |
 |---|---|---|
-| **Java 17 & Spring Boot** | Core REST backend & algorithmic execution services | Spring Boot 3.2.x |
-| **Spring Security + JWT** | Role-Based Access Control (RBAC) & stateless auth | JJWT 0.11.x |
-| **Spring Data JPA & Hibernate**| Object-Relational Mapping & PostgreSQL persistence | JPA 3.x |
-| **PostgreSQL 16** | Relational data storage for state infrastructure & triage entities | PostgreSQL 16 |
-| **React 19 & Next.js 15** | Frontend application framework (App Router) | Next.js 15 (Turbopack) |
-| **Tailwind CSS & Lucide** | Styling system & icon architecture (`Walnut Shadow`, `#491205` palette) | Tailwind CSS 3.4 |
-| **Leaflet & React-Leaflet** | Interactive spatial map visualization for 79 Jharkhand facilities | Leaflet 1.9 |
-| **OpenRouteService (ORS)** | Real road network travel distance & time matrix calculation | Self-hosted / API |
+| **Java 21 & Spring Boot** | Core REST backend & algorithmic execution services | Spring Boot 3.3.2 |
+| **Spring Security + JJWT**| Role-Based Access Control, CSP, Cookie Auth | JJWT 0.12.5 (256-bit CSPRNG entropy) |
+| **Spring Data JPA & Hibernate**| Object-Relational Mapping & PostgreSQL persistence | JPA 3.x / Hibernate 6.x |
+| **PostgreSQL 16** | Relational data storage for state infrastructure & triage entities | PostgreSQL 16-alpine |
+| **React 18 & Next.js 16** | Frontend application framework (App Router + Turbopack) | Next.js 16.3.4 |
+| **Tailwind CSS & Lucide** | Styling system & icon architecture (`Walnut Shadow`, `#491205` palette) | Tailwind CSS 3.4 + Plus Jakarta Sans |
+| **Leaflet & React-Leaflet** | Interactive spatial map visualization with real GPS coordinates | Leaflet 1.9 |
+| **OpenRouteService (ORS)** | Real road network travel distance & time matrix calculation | Self-hosted / Geofabrik extract |
 | **Python 3.11 & Scikit-Learn**| Offline ML training & 4-dataset triage benchmarking | Python 3.11 |
-| **Docker & Docker Compose** | Containerization for dev & production deployment | Docker Compose v2 |
+| **Flutter & Dart (Phase 3)**| Dedicated mobile apps (108 Ambulance, Bedside, Command) | Flutter 3.24+ / Dart 3.5+ |
+| **Docker & Docker Compose** | Hardened non-root containerization (`UID 1001`) | Compose v3.8+ / Multi-stage |
 
 ---
 
@@ -117,13 +118,20 @@
 
 | Method | Endpoint | Description & Access Scope |
 |---|---|---|
-| `POST` | `/api/auth/login` | Authenticate user, issue `triagenet_jwt` HttpOnly cookie & Bearer token |
-| `POST` | `/api/auth/logout` | Clear `triagenet_jwt` HttpOnly cookie (`Max-Age=0`) |
-| `POST` | `/api/auth/register` | Register new user account (Password complexity enforced) |
-| `GET` | `/api/hospitals` | List all hospitals (supports district filtering) |
-| `GET` | `/api/hospitals/{id}` | Get hospital details and live resource capacity |
+| `POST` | `/api/auth/login` | Authenticate with Staff ID/email + password, issue 2FA challenge |
+| `POST` | `/api/auth/logout` | Clear `triagenet_jwt` HttpOnly cookie & refresh token revocation |
+| `POST` | `/api/auth/register` | Register new user account; returns cryptographic onboarding packet |
+| `GET` | `/api/auth/status/{staffId}` | Public zero-email status probe for registration approval |
+| `POST` | `/api/auth/2fa/verify-and-start-shift` | Verify RFC 6238 TOTP, start 8h/12h duty shift with PIN |
+| `POST` | `/api/auth/refresh` | Rotate 15-minute access token via 7-day refresh cookie |
+| `GET` | `/api/auth/me` | Authoritatively return current user profile and scoped permissions |
+| `GET` | `/api/admin/staff/pending` | Scoped pending staff queue for Medical Superintendents & CMOs |
+| `POST` | `/api/admin/staff/{id}/approve` | Approve staff account according to 3-tier precedence rules |
+| `POST` | `/api/admin/staff/{id}/reject` | Reject fraudulent registration |
+| `GET` | `/api/hospitals` | List all hospitals (supports district filtering & multi-tenant checks) |
+| `GET` | `/api/hospitals/{id}` | Get hospital details (multi-tenant tenant isolation asserted) |
 | `GET` | `/api/hospitals/districts` | Get summary of all 24 Jharkhand districts |
-| `POST` | `/api/patients` | Register new patient, trigger ML severity scoring |
+| `POST` | `/api/patients` | Register patient (vitals clamped to physiological bounds), score ML |
 | `GET` | `/api/patients/{id}` | Get patient details and vitals history |
 | `GET` | `/api/triage-queue/hospital/{hospitalId}` | Get live ordered triage queue for a hospital |
 | `POST` | `/api/triage-queue/recompute/{hospitalId}` | Force recomputation of priority decay values |
@@ -141,14 +149,22 @@
 ## 5. Non-Functional & Security Specifications
 
 - **Latency**: ML scoring $< 5\text{ ms}$, Hungarian assignment $< 30\text{ ms}$, Dijkstra routing $< 40\text{ ms}$.
-- **Security**:
+- **Security & Hardening (Sprint 10 Compliant)**:
+  - Strict Content-Security-Policy (CSP) headers: `default-src 'self'`, `frame-ancestors 'none'`, restricted connect sources.
+  - Ephemeral 256-bit CSPRNG dev secret auto-generation if `JWT_SECRET` is unset in development profile.
+  - Granular multi-tenant hospital scoping on `/api/hospitals/{id}` (`hospitalAuthService.assertCanAccessHospital`).
+  - RFC 6238 TOTP engine with $\pm 1$ time-step clock drift compensation.
+  - BIP-39 12-word mnemonic phrase generation with CSPRNG entropy; salted SHA-256 hash storage.
+  - 8 single-use emergency recovery codes burned upon use.
+  - 8h/12h clinical shift sessions with 4-digit PIN quick-lock after 20-minute idle timeouts.
   - JWT authentication with dual-engine extraction (HttpOnly `triagenet_jwt` cookie + `Authorization: Bearer` header).
-  - Method-level RBAC enforcement (`@PreAuthorize("hasRole(...)")`) across all 7 REST controllers.
+  - Method-level RBAC enforcement (`@PreAuthorize("hasRole(...)")`) across all REST controllers.
   - Brute-force lockout (`LoginAttemptService` — 5 attempts $\to$ 15-minute lock with strict 10k capacity bound).
   - Centralized CORS configuration without wildcards.
   - Fail-fast JWT startup entropy guard ($\ge 256$ bits) rejecting default secrets in production.
   - Security audit logging with CRLF/control-character sanitization, quote escaping, and email PII masking.
   - Non-root container execution (`USER 1001:1001`) in Dockerfiles.
+  - 71/71 automated backend unit & integration tests passing (100% BUILD SUCCESS).
 - **Explainability**: Every API response for scoring, queue ranking, resource matching, and spatial routing includes human-readable factor attributes.
 
 ---

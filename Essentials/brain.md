@@ -17,8 +17,9 @@ This file serves as the standing, persistent context for the AI coding agent (**
 - [`TRD.md`](file:///p:/TriageNet/Essentials/TRD.md) — Technical requirements, Spring Boot + Next.js architecture, API contracts, algorithmic formulas, and data models.
 - [`ERD.md`](file:///p:/TriageNet/Essentials/ERD.md) — Database schema, JPA entity definitions, foreign keys, and indexes (`DISTRICT`, `HOSPITAL`, `PATIENT`, `SEVERITY_SCORE`, `TRIAGE_QUEUE_ENTRY`, `RESOURCE`, `ALLOCATION_RECORD`, `HOSPITAL_EDGE`, `TRANSFER_REQUEST`, `STAFF_USER`, `ROLE`).
 - [`instructions.md`](file:///p:/TriageNet/Essentials/instructions.md) — Operational guidelines, coding standards, and verification steps for Antigravity.
-- [`DECISIONS.md`](file:///p:/TriageNet/DECISIONS.md) — Architectural decision log (Jharkhand dataset selection, Render/Vercel deployment, self-hosted OpenRouteService, 4-dataset ML benchmark).
-- [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) — Single source of truth for all DevOps actions, Docker configurations, infrastructure setups, and cross-platform synchronization between Linux and Windows agents.
+- [`DECISIONS.md`](../.agents/sync/DECISIONS.md) — Architectural decision log (Jharkhand dataset selection, Render/Vercel deployment, self-hosted OpenRouteService, 4-dataset ML benchmark).
+- [`DEVOPS_LOG.md`](../.agents/sync/DEVOPS_LOG.md) — Single source of truth for all DevOps actions, Docker configurations, infrastructure setups, and cross-platform synchronization between Linux and Windows agents.
+- [`HANDOFF.md`](../.agents/sync/HANDOFF.md) — Active cross-platform task assignment and handoff coordination sheet.
 
 ---
 
@@ -73,22 +74,26 @@ This file serves as the standing, persistent context for the AI coding agent (**
 ```
 TriageNet/
 ├── Essentials/               # Source-of-truth project documentation (PRD, TRD, ERD, brain, instructions)
-├── backend/                  # Java 17 + Spring Boot 3.3.2 backend (JJWT 0.12.5, non-root Docker UID 1001)
+├── .agents/                  # Internal agent rules, workflows, and cross-platform sync
+│   ├── rules/                # devops-log-synchronization, phase-doc-synchronization, graphify
+│   ├── workflows/            # graphify workflow
+│   └── sync/                 # DEVOPS_LOG.md, DECISIONS.md, HANDOFF.md, WINDOWS_STATUS.md, DEPENDENCY_CONTRACTS.md
+├── backend/                  # Java 21 + Spring Boot 3.3.2 backend (JJWT 0.12.5, non-root Docker UID 1001, 71/71 tests)
 │   └── src/main/java/com/triagenet/
-│       ├── config/           # SecurityConfig (CORS, HSTS, frameOptions), JwtAuthenticationFilter (HttpOnly cookie), CustomUserDetails
-│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard
-│       ├── dto/              # Login, Register (with password complexity), User, Response DTOs
+│       ├── config/           # SecurityConfig (CORS, CSP, HSTS, frameOptions), JwtAuthenticationFilter, CustomUserDetails
+│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard, Admin
+│       ├── dto/              # Login, Register, User, Response, Referral, Shortage DTOs
 │       ├── engine/           # SeverityScorer, HungarianMatcher, DijkstraRouter
-│       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, etc.
+│       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, StaffUser, ShiftSession, RefreshToken
 │       ├── repository/       # Spring Data JPA Repositories
-│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed, LoginAttempt (lockout), SecurityAudit services
-├── frontend/                 # React 19 + Next.js 16.2 (App Router) + Tailwind CSS + Lucide icons + Leaflet + PWA
-│   ├── app/                  # Route handlers, login portal, state dashboard, robots.ts, sitemap.ts, manifest.ts
-│   ├── components/triagenet/ # Capacity, Queue, Regional Network, ED Intake, 108 Command, SEO, TopBar, Sidebar
-│   └── lib/                  # api-client (HttpOnly cookie credentials), auth-context, jharkhand-data, ml-severity-scorer, triage-data
+│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
+├── frontend/                 # React 18 + Next.js 16.3.4 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
+│   ├── app/                  # Route handlers, login onboarding wizard, recovery portal, sitemap, robots, manifest
+│   ├── components/triagenet/ # Capacity, Queue, Regional Network, Doctors Roster, Supplies Governance, Modals (Shortage, Pill Approval, Overviews)
+│   └── lib/                  # api-client, auth-context, jharkhand-data, predictive-supply-engine, triage-data
+├── mobile/                   # (Phase 3) Planned Flutter monorepo (108 Ambulance, Bedside Nurse, Command Monitor)
 ├── ml/                       # Python ML training & 4-dataset benchmarking scripts
-├── scripts/                  # Scraping pipeline & Jharkhand JSON/TS data builders, issue lifecycle scripts
-└── graphify-out/             # Knowledge Graph index & AST relationship network
+└── scripts/                  # Scraping pipeline & Jharkhand JSON/TS data builders
 ```
 
 ---

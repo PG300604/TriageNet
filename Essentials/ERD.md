@@ -51,15 +51,42 @@ erDiagram
         timestamp created_at
     }
 
+    STAFF_USER ||--o{ SHIFT_SESSION : "holds"
+    STAFF_USER ||--o{ REFRESH_TOKEN : "authenticates"
+
     STAFF_USER {
         uuid id PK
+        string staff_id UK "Official State ID: JH-STF-XXXX or JH-SYS-XXXX"
         string name
         string email UK
         string password_hash
+        string status "PENDING_VERIFICATION | ACTIVE | REJECTED"
+        string totp_secret "Base32 RFC 6238 Secret"
+        boolean totp_enabled
+        string recovery_phrase_hash "SHA-256 of 12-Word BIP-39 mnemonic"
+        string emergency_codes_hash "Salted SHA-256 of 8 backup codes"
         uuid hospital_id FK "Nullable for District/State roles"
         uuid district_id FK "Nullable for State/Hospital roles"
         uuid role_id FK
         timestamp created_at
+    }
+
+    SHIFT_SESSION {
+        uuid id PK
+        uuid staff_user_id FK
+        string shift_type "SHIFT_8H | SHIFT_12H"
+        string pin_hash "Salted SHA-256 of 4-digit tactile PIN"
+        boolean is_locked "Auto-locks after 20-min inactivity"
+        timestamp started_at
+        timestamp expires_at
+    }
+
+    REFRESH_TOKEN {
+        uuid id PK
+        uuid staff_user_id FK
+        string token_hash "SHA-256 of 7-day refresh token"
+        boolean revoked "Revoked on logout or replay detection"
+        timestamp expiry_date
     }
 
     ROLE {
@@ -194,8 +221,12 @@ CREATE INDEX idx_resource_avail ON resource (hospital_id, type, status);
 -- Spatial graph edge lookup
 CREATE INDEX idx_hospital_edge_src ON hospital_edge (from_hospital_id);
 
--- District hospital search
+-- District hospital search & region filtering
 CREATE INDEX idx_hospital_district ON hospital (district_id, facility_tier);
+CREATE INDEX idx_hospital_district_name_region ON hospital (district_name, region);
+
+-- Staff ID lookup for zero-email authentication
+CREATE INDEX idx_staff_user_staff_id ON staff_users (staff_id);
 
 -- Persistent account lockout lookups
 CREATE INDEX idx_login_attempts_email ON login_attempts (email);

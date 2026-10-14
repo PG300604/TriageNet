@@ -93,6 +93,26 @@ Without automated state-wide coordination:
 - Modern visual aesthetics: `Walnut Shadow` tone, `#491205` brand palette, official logo & favicon lockups, crisp cards, zero generic placeholders or emojis.
 - Full Enterprise SEO architecture, PWA capabilities, and font display swap optimizations.
 
+### Module F9 — Doctor & Specialist Availability Roster
+- Dynamic on-duty specialist tracking across emergency medicine, trauma surgery, anesthesiology, intensive care, and pediatrics.
+- Direct clinician lookup with shift indicators, emergency paging, and readiness verification.
+
+### Module F10 — AI Predictive Supply Engine & 3-Tier Governance
+- **Bottom-Up Shortage Reporting**: Frontline triage nurses and ward officers log local deficits with `#SHORT-2026-XXXX` tokens.
+- **AI Pre-Fetch Recommendations**: Predictive algorithm correlates shortage telemetry with incoming 108 ambulance admissions, calculating which reserves to pre-fetch via Dijkstra transit routing before hospital stockouts occur.
+- **3-Tier Role Governance**: State Command bulk contracts, District CMO share rebalancing, Hospital Admin department allocations with modern pill approval modals.
+
+### Module F11 — Real GIS Spatial Map & Multi-Ambulance Fleet Command
+- Real GPS coordinate mapping of all 79/111 facilities (eliminating circular layout).
+- 3-tier surge capacity coloring (Crimson Red $\ge 80\%$, Amber $60-80\%$, Emerald Green $<60\%$).
+- 6-unit multi-ambulance fleet (ALS/BLS) with 20–35 km coverage zones and interactive telemetry drawers.
+
+### Module F12 — Cryptographic Zero-Email Onboarding & 3-Tier Approval Precedence
+- Official `JH-STF-XXXX` Staff ID credentials with public status probe (`GET /api/auth/status/{staffId}`).
+- Offline RFC 6238 TOTP engine + 12-word BIP-39 mnemonic phrase self-recovery.
+- 8h/12h clinical shift sessions with 4-digit PIN quick-lock.
+- 3-tier approval hierarchy: State Command (`SUPER_ADMIN`) $\to$ Intermediate Leadership (`DISTRICT_CMO`, `HOSPITAL_ADMIN`) $\to$ Ground Operational Staff.
+
 ---
 
 ## 5. Success Metrics

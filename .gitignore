@@ -79,6 +79,7 @@ graphify-out/
 .agents/*
 !.agents/rules/
 !.agents/workflows/
+!.agents/sync/
 .gemini/
 
 # ──── Test Coverage & Reports ────

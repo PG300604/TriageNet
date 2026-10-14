@@ -11,7 +11,7 @@ These are the operational working rules for the AI coding agent (**Google Antigr
 3. **Never Hallucinate Dataset Scope**: TriageNet is integrated with **100% authentic Jharkhand healthcare infrastructure data** (79 real facilities across 24 districts). Never revert to claiming data is purely synthetic or that real maps/geospatial coordinates are absent.
 4. **Traceability**: Before writing or refactoring any module, ensure your implementation directly aligns with the technical contracts specified in `TRD.md` and `ERD.md`.
 5. **Verification Requirement**: Never declare a task complete without executing concrete runtime verification (e.g. running unit tests or build commands).
-6. **DevOps Action & Decision Logging (Linux <-> Windows Sync)**: When performing any DevOps, containerization, deployment, or infrastructure task (primarily conducted on Linux), agents **MUST** inspect [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) before acting, and record all decisions, actions, and verification commands in [`DEVOPS_LOG.md`](file:///home/priyanshughosh/Projects/TriageNet/DEVOPS_LOG.md) upon completion (enforced by [`.agents/rules/devops-log-synchronization.md`](file:///home/priyanshughosh/Projects/TriageNet/.agents/rules/devops-log-synchronization.md)).
+6. **DevOps Action & Decision Logging (Linux <-> Windows Sync)**: When performing any DevOps, containerization, deployment, or infrastructure task (primarily conducted on Linux), agents **MUST** inspect [`.agents/sync/DEVOPS_LOG.md`](../.agents/sync/DEVOPS_LOG.md) and [`.agents/sync/HANDOFF.md`](../.agents/sync/HANDOFF.md) before acting, and record all decisions, actions, and verification commands in [`.agents/sync/DEVOPS_LOG.md`](../.agents/sync/DEVOPS_LOG.md) upon completion (enforced by [`.agents/rules/devops-log-synchronization.md`](../.agents/rules/devops-log-synchronization.md)).
 
 ---
 
@@ -73,3 +73,21 @@ These are the operational working rules for the AI coding agent (**Google Antigr
 
 - **No Hardcoded Credentials**: Never commit hardcoded DB passwords, JWT secret keys, or API tokens. Always use environment variables (`APPLICATION_PROPERTIES`, `.env.local`).
 - **RBAC Enforcement**: Ensure every new backend endpoint is annotated with proper security checks matching `TRD.md` §3.1.
+
+---
+
+## 6. Multi-Device Coordination & Mobile Conventions
+
+- **Cross-Platform Sync (`.agents/sync/`)**:
+  - Always review [`.agents/sync/DEVOPS_LOG.md`](../.agents/sync/DEVOPS_LOG.md) and [`.agents/sync/HANDOFF.md`](../.agents/sync/HANDOFF.md) prior to beginning work.
+  - Windows handles core backend, web frontend, and Flutter mobile apps.
+  - Linux handles Docker containers, CI/CD, and deployment automation.
+  - Commit status updates to [`.agents/sync/WINDOWS_STATUS.md`](../.agents/sync/WINDOWS_STATUS.md) upon completing tasks.
+- **Mobile Development Convention (Phase 3)**:
+  - All mobile applications are developed in a unified **Flutter (Dart)** monorepo inside `mobile/`.
+  - Shared domain models, API client, and authentication logic live in `mobile/packages/triagenet_core/`.
+  - Native Android capabilities (background GPS beaconing for 108 ambulance, SQLite/Drift offline queue) must adhere to the low-bandwidth payload budget ($< 2\text{ KB}$).
+- **Deployment & Cloud Staging (OCI + Redis)**:
+  - Target container staging environment is Oracle Cloud Infrastructure (OCI Always Free: 4 ARM OCPU, 24GB RAM).
+  - Multi-arch Docker builds (`linux/amd64`, `linux/arm64`) must be supported.
+  - Redis 7-alpine is designated for real-time ambulance GPS streaming and queue telemetry cache.

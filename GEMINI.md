@@ -5,11 +5,12 @@ This workspace is actively maintained across **Linux** (primary for DevOps & con
 ---
 
 ## 1. DevOps Action & Decision Logging
-- **Log File**: [`DEVOPS_LOG.md`](DEVOPS_LOG.md)
+- **Log File**: [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md)
+- **Handoff Coordination**: [`.agents/sync/HANDOFF.md`](.agents/sync/HANDOFF.md)
 - **Detailed Rule**: [`.agents/rules/devops-log-synchronization.md`](.agents/rules/devops-log-synchronization.md)
 - **Directive**:
-  - Always review [`DEVOPS_LOG.md`](DEVOPS_LOG.md) prior to running DevOps commands, creating containers, editing Docker/compose configs, or modifying deployment setups.
-  - Every DevOps action and architectural decision executed on Linux (or Windows) must be logged in [`DEVOPS_LOG.md`](DEVOPS_LOG.md) with rationale, commands, affected files, and notes for peer agents.
+  - Always review [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md) prior to running DevOps commands, creating containers, editing Docker/compose configs, or modifying deployment setups.
+  - Every DevOps action and architectural decision executed on Linux (or Windows) must be logged in [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md) with rationale, commands, affected files, and notes for peer agents.
 
 ---
 
@@ -21,7 +22,7 @@ This workspace is actively maintained across **Linux** (primary for DevOps & con
   - [`Essentials/TRD.md`](Essentials/TRD.md)
   - [`Essentials/ERD.md`](Essentials/ERD.md)
   - [`Essentials/instructions.md`](Essentials/instructions.md)
-  - [`DECISIONS.md`](DECISIONS.md)
+  - [`.agents/sync/DECISIONS.md`](.agents/sync/DECISIONS.md)
 - Always read before starting work, and keep them synchronized upon completing phases or features.
 
 ---

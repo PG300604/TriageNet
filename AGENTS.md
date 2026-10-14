@@ -7,12 +7,13 @@ Welcome, AI coding agent. Whether you are running on **Linux** or **Windows**, i
 ## 1. Primary Operating Rules
 
 ### Rule A: DevOps Decision & Action Logging (Linux <-> Windows Sync)
-- **Primary Log File**: [`DEVOPS_LOG.md`](DEVOPS_LOG.md)
+- **Primary Log File**: [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md)
+- **Handoff Coordination**: [`.agents/sync/HANDOFF.md`](.agents/sync/HANDOFF.md)
 - **Full Rule Specification**: [`.agents/rules/devops-log-synchronization.md`](.agents/rules/devops-log-synchronization.md)
 - **Mandatory Directive**:
   1. DevOps operations (Docker, Compose, scripts, deployment configurations, CI/CD, environment variables) are conducted on the Linux workstation and potentially on Windows.
-  2. **BEFORE** doing any DevOps work, inspect [`DEVOPS_LOG.md`](DEVOPS_LOG.md) to review previous decisions, container states, and commands executed across environments.
-  3. **AFTER** any DevOps work, record the action, rationale, commands executed, and instructions for Windows/Linux peer agents into [`DEVOPS_LOG.md`](DEVOPS_LOG.md).
+  2. **BEFORE** doing any DevOps work, inspect [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md) and [`.agents/sync/HANDOFF.md`](.agents/sync/HANDOFF.md) to review previous decisions, container states, and commands executed across environments.
+  3. **AFTER** any DevOps work, record the action, rationale, commands executed, and instructions for Windows/Linux peer agents into [`.agents/sync/DEVOPS_LOG.md`](.agents/sync/DEVOPS_LOG.md).
 
 ### Rule B: Phase Document Synchronization & Anti-Hallucination
 - **Core Specification**: [`.agents/rules/phase-doc-synchronization.md`](.agents/rules/phase-doc-synchronization.md)
@@ -23,7 +24,7 @@ Welcome, AI coding agent. Whether you are running on **Linux** or **Windows**, i
      - [`Essentials/TRD.md`](Essentials/TRD.md) — Tech stack, REST API specs, and 4 hand-implemented algorithms (`SeverityScorer`, `TriageQueueService`, `HungarianMatcher`, `DijkstraRouter`).
      - [`Essentials/ERD.md`](Essentials/ERD.md) — PostgreSQL JPA entities and database schema.
      - [`Essentials/instructions.md`](Essentials/instructions.md) — Operating rules, build commands, and testing protocols.
-  2. **AFTER** finishing any phase/feature, update all 5 documents in `Essentials/` and [`DECISIONS.md`](DECISIONS.md).
+  2. **AFTER** finishing any phase/feature, update all 5 documents in `Essentials/` and [`.agents/sync/DECISIONS.md`](.agents/sync/DECISIONS.md).
 
 ---
 

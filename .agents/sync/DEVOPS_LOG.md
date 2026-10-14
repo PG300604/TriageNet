@@ -102,3 +102,23 @@ The project maintainer (@PG300604) established a dedicated Linux workstation for
   - Added district/tier/search filters and 6-per-page pagination with "View All" toggle to both "Regional Acuity Distribution" and "Facility Capacity & Clinical Load Matrix".
 - Verified compilation with Next.js Turbopack (`npm run build` -> 12/12 routes generated cleanly).
 
+### [LOG-003] — 2026-10-14: React 19 Script False-Positive & SSR Hydration Mismatch Resolution (Windows)
+
+- **Timestamp**: `2026-10-14T17:15:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`)
+- **Operator / Agent**: Google Antigravity (Windows Client Agent)
+- **Scope / Category**: React 19 & Next.js 16 Hydration Stability
+- **Status**: Completed & Verified
+
+#### Context & Issues Addressed
+1. **React 19 False-Positive Script Warning**: React 19 flags the internal anti-FOUC inline script injected by `next-themes` (`ThemeProvider`) during development with `Console Error: Encountered a script tag while rendering React component`.
+2. **SSR Hydration Mismatch on Sidebar Queue Badge**: `Sidebar` rendered `criticalCount` (SSR server evaluated 4, client evaluated 5 as state synchronized), triggering `Recoverable Error: Hydration failed because the server rendered text didn't match the client`.
+
+#### Actions Executed
+- Updated `frontend/components/theme-provider.tsx`:
+  - Filtered out the development-only React 19 false-positive warning for `next-themes` anti-FOUC script.
+- Updated `frontend/components/triagenet/sidebar.tsx`:
+  - Added `mounted` condition and `suppressHydrationWarning` on the `queue` badge and profile card text.
+- Verified build: `npm run build` passes with 0 errors across all 12 routes.
+
+

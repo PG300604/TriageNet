@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { useAuth, UserRole } from '@/lib/auth-context'
@@ -111,8 +111,13 @@ export function Sidebar({
   criticalCount?: number
 }) {
   const { user, logout } = useAuth()
+  const [mounted, setMounted] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [navSearch, setNavSearch] = useState('')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
   const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
@@ -211,8 +216,11 @@ export function Sidebar({
                       {item.hint}
                     </p>
                   </div>
-                  {item.key === 'queue' && criticalCount > 0 && (
-                    <span className="ml-auto hidden rounded-full bg-[#ea580c] px-2 py-0.5 text-[10px] font-bold text-white md:inline-block shadow-2xs">
+                  {item.key === 'queue' && criticalCount > 0 && mounted && (
+                    <span
+                      suppressHydrationWarning
+                      className="ml-auto hidden rounded-full bg-[#ea580c] px-2 py-0.5 text-[10px] font-bold text-white md:inline-block shadow-2xs"
+                    >
                       {criticalCount}
                     </span>
                   )}
@@ -264,25 +272,26 @@ export function Sidebar({
       </div>
 
       {/* Modern User Profile Card (Bright Leads & Boltshift pattern) */}
-      <div className="border-t border-stone-100 p-3">
+      <div className="border-t border-stone-100 p-3" suppressHydrationWarning>
         <div
+          suppressHydrationWarning
           onClick={() => setProfileModalOpen(true)}
           className="hidden md:flex items-center gap-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 p-2.5 hover:bg-stone-100/90 cursor-pointer transition-all shadow-2xs group"
         >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] shadow-2xs group-hover:scale-105 transition-transform">
+          <div suppressHydrationWarning className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] shadow-2xs group-hover:scale-105 transition-transform">
             {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'PG'}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1" suppressHydrationWarning>
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-xs font-bold text-stone-800 group-hover:text-[#382416]">
+              <span suppressHydrationWarning className="truncate text-xs font-bold text-stone-800 group-hover:text-[#382416]">
                 {user?.name || 'Dr. Prabhat Kumar'}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={cn('rounded px-1.5 py-0.2 text-[9px] font-bold border', roleConfig.color)}>
+            <div className="flex items-center gap-1.5 mt-0.5" suppressHydrationWarning>
+              <span suppressHydrationWarning className={cn('rounded px-1.5 py-0.2 text-[9px] font-bold border', roleConfig.color)}>
                 {roleConfig.badge}
               </span>
-              <span className="truncate text-[10px] text-stone-400">
+              <span suppressHydrationWarning className="truncate text-[10px] text-stone-400">
                 {user?.districtName || 'Ranchi'}
               </span>
             </div>
@@ -301,9 +310,10 @@ export function Sidebar({
         </div>
 
         {/* Mobile icon-only user circle */}
-        <div className="flex justify-center md:hidden">
+        <div className="flex justify-center md:hidden" suppressHydrationWarning>
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setProfileModalOpen(true)}
             className="flex size-9 items-center justify-center rounded-full bg-[#382416] text-xs font-bold text-[#ffedd7] hover:scale-105 transition-transform cursor-pointer"
           >

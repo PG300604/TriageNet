@@ -61,7 +61,7 @@ export function InteractiveGraphShowcase() {
           <div className="lg:col-span-4 flex flex-col items-center">
             <div className="relative w-full max-w-sm rounded-[12px] border border-dashed border-[#40372e] bg-[#382416]/10 p-6 flex flex-col items-center overflow-hidden">
               {/* Subtle Warm Waves Layer */}
-              <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay">
+              <div className="absolute inset-0 pointer-events-none opacity-10">
                 <Image
                   src="/ember-waves.png"
                   alt="Ember Waves Background Texture"

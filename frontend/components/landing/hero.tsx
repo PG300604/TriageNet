@@ -99,7 +99,7 @@ export function Hero() {
       className="relative min-h-screen w-full bg-[#100904] text-[#ffedd7] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col justify-between overflow-hidden font-sans border-b border-dashed border-[#40372e]"
     >
       {/* Subtle Warm Ember Waves Texture Blend */}
-      <div className="absolute inset-0 pointer-events-none opacity-15 mix-blend-overlay overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-10 overflow-hidden">
         <Image
           src="/ember-waves.png"
           alt="Ember Waves Background Texture"
@@ -107,7 +107,6 @@ export function Hero() {
           sizes="100vw"
           className="object-cover object-center"
           priority
-          loading="eager"
         />
       </div>
 

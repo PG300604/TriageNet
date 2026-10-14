@@ -1,6 +1,6 @@
 # Windows Workstation Status Sheet
 
-- **Last Updated**: `2026-10-14T16:45:00+05:30`
+- **Last Updated**: `2026-10-14T17:05:00+05:30`
 - **Host Environment**: Windows 11 / PowerShell / JDK 21 / Node.js 20
 - **Workspace Path**: `P:\TriageNet`
 - **Current Branch**: `main`
@@ -11,4 +11,10 @@
 1. Multi-device sync architecture establishment in `.agents/sync/` (Completed).
 2. Updating core `Essentials/` documents to reflect current system state (Completed).
 3. Phase 9.4 Doctor & Staff Profile Customization system with `<ClinicianProfileModal />` (Completed).
-4. Next Milestone: Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol) & preparing OpenAPI API contract freeze for Flutter mobile apps.
+4. **Resolved UI Clutter & Modal Glitches**:
+   - Fixed `ClinicianProfileModal` rendering containment bug using `createPortal(..., document.body)` so it escapes the `<header>` `backdrop-filter` bounding box and opens full viewport.
+   - Added prominent "Sign Out / Switch Clinician" button to easily return to `/login`.
+   - Replaced 111 raw button pills in `ClinicalView` with a categorized command bar: 24-District filter dropdown, Tier filter chips, search input, popover facility selector, and quick chips.
+   - Refactored `ReportsView` Regional Acuity Distribution and Facility Matrix with district/tier/search filters and clean pagination.
+   - Embraced the user's preferred dark charcoal/walnut & amber theme (`#181512`, `#12100e`, `#ea580c`).
+5. Next Milestone: Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol) & preparing OpenAPI API contract freeze for Flutter mobile apps.

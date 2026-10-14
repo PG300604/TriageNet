@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
   Award,
   Hash,
   AlertCircle,
+  LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth, type UserProfile, type UserRole } from '@/lib/auth-context'
@@ -53,12 +55,12 @@ interface ClinicianProfileModalProps {
 }
 
 const ROLE_BADGE_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  SUPER_ADMIN: { bg: 'bg-purple-50', text: 'text-purple-800', border: 'border-purple-300' },
-  STATE_HEALTH_DEPT: { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-300' },
-  DISTRICT_CMO: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300' },
-  HOSPITAL_ADMIN: { bg: 'bg-indigo-50', text: 'text-indigo-800', border: 'border-indigo-300' },
-  TRIAGE_NURSE: { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-300' },
-  AMBULANCE_DISPATCH: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300' },
+  SUPER_ADMIN: { bg: 'bg-purple-950/70', text: 'text-purple-300', border: 'border-purple-800' },
+  STATE_HEALTH_DEPT: { bg: 'bg-blue-950/70', text: 'text-blue-300', border: 'border-blue-800' },
+  DISTRICT_CMO: { bg: 'bg-amber-950/70', text: 'text-amber-300', border: 'border-amber-800' },
+  HOSPITAL_ADMIN: { bg: 'bg-indigo-950/70', text: 'text-indigo-300', border: 'border-indigo-800' },
+  TRIAGE_NURSE: { bg: 'bg-rose-950/70', text: 'text-rose-300', border: 'border-rose-800' },
+  AMBULANCE_DISPATCH: { bg: 'bg-emerald-950/70', text: 'text-emerald-300', border: 'border-emerald-800' },
 }
 
 export function ClinicianProfileModal({
@@ -71,6 +73,7 @@ export function ClinicianProfileModal({
   const { user, updateUserProfile, logout } = useAuth()
   const isSelf = mode === 'self'
 
+  const [mounted, setMounted] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -85,6 +88,10 @@ export function ClinicianProfileModal({
   const [phoneExtension, setPhoneExtension] = useState('')
   const [voipLine, setVoipLine] = useState('')
   const [radioFrequency, setRadioFrequency] = useState('')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Synchronize state when opened
   useEffect(() => {
@@ -115,7 +122,7 @@ export function ClinicianProfileModal({
     setSaveSuccess(false)
   }, [isOpen, isSelf, user, clinicianData])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,17 +164,17 @@ export function ClinicianProfileModal({
     .slice(0, 2)
     .toUpperCase()
 
-  return (
+  const modalContent = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-xl rounded-2xl border border-stone-200 bg-white shadow-2xl overflow-hidden text-stone-900 my-8"
+          className="relative w-full max-w-xl rounded-2xl border border-stone-800 bg-[#181512] shadow-2xl overflow-hidden text-stone-100 my-8 max-h-[90vh] flex flex-col"
         >
           {/* Header Banner */}
-          <div className="bg-[#382416] p-6 text-[#ffedd7] relative">
+          <div className="bg-[#12100e] p-6 text-[#ffedd7] border-b border-[#382416]/60 relative shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -178,7 +185,7 @@ export function ClinicianProfileModal({
 
             <div className="flex items-start gap-4 pr-8">
               {/* Avatar Initial Pill */}
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-[#ea580c] text-white text-xl font-bold shadow-lg ring-4 ring-[#ffedd7]/10">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-[#ea580c] text-white text-xl font-bold shadow-lg ring-4 ring-[#ea580c]/20">
                 {initials}
               </div>
 
@@ -224,17 +231,17 @@ export function ClinicianProfileModal({
 
           {/* Sub-Header / Notification Toast */}
           {saveSuccess && (
-            <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2.5 flex items-center gap-2 text-xs font-semibold text-emerald-800">
-              <Check className="size-4 text-emerald-600" />
+            <div className="bg-emerald-950/60 border-b border-emerald-800/80 px-6 py-2.5 flex items-center gap-2 text-xs font-semibold text-emerald-300 shrink-0">
+              <Check className="size-4 text-emerald-400" />
               <span>Profile credentials and tactical contact parameters updated successfully.</span>
             </div>
           )}
 
           {/* Body Content */}
-          <div className="p-6 space-y-5">
+          <div className="p-6 space-y-5 overflow-y-auto bg-[#181512]">
             {/* View / Edit Mode Tabs (Self Mode Only) */}
             {isSelf && (
-              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center justify-between border-b border-stone-800 pb-3">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -242,8 +249,8 @@ export function ClinicianProfileModal({
                     className={cn(
                       'px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
                       !isEditing
-                        ? 'bg-[#382416] text-[#ffedd7] shadow-xs'
-                        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
+                        ? 'bg-[#382416] text-[#ffedd7] border border-[#ea580c]/40 shadow-xs'
+                        : 'text-stone-400 hover:text-white hover:bg-stone-800'
                     )}
                   >
                     Clinical Credential Card
@@ -255,7 +262,7 @@ export function ClinicianProfileModal({
                       'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer',
                       isEditing
                         ? 'bg-[#ea580c] text-white shadow-xs'
-                        : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
+                        : 'text-stone-400 hover:text-white hover:bg-stone-800'
                     )}
                   >
                     <Edit3 className="size-3.5" />
@@ -273,53 +280,53 @@ export function ClinicianProfileModal({
               /* VIEW MODE: High-Aesthetic Clinical Credential Card */
               <div className="space-y-4">
                 {/* Qualifications & Medical Council */}
-                <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-4 space-y-2">
+                <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
                       <Award className="size-3 text-[#ea580c]" />
                       Degrees & Qualifications
                     </span>
-                    <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                    <span className="text-[10px] font-mono text-emerald-300 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
                       State Verified
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-stone-800 leading-relaxed">
+                  <p className="text-xs font-bold text-stone-200 leading-relaxed">
                     {qualifications}
                   </p>
                 </div>
 
                 {/* Clinical Station & Deployment Grid */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider">
                       Department
                     </span>
-                    <span className="font-semibold text-stone-800 block truncate">
+                    <span className="font-semibold text-stone-200 block truncate">
                       {department}
                     </span>
                   </div>
 
-                  <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider">
                       Assigned Station / Bay
                     </span>
-                    <span className="font-semibold text-stone-800 block truncate">
+                    <span className="font-semibold text-stone-200 block truncate">
                       {stationBay}
                     </span>
                   </div>
 
-                  <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider flex items-center gap-1">
-                      <Clock className="size-3 text-emerald-600" />
+                      <Clock className="size-3 text-emerald-400" />
                       Shift Schedule
                     </span>
-                    <span className="font-semibold text-emerald-700 flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       {shiftPreference}
                     </span>
                   </div>
 
-                  <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3 space-y-1">
+                  <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider flex items-center gap-1">
                       <PhoneCall className="size-3 text-[#ea580c]" />
                       Internal Extension
@@ -331,33 +338,33 @@ export function ClinicianProfileModal({
                 </div>
 
                 {/* Comms & Radio Telemetry */}
-                <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between text-stone-600">
+                <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-stone-400">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Radio className="size-3.5 text-stone-400" />
                       Secure Station Radio:
                     </span>
-                    <span className="font-mono font-bold text-stone-800">{radioFrequency}</span>
+                    <span className="font-mono font-bold text-stone-200">{radioFrequency}</span>
                   </div>
-                  <div className="flex items-center justify-between text-stone-600 border-t border-stone-200/60 pt-2">
+                  <div className="flex items-center justify-between text-stone-400 border-t border-stone-800/60 pt-2">
                     <span className="flex items-center gap-1.5 font-medium">
                       <PhoneCall className="size-3.5 text-stone-400" />
                       VoIP Terminal Line:
                     </span>
-                    <span className="font-mono font-bold text-stone-800">{voipLine}</span>
+                    <span className="font-mono font-bold text-stone-200">{voipLine}</span>
                   </div>
                 </div>
 
                 {/* Inpatient Case Load Bar (Inspect Mode) */}
                 {!isSelf && clinicianData?.currentCaseLoad !== undefined && (
-                  <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-1.5 text-xs">
+                  <div className="rounded-xl border border-stone-800/80 bg-[#221e1a] p-3.5 space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-stone-500 font-medium">Active Inpatient Load:</span>
-                      <span className="font-bold text-stone-800">
+                      <span className="text-stone-400 font-medium">Active Inpatient Load:</span>
+                      <span className="font-bold text-stone-200">
                         {clinicianData.currentCaseLoad} / {clinicianData.maxCapacity || 4} Patients
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-stone-800">
                       <div
                         className={cn(
                           'h-full rounded-full transition-all',
@@ -378,13 +385,13 @@ export function ClinicianProfileModal({
                 )}
 
                 {/* Digital Cryptographic Verification Seal */}
-                <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/40 p-3 flex items-start gap-3 text-xs text-stone-700">
-                  <FileCheck2 className="size-4 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 p-3 flex items-start gap-3 text-xs text-stone-300">
+                  <FileCheck2 className="size-4 text-emerald-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="font-bold text-emerald-900 block">
+                    <span className="font-bold text-emerald-300 block">
                       Cryptographically Sealed Clinical Identity
                     </span>
-                    <p className="text-[11px] text-stone-600 leading-relaxed font-mono">
+                    <p className="text-[11px] text-stone-400 leading-relaxed font-mono">
                       SHA256: 9b4d8e2... Verified by Government of Jharkhand Health Command
                     </p>
                   </div>
@@ -395,7 +402,7 @@ export function ClinicianProfileModal({
               <form onSubmit={handleSave} className="space-y-4 text-xs">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Full Name & Title
                     </label>
                     <input
@@ -403,12 +410,12 @@ export function ClinicianProfileModal({
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Official Role Designation
                     </label>
                     <input
@@ -416,14 +423,14 @@ export function ClinicianProfileModal({
                       value={roleTitle}
                       onChange={(e) => setRoleTitle(e.target.value)}
                       required
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Medical Council Reg. Number
                     </label>
                     <input
@@ -432,12 +439,12 @@ export function ClinicianProfileModal({
                       onChange={(e) => setRegistrationNumber(e.target.value)}
                       placeholder="JMC-XXXXX"
                       required
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-mono font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-mono font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Department
                     </label>
                     <input
@@ -445,60 +452,55 @@ export function ClinicianProfileModal({
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
                       required
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-bold text-stone-500 block">
-                    Degrees & Clinical Qualifications
+                  <label className="text-[10px] uppercase font-bold text-stone-400 block">
+                    Degrees & Fellowships (Comma separated)
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={qualifications}
                     onChange={(e) => setQualifications(e.target.value)}
-                    placeholder="e.g. MBBS, MS, MCh (Trauma Surgery)"
                     required
-                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
-                      Station / OT Bay / Desk
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
+                      Assigned Station Bay
                     </label>
                     <input
                       type="text"
                       value={stationBay}
                       onChange={(e) => setStationBay(e.target.value)}
-                      placeholder="e.g. Red Bay Desk 1"
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      placeholder="Red Bay Desk Station 1"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
-                      Shift Schedule Preference
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
+                      Duty Shift Schedule
                     </label>
-                    <select
+                    <input
+                      type="text"
                       value={shiftPreference}
                       onChange={(e) => setShiftPreference(e.target.value)}
-                      className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
-                    >
-                      <option value="Day 8h Shift (08:00 - 16:00)">Day 8h Shift (08:00 - 16:00)</option>
-                      <option value="Day 12h Duty (08:00 - 20:00)">Day 12h Duty (08:00 - 20:00)</option>
-                      <option value="Night Emergency (20:00 - 08:00)">Night Emergency (20:00 - 08:00)</option>
-                      <option value="On-Call Trauma Specialist">On-Call Trauma Specialist</option>
-                      <option value="Continuous Command (24/7 Roster)">Continuous Command (24/7 Roster)</option>
-                    </select>
+                      placeholder="Day 8h Shift (08:00 - 16:00)"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-3 py-2 text-xs font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Pager Extension
                     </label>
                     <input
@@ -506,12 +508,12 @@ export function ClinicianProfileModal({
                       value={phoneExtension}
                       onChange={(e) => setPhoneExtension(e.target.value)}
                       placeholder="Ext. 4012"
-                      className="w-full rounded-xl border border-stone-200 bg-white px-2.5 py-2 text-xs font-mono font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-2.5 py-2 text-xs font-mono font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       VoIP Line
                     </label>
                     <input
@@ -519,12 +521,12 @@ export function ClinicianProfileModal({
                       value={voipLine}
                       onChange={(e) => setVoipLine(e.target.value)}
                       placeholder="VOIP-01"
-                      className="w-full rounded-xl border border-stone-200 bg-white px-2.5 py-2 text-xs font-mono font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-2.5 py-2 text-xs font-mono font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase font-bold text-stone-500 block">
+                    <label className="text-[10px] uppercase font-bold text-stone-400 block">
                       Radio Freq
                     </label>
                     <input
@@ -532,7 +534,7 @@ export function ClinicianProfileModal({
                       value={radioFrequency}
                       onChange={(e) => setRadioFrequency(e.target.value)}
                       placeholder="154.280 MHz"
-                      className="w-full rounded-xl border border-stone-200 bg-white px-2.5 py-2 text-xs font-mono font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                      className="w-full rounded-xl border border-stone-700 bg-[#12100e] px-2.5 py-2 text-xs font-mono font-semibold text-white focus:border-[#ea580c] focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -541,7 +543,7 @@ export function ClinicianProfileModal({
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer"
+                    className="rounded-xl border border-stone-700 px-3.5 py-2 text-xs font-semibold text-stone-400 hover:text-white hover:bg-stone-800 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -556,7 +558,7 @@ export function ClinicianProfileModal({
             )}
 
             {/* Bottom Actions */}
-            <div className="border-t border-stone-100 pt-4 flex items-center justify-between gap-3">
+            <div className="border-t border-stone-800 pt-4 flex items-center justify-between gap-3">
               {isSelf ? (
                 <>
                   <button
@@ -565,14 +567,16 @@ export function ClinicianProfileModal({
                       onClose()
                       logout()
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 px-3.5 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-950/50 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-bold cursor-pointer transition-colors shadow-xs"
+                    title="Sign out and return to login screen"
                   >
-                    Logout Session
+                    <LogOut className="size-3.5" />
+                    <span>Sign Out / Switch Clinician</span>
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                    className="rounded-xl border border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
                   >
                     Done
                   </button>
@@ -595,7 +599,7 @@ export function ClinicianProfileModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors ml-auto"
+                    className="rounded-xl border border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors ml-auto"
                   >
                     Close
                   </button>
@@ -607,4 +611,6 @@ export function ClinicianProfileModal({
       </div>
     </AnimatePresence>
   )
+
+  return createPortal(modalContent, document.body)
 }

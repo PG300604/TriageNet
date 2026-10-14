@@ -75,3 +75,30 @@ The project maintainer (@PG300604) established a dedicated Linux workstation for
 - Pull the latest `main` branch before starting any development or triage work.
 - When reviewing DevOps or deployment questions, inspect `DEVOPS_LOG.md` first to understand recent changes made on the Linux workstation.
 - If you make any Docker, Compose, CI/CD, or deployment-related changes on Windows, record your actions in `DEVOPS_LOG.md` following this same schema, noting `Windows` under the `Environment` field.
+
+### [LOG-002] — 2026-10-14: Modal Portal Containment Fix & Statewide Facility Clutter Filtering (Windows)
+
+- **Timestamp**: `2026-10-14T17:05:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`)
+- **Operator / Agent**: Google Antigravity (Windows Client Agent)
+- **Scope / Category**: UI Architecture, Portal Rendering, Statewide 111-Hospital UX Optimization
+- **Status**: Completed & Verified
+
+#### Context & Issues Addressed
+1. **Clinician Profile Modal Containment Bug**: Clicking the doctor profile card in `<header>` (`top-bar.tsx`) squished the modal into a tiny ~64px box. Because `<header>` applied `backdrop-blur-md`, CSS specifications established a new containing block for `fixed` descendants.
+2. **111-Facility Visual Clutter**:
+   - `ClinicalView` (`clinical-view.tsx`) mapped all 111 hospitals as buttons wrapping indefinitely across the screen.
+   - `ReportsView` (`reports-view.tsx`) rendered all 111 hospitals in an unbounded vertical list in the Regional Acuity Distribution panel and Facility Matrix.
+3. **Theme & Dark Mode Styling**: User preferred the dark charcoal/walnut & glowing amber aesthetic (`#181512`, `#12100e`, `#ea580c`) active in their browser.
+
+#### Actions Executed
+- Updated `frontend/components/triagenet/clinician-profile-modal.tsx`:
+  - Imported `createPortal` and mounted modal directly to `document.body`.
+  - Added dedicated "Sign Out / Switch Clinician" button calling `logout()` to easily return to `/login`.
+  - Styled with deep charcoal/amber theme (`#181512`, `#12100e`, `#ea580c` accents).
+- Updated `frontend/components/triagenet/clinical-view.tsx`:
+  - Implemented categorized command toolbar with District filter (all 24 Jharkhand districts), Tier selector chips (Tertiary, District, SDH, CHC), search input, active facility card, popover facility selector, and quick-access pills.
+- Updated `frontend/components/triagenet/reports-view.tsx`:
+  - Added district/tier/search filters and 6-per-page pagination with "View All" toggle to both "Regional Acuity Distribution" and "Facility Capacity & Clinical Load Matrix".
+- Verified compilation with Next.js Turbopack (`npm run build` -> 12/12 routes generated cleanly).
+

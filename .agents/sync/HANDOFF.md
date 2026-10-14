@@ -41,8 +41,9 @@
 
 ## 📋 Next Milestone Checklist
 
-- [ ] **Windows**: Update all 5 `Essentials/` documents to reflect Phase 9.6 + Sprint 10 state.
-- [ ] **Windows**: Execute Phase 9.4 (Doctor & Clinician Profile Customization system).
+- [x] **Windows**: Update all 5 `Essentials/` documents to reflect Phase 9.6 + Sprint 10 state.
+- [x] **Windows**: Execute Phase 9.4 (Doctor & Clinician Profile Customization system with `<ClinicianProfileModal />`).
+- [ ] **Windows**: Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol).
 - [ ] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
 - [ ] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification.
 - [ ] **Both**: Export OpenAPI specification from Spring Boot for mobile contract synchronization.

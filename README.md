@@ -1054,6 +1054,19 @@ flowchart LR
 | **Zero-Email Status Probe API** | `GET /api/auth/status/{staffId}` — Public, real-time cryptographic status check allowing clinicians to probe verification status without SMS/email notifications. |
 | **65/65 Backend Tests** | 100% automated test coverage covering full registration → pending lock → hierarchical precedence guards → active shift login. |
 
+### ✅ Phase 9.3 — Clinical SaaS UI Modernization & Doctor Availability (Complete)
+- [x] **Design System Overhaul**: Plus Jakarta Sans geometric typography, Boltshift-style KPI statistics, Globetrans map HUD indicators, and decluttered top-bar navigation.
+- [x] **Doctor & Specialist Availability Roster (`doctors-view.tsx`)**: Replaced appointment booking with live specialist on-duty tracking across emergency medicine, trauma surgery, anesthesiology, pediatrics, and critical care.
+- [x] **Tactical Paging Engine**: Direct 1-click paging of available specialists to trauma bays with priority notification modals.
+
+### ✅ Phase 9.4 — Clinician & Doctor Profile Customization System (Complete — Oct 14, 2026)
+- [x] **Universal `<ClinicianProfileModal />` Component**: Unified modal supporting both self-customization (`mode="self"`) and cross-user inspection (`mode="inspect"`).
+- [x] **Editable Clinical Credentials**: Allows clinicians to customize their Name, Clinical Title, Medical Council Registration Number (e.g., `JMC-84920`), Degrees (MBBS, MD, MS, MCh), Clinical Sub-Specialty, Assigned Bay/Desk, Shift Preferences, Pager Extensions, and VoIP Lines.
+- [x] **Client-Side Profile State Persistence**: Updates reactive `AuthContext` state and persists overrides in local storage (`triagenet_custom_profile_*`), surviving browser reloads and offline demo sessions.
+- [x] **Dual Surface Access**: Easily accessible via the top-bar profile pill button and the sidebar clinician badge.
+- [x] **Doctor & Staff Cross-Inspection**: Clicking any physician in the Doctor Availability Roster opens their verified credential card with active inpatient caseload indicators and direct bay paging.
+- [x] **Clean Session Termination**: Strict logout clears all tokens, active shift sessions, and temporary state, returning cleanly to `/login`.
+
 ### ✅ Phase 9.6 — GIS Spatial Map Overhaul, Multi-Ambulance Fleet Command & 3-Tier Inventory Governance (Complete — Sep 4, 2026)
 - [x] **Real GIS Coordinate Hospital Positioning**: Eliminated radial trigonometric circle layout; hospitals now placed at actual GPS lat/lng coordinates from the 79-facility Jharkhand dataset using Haversine-based fuzzy matching.
 - [x] **3-Tier Surge Capacity Color Hierarchy**: Hospital markers dynamically colored — Crimson Red (≥80% load, pulsing beacon), Amber (60–80%), Emerald Green (<60%) — with live percentage badges on the Leaflet map.

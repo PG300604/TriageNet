@@ -20,6 +20,16 @@ export interface UserProfile {
   districtName?: string;
   hospitalId?: string;
   hospitalName?: string;
+  staffId?: string;
+  registrationNumber?: string;
+  qualifications?: string;
+  department?: string;
+  stationBay?: string;
+  shiftPreference?: string;
+  phoneExtension?: string;
+  voipLine?: string;
+  radioFrequency?: string;
+  signatureSealVerified?: boolean;
 }
 
 export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
@@ -28,8 +38,18 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
     name: 'Dr. Rajeshwar Sharma',
     email: 'admin@triagenet.jharkhand.gov.in',
     role: 'SUPER_ADMIN',
-    roleTitle: 'System Super Admin',
+    roleTitle: 'State Health Command Controller',
     districtName: 'Statewide',
+    staffId: 'JH-SYS-0001',
+    registrationNumber: 'NMC-IND-90112',
+    qualifications: 'MBBS, MD (Hospital Admin), FACP',
+    department: 'State Directorate of Health Services',
+    stationBay: 'Main Command Console',
+    shiftPreference: 'Continuous Command (24/7 Roster)',
+    phoneExtension: 'Ext. 1001',
+    voipLine: 'JH-HEALTH-HQ-01',
+    radioFrequency: '155.050 MHz (State Command)',
+    signatureSealVerified: true,
   },
   STATE_HEALTH_DEPT: {
     id: 'demo-state-health',
@@ -38,6 +58,16 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
     role: 'STATE_HEALTH_DEPT',
     roleTitle: 'State Health Department Director',
     districtName: 'Statewide (All 24 Districts)',
+    staffId: 'JH-SYS-0002',
+    registrationNumber: 'IAS-JH-2011',
+    qualifications: 'MPA (Public Health Policy)',
+    department: 'Ministry of Health & Family Welfare',
+    stationBay: 'Secretariat Room 304',
+    shiftPreference: 'Executive Oversight',
+    phoneExtension: 'Ext. 1002',
+    voipLine: 'JH-SEC-HEALTH',
+    radioFrequency: '155.050 MHz',
+    signatureSealVerified: true,
   },
   DISTRICT_CMO: {
     id: 'demo-district-cmo',
@@ -46,6 +76,16 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
     role: 'DISTRICT_CMO',
     roleTitle: 'District Chief Medical Officer (Ranchi)',
     districtName: 'Ranchi',
+    staffId: 'JH-STF-1004',
+    registrationNumber: 'JMC-71940',
+    qualifications: 'MBBS, MD (Community Medicine)',
+    department: 'District Health Office Ranchi',
+    stationBay: 'CMO Operations Desk',
+    shiftPreference: 'Day Shift (08:00 - 18:00)',
+    phoneExtension: 'Ext. 2004',
+    voipLine: 'CMO-RANCHI-DIRECT',
+    radioFrequency: '154.250 MHz (District Net)',
+    signatureSealVerified: true,
   },
   HOSPITAL_ADMIN: {
     id: 'demo-hosp-admin',
@@ -56,24 +96,54 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
     districtName: 'Ranchi',
     hospitalId: 'rims-ranchi',
     hospitalName: 'Rajendra Institute of Medical Sciences (RIMS)',
+    staffId: 'JH-STF-2015',
+    registrationNumber: 'JMC-84920',
+    qualifications: 'MBBS, MS (General Surgery), MHA',
+    department: 'Hospital Administration & Trauma Command',
+    stationBay: 'Superintendent Office Bay-A',
+    shiftPreference: 'Day 12h Duty (08:00 - 20:00)',
+    phoneExtension: 'Ext. 3010',
+    voipLine: 'RIMS-SUPT-LINE',
+    radioFrequency: '154.280 MHz (RIMS ED)',
+    signatureSealVerified: true,
   },
   TRIAGE_NURSE: {
     id: 'demo-nurse',
     name: 'Sister Sunita Kujur',
     email: 'ed.nurse@rims.gov.in',
     role: 'TRIAGE_NURSE',
-    roleTitle: 'Emergency Triage Nurse',
+    roleTitle: 'Emergency Triage Lead Nurse',
     districtName: 'Ranchi',
     hospitalId: 'rims-ranchi',
     hospitalName: 'RIMS Ranchi ED',
+    staffId: 'JH-STF-4089',
+    registrationNumber: 'JNC-N-52194',
+    qualifications: 'B.Sc (Hons) Nursing, Certified ED Triage (CTN)',
+    department: 'Emergency & Trauma Bay Intake',
+    stationBay: 'Red Bay Desk Station 1',
+    shiftPreference: 'Day 8h Shift (08:00 - 16:00)',
+    phoneExtension: 'Ext. 4012',
+    voipLine: 'RIMS-ED-TRIAGE-01',
+    radioFrequency: '154.280 MHz (RIMS ED)',
+    signatureSealVerified: true,
   },
   AMBULANCE_DISPATCH: {
     id: 'demo-dispatch',
     name: 'Operator Manoj Soren',
     email: 'dispatch108@jharkhand.gov.in',
     role: 'AMBULANCE_DISPATCH',
-    roleTitle: '108 Ambulance Dispatch Controller',
+    roleTitle: '108 Central Fleet Dispatcher',
     districtName: 'Ranchi District Command',
+    staffId: 'JH-STF-5002',
+    registrationNumber: 'EMRS-JH-108',
+    qualifications: 'Advanced Emergency Medical Dispatch (AEMD), GIS Spatial Ops',
+    department: 'Central 108 Operations & Spatial Routing Hub',
+    stationBay: 'Console #04 (Central Fleet Desk)',
+    shiftPreference: 'Night Emergency (20:00 - 08:00)',
+    phoneExtension: 'Ext. 1084',
+    voipLine: '108-FLEET-RANCHI',
+    radioFrequency: '155.160 MHz (108 Fleet Net)',
+    signatureSealVerified: true,
   },
 };
 
@@ -94,6 +164,7 @@ interface AuthContextType {
   lockScreen: () => Promise<void>;
   endShift: () => Promise<void>;
   loginAsDemoRole: (role: UserRole) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
   logout: () => void;
   hasRoleAccess: (allowedRoles: UserRole[]) => boolean;
 }
@@ -193,13 +264,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {
         // If unauthenticated on server, check if offline demo mode is chosen
         const isDemo = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') : null;
-        if (isDemo) {
-          const demoRole = (localStorage.getItem('triagenet_demo_role') as UserRole) || 'SUPER_ADMIN';
-          setUser(DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN);
-        } else {
-          // Default preview fallback for demo UI
-          setUser(DEMO_PRESET_USERS.SUPER_ADMIN);
+        const demoRole = (localStorage.getItem('triagenet_demo_role') as UserRole) || 'SUPER_ADMIN';
+        const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
+        let finalProfile = defaultProfile;
+        if (typeof window !== 'undefined') {
+          try {
+            const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
+            if (saved) {
+              finalProfile = { ...defaultProfile, ...JSON.parse(saved) };
+            }
+          } catch {}
         }
+        setUser(finalProfile);
       } finally {
         setIsLoading(false);
       }
@@ -301,13 +377,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginAsDemoRole = (role: UserRole) => {
-    const profile = DEMO_PRESET_USERS[role];
+    const defaultProfile = DEMO_PRESET_USERS[role];
+    let profile = defaultProfile;
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
+        if (saved) {
+          profile = { ...defaultProfile, ...JSON.parse(saved) };
+        }
+      } catch {}
+    }
     setToken(null);
     setUser(profile);
     setIsShiftActive(true);
     setIsScreenLocked(false);
     localStorage.setItem('triagenet_demo_active', 'true');
     localStorage.setItem('triagenet_demo_role', role);
+  };
+
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`triagenet_custom_profile_${updated.id}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
   };
 
   const logout = () => {
@@ -346,6 +444,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         lockScreen,
         endShift,
         loginAsDemoRole,
+        updateUserProfile,
         logout,
         hasRoleAccess,
       }}

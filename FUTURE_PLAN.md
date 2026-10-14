@@ -105,7 +105,7 @@
 | **Phase 9.1** | Cryptographic Authentication & Shift Sessions | TOTP RFC 6238, BIP-39 12-word mnemonic phrases, 8h/12h shift lock PIN | ✅ Completed |
 | **Phase 9.2** | Official Staff ID & Dual-Control Onboarding | `JH-STF-XXXX` identifier, probe endpoint, Medical Superintendent verification queue | ✅ Completed |
 | **Phase 9.3** | UI/UX Modernization & Doctor Availability | Plus Jakarta Sans typography, Boltshift KPIs, Globetrans Map HUD, Doctor Roster | ✅ Completed |
-| **Phase 9.4** | Clinician & Doctor Profile Customization | Individual editable profile cards, cross-user inspection, user-provided card layout | 🔮 Next Sprint |
+| **Phase 9.4** | Clinician & Doctor Profile Customization | Individual editable profile cards, cross-user inspection, user-customizable credentials & tactile parameters | ✅ Completed |
 | **Phase 9.5** | AI Predictive Shortage & Proactive Pre-Fetch | Bottom-up shortage incident logging, AI pre-fetch recommendations, triage queue insight alerts | ✅ Architecture Embedded |
 | **Phase 9.6** | GIS Map Overhaul, Multi-Ambulance Fleet & 3-Tier Inventory | Real GPS hospital positioning, surge capacity coloring, 6-unit ALS/BLS fleet command, role-scoped inventory governance | ✅ Completed |
 | **Sprint 10** | Security Hardening & Patchworks (Hermes Audit B1-B5) | Dynamic dev CSPRNG JWT secret, Content-Security-Policy headers, hospital scoping, example secret cleansing | ✅ Completed |

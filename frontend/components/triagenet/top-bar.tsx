@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { useEffect, useRef, useState } from 'react'
+import { ClinicianProfileModal } from './clinician-profile-modal'
 
 interface TopBarProps {
   hospitals: Hospital[]
@@ -60,6 +61,7 @@ export function TopBar({
   const [distOpen, setDistOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
 
   // Auto-lock district selector if user is District CMO or Hospital Staff
   useEffect(() => {
@@ -255,12 +257,33 @@ export function TopBar({
         </div>
       </div>
 
-      {/* Right: Clean Live Network Sync Badge */}
-      <div className="flex items-center gap-3">
+      {/* Right: Clean Live Network Sync Badge & Clinician Profile Trigger */}
+      <div className="flex items-center gap-2.5">
         <div className="hidden sm:flex items-center gap-2 rounded-full border border-stone-200/80 bg-stone-50/80 px-3 py-1 text-xs font-medium text-stone-600">
           <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
           <span>Live Network Synced</span>
         </div>
+
+        {/* Clinician Profile Trigger Button */}
+        <button
+          type="button"
+          onClick={() => setProfileModalOpen(true)}
+          className="flex items-center gap-2 rounded-full border border-[#382416]/20 bg-white hover:bg-[#ffedd7]/50 px-2.5 py-1 text-xs font-semibold text-[#382416] transition-all shadow-2xs cursor-pointer"
+          title="Open Clinician Profile Card"
+        >
+          <div className="flex size-6 items-center justify-center rounded-full bg-[#382416] text-[10px] font-bold text-[#ffedd7]">
+            {user?.name ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'TN'}
+          </div>
+          <span className="hidden md:inline max-w-[120px] truncate text-[11px] font-bold text-[#382416]">
+            {user?.name || 'My Profile'}
+          </span>
+        </button>
+
+        <ClinicianProfileModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          mode="self"
+        />
       </div>
     </header>
   )

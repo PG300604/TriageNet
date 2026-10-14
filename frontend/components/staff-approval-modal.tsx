@@ -20,6 +20,33 @@ interface StaffApprovalModalProps {
   onApproved?: () => void;
 }
 
+const DEMO_PENDING_STAFF: PendingStaffUser[] = [
+  {
+    id: 'demo-staff-1',
+    name: 'Dr. Alok Verma',
+    email: 'alok.verma@rims.gov.in',
+    hospitalId: 'hosp-001',
+    hospitalName: 'RIMS Ranchi',
+    role: 'HOSPITAL_ADMIN',
+    staffId: 'JH-RIMS-0412',
+    registrationNumber: 'NMC-JH-44012',
+    qualifications: 'MBBS, MD (Hospital Admin)',
+    createdAt: '2026-10-14T10:30:00Z',
+  },
+  {
+    id: 'demo-staff-2',
+    name: 'Dr. Sunita Soren',
+    email: 'sunita.soren@sadar.gov.in',
+    hospitalId: 'hosp-002',
+    hospitalName: 'Sadar Hospital Ranchi',
+    role: 'DISTRICT_CMO',
+    staffId: 'JH-CMO-0219',
+    registrationNumber: 'NMC-JH-38104',
+    qualifications: 'MBBS, DNB (Emergency Medicine)',
+    createdAt: '2026-10-14T11:15:00Z',
+  },
+];
+
 export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
   isOpen,
   onClose,
@@ -36,6 +63,12 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
   const loadPending = async () => {
     setLoading(true);
     setError(null);
+    const hasBackendSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+    if (!hasBackendSession) {
+      setPendingList(DEMO_PENDING_STAFF);
+      setLoading(false);
+      return;
+    }
     try {
       const data = await ApiClient.getPendingStaff();
       setPendingList(data || []);
@@ -110,6 +143,15 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
         ? staff.role
         : tierConfig.options[0]?.value || 'HOSPITAL_STAFF';
       const role = selectedRoles[staff.id] || defaultRole;
+
+      const hasBackendSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+      if (!hasBackendSession) {
+        setSuccess(`[DEMO VERIFIED] Granted active clinical status to ${staff.name} (${staff.staffId}) as ${role}!`);
+        setPendingList((prev) => prev.filter((item) => item.id !== staff.id));
+        if (onApproved) onApproved();
+        return;
+      }
+
       await ApiClient.approveStaff(staff.id, role);
       setSuccess(`Verified and granted active clinical status to ${staff.name} (${staff.staffId}) as ${role}!`);
       setPendingList((prev) => prev.filter((item) => item.id !== staff.id));
@@ -128,6 +170,14 @@ export const StaffApprovalModal: React.FC<StaffApprovalModalProps> = ({
     setActionLoading(staff.id);
     setError(null);
     try {
+      const hasBackendSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+      if (!hasBackendSession) {
+        setSuccess(`[DEMO REJECTED] Registration for ${staff.name} has been rejected.`);
+        setPendingList((prev) => prev.filter((item) => item.id !== staff.id));
+        if (onApproved) onApproved();
+        return;
+      }
+
       await ApiClient.rejectStaff(staff.id);
       setSuccess(`Registration for ${staff.name} has been rejected.`);
       setPendingList((prev) => prev.filter((item) => item.id !== staff.id));

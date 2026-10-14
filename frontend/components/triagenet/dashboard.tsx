@@ -318,6 +318,11 @@ export function Dashboard() {
 
   const checkPendingStaff = useCallback(async () => {
     if (user && ['SUPER_ADMIN', 'DISTRICT_CMO', 'HOSPITAL_ADMIN'].includes(user.role)) {
+      const hasBackendSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
+      if (!hasBackendSession) {
+        setPendingStaffCount(2);
+        return;
+      }
       try {
         const pending = await ApiClient.getPendingStaff()
         setPendingStaffCount(pending?.length || 0)

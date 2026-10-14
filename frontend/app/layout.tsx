@@ -10,6 +10,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: '--font-sans',
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
+  preload: false,
 })
 
 const geistMono = Geist_Mono({
@@ -179,6 +180,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${plusJakartaSans.variable} ${geistMono.variable} bg-background`}
     >
       <head>

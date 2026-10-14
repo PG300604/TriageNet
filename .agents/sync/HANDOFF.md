@@ -37,12 +37,31 @@
   3. When beginning Docker/CI work on Linux, verify Docker Compose runs seamlessly on Linux host with the new file paths.
   4. Maintain all future DevOps log entries inside `.agents/sync/DEVOPS_LOG.md`.
 
+### [HANDOFF-002] — 2026-10-14: Landing Page & Dashboard Stabilization Complete (0 Console Errors)
+- **From**: Windows Agent
+- **To**: Linux Agent / Next Windows Session
+- **Status**: `RESOLVED`
+- **Summary**:
+  1. Localized mock patient and hospital names to authentic Jharkhand facilities (RIMS Ranchi, Sadar Hospital Ranchi, MGM Jamshedpur, SNMMCH Dhanbad).
+  2. Aligned telemetry heap queue columns (`w-20` wait time, `w-56 sm:w-64` matched bed, `w-20` priority).
+  3. Reordered hero card so Telemetry Header and controls render above the live ECG monitor.
+  4. Removed full-bleed `ember-waves.png` overlay across `hero.tsx`, `interactive-graph-showcase.tsx`, and `cta-footer.tsx` to ensure uniform `#100904` background color across all sections.
+  5. Resolved all console warnings:
+     - Next.js Image `sizes="100vw"` and LCP eager loading.
+     - Disabled `preload` on fonts (`Geist_Mono` and `Plus_Jakarta_Sans`).
+     - Added `data-scroll-behavior="smooth"` to `<html>`.
+     - Guarded `/api/auth/me` and `/api/auth/refresh` on landing page to eliminate 401s.
+     - Guarded `/api/admin/staff/pending` with demo simulation fallback to eliminate 403s on `/dashboard`.
+  6. Verified compilation (`npm run build`: 12/12 static routes generated cleanly).
+
 ---
 
 ## 📋 Next Milestone Checklist
 
 - [x] **Windows**: Update all 5 `Essentials/` documents to reflect Phase 9.6 + Sprint 10 state.
 - [x] **Windows**: Execute Phase 9.4 (Doctor & Clinician Profile Customization system with `<ClinicianProfileModal />`).
+- [x] **Windows**: Clean Landing Page & Dashboard (0 console errors, authentic Jharkhand names, unified color scheme).
+- [ ] **Windows**: Page-by-page feature breakdown & architectural walkthrough with user (Tomorrow).
 - [ ] **Windows**: Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol).
 - [ ] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
 - [ ] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification.

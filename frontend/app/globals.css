@@ -295,6 +295,10 @@
 
 /* ---- Landing Page & Premium Scroll System ---- */
 
+html {
+  scroll-behavior: smooth;
+}
+
 html.lenis, html.lenis body {
   height: auto;
 }
@@ -305,10 +309,6 @@ html.lenis, html.lenis body {
 
 .lenis.lenis-smooth [data-lenis-prevent] {
   overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
 }
 
 .lenis.lenis-smooth iframe {

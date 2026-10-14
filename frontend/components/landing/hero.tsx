@@ -58,11 +58,11 @@ export function Hero() {
     }, '-=400')
     .add({
       targets: '.anime-hero-card',
-      translateY: [35, 0],
-      opacity: [0, 1],
-      scale: [0.98, 1],
-      duration: 800,
-    }, '-=400')
+      translateY: [20, 0],
+      opacity: [0.6, 1],
+      scale: [0.99, 1],
+      duration: 600,
+    }, '-=300')
   }, [])
 
   const simulateCriticalArrival = () => {
@@ -96,7 +96,7 @@ export function Hero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen w-full bg-[#100904] text-[#ffedd7] pt-28 pb-20 md:pt-36 md:pb-28 flex flex-col justify-between overflow-hidden font-sans border-b border-dashed border-[#40372e]"
+      className="relative min-h-screen w-full bg-[#100904] text-[#ffedd7] pt-24 pb-14 md:pt-28 md:pb-20 flex flex-col justify-between overflow-hidden font-sans border-b border-dashed border-[#40372e]"
     >
       {/* Subtle Warm Ember Waves Texture Blend */}
       <div className="absolute inset-0 pointer-events-none opacity-10 overflow-hidden">
@@ -124,12 +124,12 @@ export function Hero() {
           </p>
 
           {/* Display Headline with Motion Primitives TextReveal */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-medium uppercase tracking-normal leading-[0.9] text-[#ffedd7] mb-8">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium uppercase tracking-normal leading-[0.95] text-[#ffedd7] mb-5">
             <TextReveal text="INTELLIGENT HEALTHCARE RESOURCE ALLOCATION PLATFORM." />
           </h1>
 
           {/* Mixed-Case Body Copy */}
-          <p className="anime-hero-sub text-lg md:text-2xl font-normal leading-relaxed text-[#ffedd7]/90 max-w-3xl mb-10">
+          <p className="anime-hero-sub text-base md:text-xl font-normal leading-relaxed text-[#ffedd7]/90 max-w-3xl mb-8">
             Unifying multi-hospital vital streams, Hungarian bipartite bed matching, and Dijkstra regional overflow routing into a calm command environment.
           </p>
 
@@ -151,23 +151,10 @@ export function Hero() {
         </div>
 
         {/* Product Reveal Container (Interactive Telemetry Artifact) */}
-        <div className="anime-hero-card mt-16 md:mt-20">
-          <div className="relative rounded-[12px] border border-dashed border-[#40372e] bg-[#100904] p-6 md:p-8">
-            {/* Live ECG Waveform Monitor */}
-            <div className="mb-6">
-              <AnimatedECGWaveform />
-            </div>
-
-            {/* Overlay Notice */}
-            {preemptionNotice && (
-              <div className="mb-6 p-3 rounded-[12px] border border-[#dc5000] bg-[#dc5000]/10 text-xs font-mono text-[#ffedd7] uppercase flex items-center justify-between">
-                <span>{preemptionNotice}</span>
-                <span className="text-[#dc5000] font-bold">EVENT LOGGED</span>
-              </div>
-            )}
-
-            {/* Telemetry Header */}
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-dashed border-[#40372e] pb-4">
+        <div className="anime-hero-card mt-8 md:mt-12">
+          <div className="relative rounded-[12px] border border-dashed border-[#40372e] bg-[#100904] p-5 md:p-8">
+            {/* Telemetry Header with Title and Controls */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-dashed border-[#40372e] pb-4">
               <div>
                 <span className="text-xs font-medium uppercase tracking-wider text-[#dc5000] block">
                   * REAL-TIME TRIAGE TELEMETRY
@@ -212,6 +199,19 @@ export function Hero() {
                 </motion.button>
               </div>
             </div>
+
+            {/* Live ECG Waveform Monitor */}
+            <div className="mb-4">
+              <AnimatedECGWaveform />
+            </div>
+
+            {/* Overlay Notice */}
+            {preemptionNotice && (
+              <div className="mb-4 p-3 rounded-[12px] border border-[#dc5000] bg-[#dc5000]/10 text-xs font-mono text-[#ffedd7] uppercase flex items-center justify-between">
+                <span>{preemptionNotice}</span>
+                <span className="text-[#dc5000] font-bold">EVENT LOGGED</span>
+              </div>
+            )}
 
             {/* Patient Heap Queue */}
             <div className="space-y-3 font-mono">

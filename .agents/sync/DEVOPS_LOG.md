@@ -164,5 +164,28 @@ In `CapacityView` (`components/triagenet/capacity-view.tsx:168`), the dynamic me
 5. **Build Verification**:
    - `npm run build` completed with 0 errors across 12 static routes (`12/12 in 870ms`).
 
+### [LOG-006] — 2026-10-14: Dashboard Console Error Elimination & Demo Staff Verification (Windows)
+
+- **Timestamp**: `2026-10-14T22:05:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`)
+- **Operator / Agent**: Google Antigravity (Windows Client Agent)
+- **Scope / Category**: Console Error Resolution, Demo Authorization Simulation, Next.js Routing
+- **Status**: Completed & Verified
+
+#### Context & Issues Addressed
+1. **Next.js `data-scroll-behavior="smooth"` Warning**:
+   - `Detected 'scroll-behavior: smooth' on the '<html>' element. To disable smooth scrolling during route transitions, add 'data-scroll-behavior="smooth"' to your '<html>' element.`
+   - Resolved by adding `data-scroll-behavior="smooth"` directly on `<html ...>` in `frontend/app/layout.tsx`.
+2. **Font Preload Warning**:
+   - `...woff2 was preloaded using link preload but not used within a few seconds from the window's load event.`
+   - Resolved by setting `preload: false` on `Plus_Jakarta_Sans` in `frontend/app/layout.tsx`.
+3. **403 Forbidden on `/api/admin/staff/pending`**:
+   - In demo mode, Spring Boot returned 403 Forbidden because no real backend `SUPER_ADMIN` cookie session exists.
+   - Guarded `checkPendingStaff` in `dashboard.tsx` with `triagenet_session_active`. In demo mode, provides mock pending count (2) and simulated pending staff roster in `staff-approval-modal.tsx`, allowing full interactive verification workflow without 403 network failures.
+4. **Unified Background Tint**:
+   - Completely removed `ember-waves.png` texture overlay from `hero.tsx`, `interactive-graph-showcase.tsx`, and `cta-footer.tsx` to unify `#100904` background seamlessly.
+5. **Build Verification**:
+   - `npm run build` passed cleanly in Turbopack (`12/12 in 835ms`).
+
 
 

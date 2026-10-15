@@ -288,3 +288,23 @@ Created `nginx/default.conf` at repository root to configure Nginx as a reverse 
   - `/_next/static/` — Next.js static asset caching (365d expiry, immutable)
   - `/` — default fallback proxying to Next.js frontend
 - Included Gzip compression, security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy), `client_max_body_size 20M`, and upstream keepalive of 32 connections.
+
+### [LOG-012] — 2026-10-15: Created `.github/workflows/ci.yml` CI/CD Pipeline
+
+- **Timestamp**: `2026-10-15T14:45:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Hermes Agent (Linux DevOps Session)
+- **Scope / Category**: CI/CD & Workflows, Security Scanning
+- **Status**: Completed
+
+#### Context & Decisions Made
+Created `.github/workflows/ci.yml` to establish continuous integration for TriageNet. The pipeline runs on pushes and pull requests to `main` and includes three parallel jobs: backend Spring Boot test suite (Temurin JDK 17, Maven wrapper), frontend Next.js production build (Node.js 20 LTS), and Trivy vulnerability/secret/misconfiguration scanning (`HIGH,CRITICAL` severity, exit-code 0 for reporting without blocking). Concurrency control cancels in-progress runs to avoid redundant builds.
+
+#### Actions Executed
+- Created `.github/workflows/` directory (did not exist previously).
+- Wrote `.github/workflows/ci.yml` with:
+  - `backend-test`: checkout, JDK 17 setup, `chmod +x backend/mvnw`, `./mvnw clean test -B`
+  - `frontend-build`: checkout, Node 20 setup with npm cache, `npm ci`, `npm run build` with `NEXT_TELEMETRY_DISABLED=1`
+  - `security-scan`: Trivy `fs` scan (`vuln,secret,misconfig`) on entire repo
+  - Concurrency group `github.workflow-${github.ref}` with `cancel-in-progress: true`
+- Added entry to `.agents/sync/DECISIONS.md` for CI/CD architecture.

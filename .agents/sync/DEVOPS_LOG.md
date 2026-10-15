@@ -187,5 +187,46 @@ In `CapacityView` (`components/triagenet/capacity-view.tsx:168`), the dynamic me
 5. **Build Verification**:
    - `npm run build` passed cleanly in Turbopack (`12/12 in 835ms`).
 
+### [LOG-007] — 2026-10-15: Linux Host DevOps Toolchain Provisioning & Portable Wrapper Setup
 
+- **Timestamp**: `2026-10-15T14:08:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity (Linux DevOps Session)
+- **Scope / Category**: Host Toolchain Installation, Node.js 20 LTS, Apache Maven 3.9, Trivy Scanner, Cross-Platform Maven Wrapper
+- **Status**: Completed & Verified
 
+#### Context & Actions Executed
+1. **Node.js & npm Setup**:
+   - Installed Node Version Manager (`nvm` v0.40.1) in user-space (`~/.nvm`).
+   - Provisioned Node.js `v20.20.2` LTS and `npm` `10.8.2`.
+   - Created symlinks in `~/.local/bin` (`node`, `npm`, `npx`) ensuring immediate availability across subshells and background processes.
+2. **Apache Maven Setup**:
+   - Installed Apache Maven 3.9.9 in `~/.local/share/apache-maven-3.9.9` with symlink at `~/.local/bin/mvn`.
+   - Verified runtime execution alongside OpenJDK 25.0.4.
+3. **Portable Maven Wrapper**:
+   - Generated official Maven wrapper scripts inside `backend/` (`mvn wrapper:wrapper`).
+   - Made `backend/mvnw` executable (`chmod +x`). Verified `./mvnw -version` succeeds on Linux, establishing parity with `mvnw.cmd` on Windows.
+4. **Trivy Vulnerability Scanner**:
+   - Installed Aqua Security Trivy `v0.76.0` binary into `~/.local/bin/trivy` for container image and secret vulnerability scanning.
+5. **Toolchain Verification**:
+   - Docker Engine: 29.8.2
+   - Docker Compose: 5.6.0
+   - Node.js: v20.20.2 / npm: 10.8.2
+   - Java: OpenJDK 25.0.4 / Maven: 3.9.9 / `./backend/mvnw`
+   - Trivy: 0.76.0
+
+### [LOG-008] — 2026-10-15: Created `.env.example` Template for Environment Variables
+
+- **Timestamp**: `2026-10-15T14:35:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Hermes Agent (Linux DevOps Session)
+- **Scope / Category**: Secrets & Security, Environment Configuration
+- **Status**: Completed
+
+#### Context & Decisions Made
+Created `.env.example` at repository root as a version-controlled template for environment variables. Following AGENTS.md and `.agents/rules/devops-log-synchronization.md`, real secrets must never be committed; this file provides sensible development defaults for all services (Database, Redis, Spring Boot, Next.js, Nginx) with clear section headers and a prominent top warning.
+
+#### Actions Executed
+- Created `.env.example` with all required sections and development defaults.
+- Added top-level warning: "DO NOT COMMIT REAL PRODUCTION SECRETS TO VERSION CONTROL."
+- Verified file is tracked in workspace (not `.env` which remains gitignored).

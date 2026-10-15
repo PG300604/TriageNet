@@ -267,3 +267,24 @@ Created `.env.example` at repository root as a version-controlled template for e
 3. **Next.js & Frontend Dependency Patching**: Executed `npm audit fix` in `frontend/`, upgrading Next.js to `16.4.1` (Turbopack) and eliminating all critical vulnerabilities. Verified `npm run build` generates all 12 static routes cleanly.
 4. **Secret Fallback Cleansing**: Eliminated inline fallback secrets in `docker-compose.yml`, enforcing strict `${VAR:?error}` runtime variable interpolation.
 5. **Tracker Updated**: Cataloged resolutions 16, 17, 18, and 19 in `.github/SECURITY_AUDIT_TRACKER.md`.
+
+### [LOG-011] — 2026-10-15: Created `nginx/default.conf` Reverse Proxy Configuration
+
+- **Timestamp**: `2026-10-15T14:40:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Hermes Agent (Linux DevOps Session)
+- **Scope / Category**: Containerization, Reverse Proxy, Nginx Configuration
+- **Status**: Completed
+
+#### Context & Decisions Made
+Created `nginx/default.conf` at repository root to configure Nginx as a reverse proxy in front of the TriageNet services (Next.js frontend and Spring Boot backend). The configuration separates upstream definitions (`frontend_upstream` on `frontend:3000`, `backend_upstream` on `backend:8080`) and implements location-based routing for the healthcheck, REST API, WebSocket telemetry stream, Next.js static asset caching, and default frontend fallback. This file will be consumed by the Docker Compose Nginx service and the OCI/VPS Nginx TLS container.
+
+#### Actions Executed
+- Created `nginx/` directory (did not exist previously).
+- Wrote `nginx/default.conf` with reverse proxy routes for:
+  - `/healthz` — liveness healthcheck (plain text `200 healthy`)
+  - `/api/` — Spring Boot REST API proxy with 60s timeouts
+  - `/ws/` — WebSocket telemetry & streaming proxy with upgrade headers and 86400s timeouts
+  - `/_next/static/` — Next.js static asset caching (365d expiry, immutable)
+  - `/` — default fallback proxying to Next.js frontend
+- Included Gzip compression, security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy), `client_max_body_size 20M`, and upstream keepalive of 32 connections.

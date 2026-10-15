@@ -63,6 +63,22 @@
 - [x] **Windows**: Clean Landing Page & Dashboard (0 console errors, authentic Jharkhand names, unified color scheme).
 - [ ] **Windows**: Page-by-page feature breakdown & architectural walkthrough with user (Tomorrow).
 - [ ] **Windows**: Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol).
-- [ ] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
-- [ ] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification.
+- [x] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
+- [x] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification (100% Green!).
+- [ ] **Linux / DevOps**: Script automated staging deployment (`scripts/deploy.sh`) for OCI Always Free ARM instance with Certbot TLS.
 - [ ] **Both**: Export OpenAPI specification from Spring Boot for mobile contract synchronization.
+
+### [HANDOFF-003] — 2026-10-15: Linux DevOps Hardening, Hermes Coordination & 100% Green CI Complete
+- **From**: Linux Agent (Google Antigravity)
+- **To**: Windows Agent / Next Session
+- **Status**: `RESOLVED`
+- **Summary**:
+  1. **Host Toolchains Provisioned**: Eclipse Temurin JDK 17, Maven 3.9.9 (`./mvnw` wrapper), Node.js 20 LTS, Trivy 0.76.0, GitHub CLI 2.62.0.
+  2. **Multi-Agent Task Sharing with Hermes**:
+     - Task 1: `.env.example` template with strict fail-fast env vars.
+     - Task 2: `nginx/default.conf` reverse proxy with `/healthz`, `/api/`, `/ws/`, `/_next/static/`, and security headers.
+     - Task 3: `.github/workflows/ci.yml` pipeline with 3 parallel jobs.
+  3. **Security Remediation**: Upgraded Spring Boot from 3.3.2 to 3.3.13 (CVE-2024-38816/38819 resolved). Patched frontend dependencies to Next.js 16.4.1 (0 criticals remaining). Cleansed hardcoded fallback secrets from Compose.
+  4. **Local Multi-Container Stack (100% Healthy)**: `postgres:16-alpine`, `redis:7-alpine`, `triagenet-backend`, `triagenet-frontend`, and `nginx:alpine` running locally on port 80, 3000, 8080, 5432, and 6379.
+  5. **CI/CD Fully Passing (100% Green)**: Resolved Surefire cross-test foreign key leakage, district seeding idempotence, and test hospital pollution. Run `38726310478` passed all jobs (Backend 71 tests, Frontend Next.js build, Trivy offline security scan).
+

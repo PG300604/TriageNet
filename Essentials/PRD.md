@@ -113,6 +113,20 @@ Without automated state-wide coordination:
 - 8h/12h clinical shift sessions with 4-digit PIN quick-lock.
 - 3-tier approval hierarchy: State Command (`SUPER_ADMIN`) $\to$ Intermediate Leadership (`DISTRICT_CMO`, `HOSPITAL_ADMIN`) $\to$ Ground Operational Staff.
 
+### Module F13 — Phase 10: Pure Motion Graphics & Product Launch Showcase (Silent Keynote Style)
+- **Concept & Format**: Zero-voiceover, high-energy product launch video (60–90 seconds) following the modern Silicon Valley "Silent Tech Reel" style (Linear / Raycast / Supabase aesthetic).
+- **Core Narrative Flow**:
+  1. *Hook & 3D Perspective Reveal (0–8s)*: Floating 3D dark laptop mockup displaying the amber `#100904` TriageNet command HUD with kinetic typography.
+  2. *Intake & Priority Queue (8–22s)*: High-fps OBS screen capture of emergency patient intake, vital sliders moving, and dynamic priority min-heap recalculation.
+  3. *Algorithm Explainer (22–42s)*: Programmatic vector animation of Jharkhand's 24-district network graph with Dijkstra shortest-path calculations and Hungarian bipartite bed allocation.
+  4. *108 Tactical Dispatch & Referral (42–52s)*: In-flight ambulance telemetry, 1-click bed pre-booking, and Clinician Profile multi-role switching.
+  5. *Architecture & Production Metrics (52–60s)*: Kinetic counter animations (111+ Hospitals, 24 Districts, 71/71 Tests Green, Spring Boot 3.3.13 + Next.js 16.4.1) leading to open-source GitHub callout.
+- **Production Toolchain (100% Free & Zero Watermark)**:
+  - **Screen Recording**: OBS Studio (1080p / 60 FPS lossless) + ShareX.
+  - **Algorithm Motion Graphics**: Motion Canvas (TypeScript + browser interactive scrubber) / Remotion (React + TS for animated UI counters and telemetry cards).
+  - **3D Device Framing**: Web-based Animockup / Figma Perspective Mockups + DaVinci Resolve 3D DVE camera tilts.
+  - **Master Assembly & Sound Design**: DaVinci Resolve Free (up to 4K 60fps, Text+ titles with motion blur, no watermarks) paired with electronic synth soundtrack and UI micro-SFX (clicks, swooshes, chimes).
+
 ---
 
 ## 5. Success Metrics

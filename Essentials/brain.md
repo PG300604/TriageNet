@@ -54,6 +54,15 @@ This file serves as the standing, persistent context for the AI coding agent (**
 - Visual design language: `Walnut Shadow` palette, `#491205` brand accent, official TriageNet logo and favicons, crisp cards, zero generic emojis.
 - Full Enterprise SEO architecture: Schema.org JSON-LD structured data (`GovernmentOrganization`, `WebApplication`, `GovernmentService`, `SoftwareApplication`), multi-lingual emergency contact schemas (`Hindi, English, Santhali, Ho, Mundari`), OpenGraph/Twitter Cards, Next.js HTTP security headers (`nosniff`, `SAMEORIGIN`, `strict-origin-when-cross-origin`), CartoCDN tile prefetching, and PWA capabilities.
 
+### F. Phase 10 — Product Launch Showcase & Motion Graphic Media Architecture (Final Phase)
+- **Design Philosophy**: Zero-voiceover, high-velocity "Silent Tech Keynote" style driven by electronic synth soundtrack, UI sound design, kinetic typography, and programmatic motion graphics.
+- **Approved 100% Free / Zero-Watermark Toolchain**:
+  - **Screen Recording**: OBS Studio (1080p 60fps lossless) + ShareX.
+  - **Algorithm Motion Graphics**: Motion Canvas (TypeScript vector animation for 24-district Dijkstra graph & Hungarian bed allocation).
+  - **Telemetry Overlays**: Remotion (React/TypeScript component animation for metric counters and live vitals).
+  - **Master Assembly**: DaVinci Resolve Free (4K 60fps timeline, Text+ with motion blur, no watermarks, audio mixing).
+- **Explicit Non-Adoption**: Commercial watermark tools (e.g. Rotato free tier) are excluded to preserve production polish.
+
 ---
 
 ## 4. Non-Negotiable Core Engineering Principles

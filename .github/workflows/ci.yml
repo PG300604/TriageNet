@@ -30,6 +30,8 @@ jobs:
 
       - name: Run Backend Test Suite (71 Tests)
         working-directory: backend
+        env:
+          MAVEN_OPTS: "-Xmx1024m -XX:+UseG1GC"
         run: ./mvnw clean test -B
 
   frontend-build:
@@ -70,4 +72,4 @@ jobs:
 
       - name: Run Secret and Misconfiguration Scan
         run: |
-          trivy fs --scanners secret,misconfig --severity HIGH,CRITICAL --exit-code 0 .
+          trivy fs --scanners secret,misconfig --offline-scan --severity HIGH,CRITICAL --exit-code 0 .

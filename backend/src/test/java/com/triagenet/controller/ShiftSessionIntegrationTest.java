@@ -58,6 +58,13 @@ class ShiftSessionIntegrationTest {
         staffUserRepository.deleteAll();
     }
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        shiftSessionRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
+        staffUserRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("Comprehensive E2E: 2FA Setup -> Challenge Login -> 8h Shift -> Quick Lock/PIN Unlock -> Mnemonic Recovery")
     void testFull2faAndClinicalShiftLifecycle() throws Exception {

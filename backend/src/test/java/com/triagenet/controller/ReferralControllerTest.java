@@ -67,17 +67,19 @@ public class ReferralControllerTest {
     private com.triagenet.repository.RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() throws Exception {
-        // Clean up from previous test method
+        // Clean up from previous test method in proper foreign key order
+        shiftSessionRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         transferRequestRepository.deleteAll();
         patientRepository.deleteAll();
-        hospitalRepository.deleteAll();
         staffUserRepository.deleteAll();
-        roleRepository.deleteAll();
 
         // B5 fix: Seed a real source hospital first, then assign the patient to it
         com.triagenet.entity.Hospital fromHospital = hospitalRepository.save(
@@ -452,5 +454,20 @@ public class ReferralControllerTest {
     private void registerUserWithRole(String name, String email, String password,
                                       RoleName roleName) throws Exception {
         registerUserWithRole(name, email, password, roleName, null);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        transferRequestRepository.deleteAll();
+        patientRepository.deleteAll();
+        shiftSessionRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
+        staffUserRepository.deleteAll();
+        if (fromHospitalId != null) {
+            hospitalRepository.deleteById(fromHospitalId);
+        }
+        if (toHospitalId != null) {
+            hospitalRepository.deleteById(toHospitalId);
+        }
     }
 }

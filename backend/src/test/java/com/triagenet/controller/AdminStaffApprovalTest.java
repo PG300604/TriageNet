@@ -50,6 +50,9 @@ class AdminStaffApprovalTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -57,6 +60,7 @@ class AdminStaffApprovalTest {
 
     @BeforeEach
     void setUp() {
+        shiftSessionRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         staffUserRepository.deleteAll();
 

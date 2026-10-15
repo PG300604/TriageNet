@@ -308,3 +308,22 @@ Created `.github/workflows/ci.yml` to establish continuous integration for Triag
   - `security-scan`: Trivy `fs` scan (`vuln,secret,misconfig`) on entire repo
   - Concurrency group `github.workflow-${github.ref}` with `cancel-in-progress: true`
 - Added entry to `.agents/sync/DECISIONS.md` for CI/CD architecture.
+
+### [LOG-013] — 2026-10-15: Test Isolation Hardening, Shift Session FK Cleanup & District Seeding Idempotence
+
+- **Timestamp**: `2026-10-15T16:28:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity (Linux DevOps Session)
+- **Scope / Category**: CI/CD Debugging, Integration Test Teardown, Database Referential Integrity
+- **Status**: Completed & Verified (71/71 Tests Passing)
+
+#### Context & Issues Addressed
+1. **GitHub Actions Test Order Sensitivity**: In the CI environment (Ubuntu), Surefire ran `ShiftSessionIntegrationTest` prior to `ReferralControllerTest`. Because `ShiftSessionIntegrationTest` left active sessions in H2, `ReferralControllerTest.setUp()` failed with `Referential integrity constraint violation: FK9S7SNQ8JTNAFGJ5Q7WY3RQR1Q: PUBLIC.SHIFT_SESSIONS FOREIGN KEY(USER_ID) REFERENCES PUBLIC.STAFF_USERS(ID)` when deleting `staff_users`.
+2. **Cascading State Failure in Routing Tests**: In `ReferralControllerTest`, calling `hospitalRepository.deleteAll()` cleared hospitals while leaving `districts` intact. When `RoutingControllerTest` subsequently invoked `HospitalSeedService.seedJharkhandData()`, attempting to insert existing districts triggered a unique constraint violation on `districts(name)`, marking the transaction rollback-only (`UnexpectedRollback`).
+
+#### Remediation Actions Executed
+1. **Foreign Key Teardown Order**: Injected `ShiftSessionRepository` across `ReferralControllerTest`, `AdminStaffApprovalTest`, and `Phase9SecurityHardeningIntegrationTest`, ensuring child `shift_sessions` and `refresh_tokens` are deleted before `staff_users`.
+2. **Test Isolation & Teardown**: Added `@AfterEach` in `ShiftSessionIntegrationTest` and `ReferralControllerTest` to clean up created entities after test completion. Removed destructive `hospitalRepository.deleteAll()` and `roleRepository.deleteAll()` from `ReferralControllerTest.setUp()`, replacing them with targeted cleanup of only test-created hospital IDs.
+3. **Idempotent District Seeding**: Updated `HospitalSeedService.java` to guard district creation with `districtRepository.findByName(distName).isEmpty()`, preventing unique key constraint violations under partial database states.
+4. **Verification**: Executed `./mvnw test` verifying all 71 backend integration and unit tests pass cleanly with 100% BUILD SUCCESS.
+

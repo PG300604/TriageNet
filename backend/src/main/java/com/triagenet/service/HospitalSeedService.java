@@ -56,17 +56,19 @@ public class HospitalSeedService {
                     String distName = entry.getKey();
                     JsonNode dinfo = entry.getValue();
 
-                    District district = District.builder()
-                            .name(distName)
-                            .stateCode("JH")
-                            .lat(dinfo.get("lat").asDouble())
-                            .lng(dinfo.get("lng").asDouble())
-                            .cmoName(dinfo.has("cmo") ? dinfo.get("cmo").asText() : "District CMO")
-                            .cmoPhone(dinfo.has("phone") ? dinfo.get("phone").asText() : "+91-651-0000000")
-                            .totalHospitals(0)
-                            .build();
+                    if (districtRepository.findByName(distName).isEmpty()) {
+                        District district = District.builder()
+                                .name(distName)
+                                .stateCode("JH")
+                                .lat(dinfo.get("lat").asDouble())
+                                .lng(dinfo.get("lng").asDouble())
+                                .cmoName(dinfo.has("cmo") ? dinfo.get("cmo").asText() : "District CMO")
+                                .cmoPhone(dinfo.has("phone") ? dinfo.get("phone").asText() : "+91-651-0000000")
+                                .totalHospitals(0)
+                                .build();
 
-                    districtRepository.save(district);
+                        districtRepository.save(district);
+                    }
                 }
             }
 

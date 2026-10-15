@@ -51,6 +51,9 @@ public class Phase9SecurityHardeningIntegrationTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
+    private com.triagenet.repository.ShiftSessionRepository shiftSessionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private static final String TEST_EMAIL = "p9test@triagenet.org";
@@ -58,6 +61,7 @@ public class Phase9SecurityHardeningIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        shiftSessionRepository.deleteAll();
         refreshTokenRepository.deleteAll();
         staffUserRepository.deleteAll();
 

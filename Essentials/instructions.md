@@ -52,14 +52,26 @@ These are the operational working rules for the AI coding agent (**Google Antigr
 ## 4. Testing & Verification Workflows
 
 - **Backend Build & Verification**:
-  ```powershell
-  cd backend
-  ./mvnw clean test
+  ```bash
+  # Linux
+  cd backend && ./mvnw clean test
+
+  # Windows
+  cd backend; .\mvnw.cmd clean test
   ```
 - **Frontend Build & Verification**:
-  ```powershell
-  cd frontend
-  npm run build
+  ```bash
+  cd frontend && npm run build
+  ```
+- **Full-Stack Docker Compose Verification**:
+  ```bash
+  docker compose up -d --build
+  docker compose ps
+  curl -s http://localhost/healthz
+  ```
+- **Security & Secret Verification (Trivy)**:
+  ```bash
+  trivy fs --scanners secret,misconfig --offline-scan .
   ```
 - **Knowledge Graph Synchronization**:
   After modifying source code or documentation files in a session, always update the graphify index:

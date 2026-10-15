@@ -65,7 +65,8 @@ This file serves as the standing, persistent context for the AI coding agent (**
    - `DijkstraRouter.java` — Shortest path spatial graph routing over Jharkhand road network graph.
 2. **Explainability**: Every score, queue re-ranking, resource assignment, and spatial routing decision must return a clear, human-readable breakdown of contributing factors.
 3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints with method-level `@PreAuthorize`.
-4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.2 backend and Next.js 16.2.6 frontend deployment.
+4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.13 backend and Next.js 16.4.1 frontend deployment with Redis 7-alpine and Nginx reverse proxy.
+5. **Continuous Integration**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (71/71), frontend Turbopack build, and Trivy offline security scanning.
 
 ---
 
@@ -77,8 +78,12 @@ TriageNet/
 ├── .agents/                  # Internal agent rules, workflows, and cross-platform sync
 │   ├── rules/                # devops-log-synchronization, phase-doc-synchronization, graphify
 │   ├── workflows/            # graphify workflow
-│   └── sync/                 # DEVOPS_LOG.md, DECISIONS.md, HANDOFF.md, WINDOWS_STATUS.md, DEPENDENCY_CONTRACTS.md
-├── backend/                  # Java 21 + Spring Boot 3.3.2 backend (JJWT 0.12.5, non-root Docker UID 1001, 71/71 tests)
+│   └── sync/                 # DEVOPS_LOG.md, DECISIONS.md, HANDOFF.md, LINUX_STATUS.md, WINDOWS_STATUS.md
+├── .github/                  # GitHub Actions CI/CD pipeline (ci.yml) and security trackers
+│   └── workflows/ci.yml      # Parallel Backend test, Frontend build, and Trivy security scans
+├── nginx/                    # Reverse proxy configuration
+│   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz
+├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 71/71 tests)
 │   └── src/main/java/com/triagenet/
 │       ├── config/           # SecurityConfig (CORS, CSP, HSTS, frameOptions), JwtAuthenticationFilter, CustomUserDetails
 │       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard, Admin
@@ -87,7 +92,7 @@ TriageNet/
 │       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, StaffUser, ShiftSession, RefreshToken
 │       ├── repository/       # Spring Data JPA Repositories
 │       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
-├── frontend/                 # React 18 + Next.js 16.3.4 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
+├── frontend/                 # React 19 + Next.js 16.4.1 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
 │   ├── app/                  # Route handlers, login onboarding wizard, recovery portal, sitemap, robots, manifest
 │   ├── components/triagenet/ # Capacity, Queue, Regional Network, Doctors Roster, Supplies Governance, Modals (Shortage, Pill Approval, Overviews)
 │   └── lib/                  # api-client, auth-context, jharkhand-data, predictive-supply-engine, triage-data

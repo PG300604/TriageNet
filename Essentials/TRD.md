@@ -43,17 +43,20 @@
 
 | Technology / Library | Purpose in TriageNet | Version / Spec |
 |---|---|---|
-| **Java 21 & Spring Boot** | Core REST backend & algorithmic execution services | Spring Boot 3.3.2 |
+| **Java 17/21 & Spring Boot** | Core REST backend & algorithmic execution services | Spring Boot 3.3.13 |
 | **Spring Security + JJWT**| Role-Based Access Control, CSP, Cookie Auth | JJWT 0.12.5 (256-bit CSPRNG entropy) |
 | **Spring Data JPA & Hibernate**| Object-Relational Mapping & PostgreSQL persistence | JPA 3.x / Hibernate 6.x |
 | **PostgreSQL 16** | Relational data storage for state infrastructure & triage entities | PostgreSQL 16-alpine |
-| **React 18 & Next.js 16** | Frontend application framework (App Router + Turbopack) | Next.js 16.3.4 |
-| **Tailwind CSS & Lucide** | Styling system & icon architecture (`Walnut Shadow`, `#491205` palette) | Tailwind CSS 3.4 + Plus Jakarta Sans |
+| **Redis 7** | In-memory telemetry cache & golden-hour ambulance GPS buffer | Redis 7-alpine |
+| **Nginx** | Unified edge reverse proxy, SSL/TLS termination, static caching | Nginx alpine |
+| **React 19 & Next.js 16** | Frontend application framework (App Router + Turbopack) | Next.js 16.4.1 |
+| **Tailwind CSS & Lucide** | Styling system & icon architecture (`Walnut Shadow`, `#491205` palette) | Tailwind CSS 4.x + Plus Jakarta Sans |
 | **Leaflet & React-Leaflet** | Interactive spatial map visualization with real GPS coordinates | Leaflet 1.9 |
 | **OpenRouteService (ORS)** | Real road network travel distance & time matrix calculation | Self-hosted / Geofabrik extract |
 | **Python 3.11 & Scikit-Learn**| Offline ML training & 4-dataset triage benchmarking | Python 3.11 |
 | **Flutter & Dart (Phase 3)**| Dedicated mobile apps (108 Ambulance, Bedside, Command) | Flutter 3.24+ / Dart 3.5+ |
-| **Docker & Docker Compose** | Hardened non-root containerization (`UID 1001`) | Compose v3.8+ / Multi-stage |
+| **Docker & Docker Compose** | Hardened non-root containerization (`UID 1001`), fail-fast env vars | Compose v2.x / Multi-stage |
+| **Aqua Security Trivy & CI** | Automated container, secret, and misconfig auditing in GitHub Actions | Trivy 0.76.0 (0 Findings) |
 
 ---
 

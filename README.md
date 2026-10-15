@@ -6,10 +6,13 @@
 
 ### AI-powered state-wide hospital emergency triage & spatial resource allocation platform for Jharkhand government healthcare
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.3.4-black?logo=next.js)](https://nextjs.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.2-6DB33F?logo=spring-boot)](https://spring.io/projects/spring-boot)
-[![Python](https://img.shields.io/badge/Python-ML_Pipeline-3776AB?logo=python)](https://python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://postgresql.org/)
+[![CI/CD Pipeline](https://github.com/PG300604/TriageNet/actions/workflows/ci.yml/badge.svg)](https://github.com/PG300604/TriageNet/actions/workflows/ci.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4.1-black?logo=next.js)](https://nextjs.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.13-6DB33F?logo=spring-boot)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16--alpine-336791?logo=postgresql)](https://postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7--alpine-DC382D?logo=redis)](https://redis.io/)
+[![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx)](https://nginx.org/)
+[![Security Scan](https://img.shields.io/badge/Trivy-0_Vulnerabilities-00ADD8?logo=aquasec)](https://trivy.dev/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-Spatial_Maps-199900?logo=leaflet)](https://leafletjs.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -698,29 +701,80 @@ graph TD
 
 ### Prerequisites
 
-- **Node.js** ≥ 20.x
-- **Java** 17+
-- **Python** 3.10+ (for ML training only)
-- **Docker** & **Docker Compose** (optional, for full stack)
+- **Docker & Docker Compose** (Recommended for full-stack deployment)
+- **Node.js** ≥ 20.x LTS & **npm** 10.x
+- **Java** 17+ (Eclipse Temurin JDK 17 recommended)
+- **Python** 3.10+ (optional, for ML training pipeline only)
 
-### Quick Start
+---
+
+### Method A: Full-Stack Docker Compose (Recommended)
+
+Run the entire hardened production topology locally (PostgreSQL 16, Redis 7, Spring Boot 3.3.13, Next.js 16.4.1, and Nginx reverse proxy) with a single command:
 
 ```bash
-# Clone the repository
+# 1. Clone repository
 git clone https://github.com/PG300604/TriageNet.git
 cd TriageNet
 
-# Start Backend Server (Terminal 1)
-cd backend
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+# 2. Configure environment variables from template
+cp .env.example .env
 
-# Start Frontend Dev Server (Terminal 2)
+# 3. Build & start all 5 containers
+docker compose up -d --build
+
+# 4. Verify container health status
+docker compose ps
+```
+
+All 5 services run on the isolated bridge network `triagenet-network`:
+- **Nginx Reverse Proxy & Entrypoint**: [http://localhost](http://localhost) (Port 80)
+- **Liveness Healthcheck**: [http://localhost/healthz](http://localhost/healthz)
+- **Next.js Web Frontend**: [http://localhost:3000](http://localhost:3000) (Proxied via `/`)
+- **Spring Boot REST API**: [http://localhost:8080/api](http://localhost:8080/api) (Proxied via `/api/`)
+- **PostgreSQL 16 Database**: `localhost:5432`
+- **Redis 7 Telemetry Cache**: `localhost:6379`
+
+---
+
+### Method B: Cross-Platform Local Development
+
+#### 1. Start Backend (Terminal 1)
+```bash
+cd backend
+
+# Linux / macOS
+./mvnw clean spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Windows
+.\mvnw.cmd clean spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+#### 2. Start Frontend (Terminal 2)
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000/login](http://localhost:3000/login) for the authentication portal and [http://localhost:3000/dashboard](http://localhost:3000/dashboard) for the command console.
+Open [http://localhost:3000/login](http://localhost:3000/login) for authentication and [http://localhost:3000/dashboard](http://localhost:3000/dashboard) for the command console.
+
+---
+
+### Automated Testing & CI/CD Pipeline
+
+TriageNet includes automated continuous integration running on GitHub Actions (`.github/workflows/ci.yml`):
+
+```bash
+# Run backend test suite (71 unit & integration tests)
+cd backend && ./mvnw clean test
+
+# Run frontend build & production static export (12 static pages)
+cd frontend && npm run build
+
+# Run Aqua Security Trivy vulnerability and secret audit
+trivy fs --scanners secret,misconfig --offline-scan .
+```
 
 ---
 

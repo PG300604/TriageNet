@@ -1,30 +1,28 @@
 # Windows Workstation Status Sheet
 
-- **Last Updated**: `2026-10-14T22:06:00+05:30`
-- **Host Environment**: Windows 11 / PowerShell / JDK 21 / Node.js 20
+- **Last Updated**: `2026-10-16T00:26:00+05:30`
+- **Host Environment**: Windows 11 / PowerShell / JDK 17 & 21 / Node.js 20
 - **Workspace Path**: `P:\TriageNet`
 - **Current Branch**: `main`
-- **Active Backend Test Suite**: 71/71 tests passing (100% BUILD SUCCESS)
-- **Active Frontend Pages**: 12/12 static routes generated cleanly via Next.js Turbopack
-- **Background Servers**: Stopped cleanly for session close
+- **Active Backend Test Suite**: 71/71 tests passing (100% BUILD SUCCESS on Windows with Spring Boot 3.3.13)
+- **Active Frontend Pages**: 12/12 static routes generated cleanly via Next.js Turbopack (Next.js 16.4.1)
+- **GitHub Community Standards**: 100% Complete (`.github/` directory containing all community health profile standards)
+- **Background Servers**: Clean state, ready for local execution or feature walkthrough
 
 ## Current Focus & Objectives
-1. Multi-device sync architecture establishment in `.agents/sync/` (Completed).
-2. Updating core `Essentials/` documents to reflect current system state (Completed).
-3. Phase 9.4 Doctor & Staff Profile Customization system with `<ClinicianProfileModal />` (Completed).
-4. **Resolved UI Clutter & Modal Glitches**:
-   - Fixed `ClinicianProfileModal` rendering containment bug using `createPortal(..., document.body)` so it escapes the `<header>` `backdrop-filter` bounding box and opens full viewport.
-   - Added prominent "Sign Out / Switch Clinician" button to easily return to `/login`.
-   - Replaced 111 raw button pills in `ClinicalView` with a categorized command bar: 24-District filter dropdown, Tier filter chips, search input, popover facility selector, and quick chips.
-   - Refactored `ReportsView` Regional Acuity Distribution and Facility Matrix with district/tier/search filters and clean pagination.
-   - Embraced the user's preferred dark charcoal/walnut & amber theme (`#181512`, `#12100e`, `#ea580c`).
-5. **Resolved All Hydration & Console Warnings**:
-   - Fixed guest `/api/auth/me` 401 console error on landing page via active session check in `auth-context.tsx`.
-   - Added `sizes="100vw"` on all `ember-waves.png` Next.js Image components.
-6. **Refined Landing Page Experience**:
-   - Replaced foreign mock names with authentic Jharkhand Indian names (`Rahul Mahato`, `Anita Soren`, `Sunil Birhor`, `Deepak Munda`).
-   - Fixed heap telemetry column alignment (`WAIT TIME`, `MATCHED BED`, `PRIORITY`).
-   - Replaced simulated regional hospitals with actual Jharkhand healthcare facilities (`RIMS Ranchi`, `Sadar Hospital Ranchi`, `MGM Medical College Jamshedpur`, `SNMMCH Dhanbad`).
-   - Removed academic pills, raw big-O notations, and math formulas in favor of clear clinical explanations.
-   - Removed personal credit footnote in hero and footer, retaining GitHub code repository and Live Console links.
-7. Next Milestone: Page-by-page feature breakdown & architectural walkthrough with user.
+1. **Multi-device Sync Parity Achieved**:
+   - Pulled 28 files (`5752b4d`) from Linux DevOps workstation.
+   - Verified Spring Boot 3.3.13 upgrade, portable `./mvnw` / `mvnw.cmd` wrappers, and `.env.example` fail-fast configuration.
+   - Verified that all 71 backend integration tests pass locally on Windows with zero failures or errors.
+   - Verified that Next.js 16.4.1 production build compiles all 12 routes in 6.0 seconds with zero errors.
+2. **GitHub Community Standards (Organized in `.github/`)**:
+   - Maintained clean repository root per user directive by placing all health documentation inside `.github/`:
+     - `.github/CODE_OF_CONDUCT.md`: Contributor Covenant v2.1 for TriageNet Jharkhand emergency services.
+     - `.github/CONTRIBUTING.md`: Detailed developer guide covering toolchains, commands, Docker Compose, testing protocols, and PR flow.
+     - `.github/PULL_REQUEST_TEMPLATE.md`: Comprehensive PR checklist with test and security gates.
+     - `.github/ACCESSIBILITY.md`: WCAG 2.1 AA accessibility commitment, dark theme contrast ratios, ARIA live regions, and keyboard navigation.
+     - `.github/LICENSE`: Standard MIT license.
+   - Updated `README.md` badge and footer links to point directly to `.github/LICENSE`.
+3. **Next Milestone**:
+   - Page-by-page feature breakdown & architectural walkthrough with user.
+   - Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol).

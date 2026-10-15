@@ -348,3 +348,27 @@ Created `.github/workflows/ci.yml` to establish continuous integration for Triag
    - `Backend Test Suite (Spring Boot, 71 tests)`: **SUCCESS** (57s)
    - Workflow Run: `38726310478` concluded with **SUCCESS (100% Green)**.
 
+### [LOG-015] — 2026-10-16: GitHub Community Standards Implementation in `.github/` & Full Parity Verification
+
+- **Timestamp**: `2026-10-16T00:25:00+05:30`
+- **Environment**: Windows 11 (`P:\TriageNet`) & Cross-Workstation Sync
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Open-Source Health, GitHub Community Standards, Cross-Platform Verification
+- **Status**: Completed & 100% Verified
+
+#### Context & Objectives
+Following the Linux DevOps hardening milestone (`[LOG-014]`), the repository was synchronized on Windows (`git pull origin main`, 28 files updated). The user requested completing all missing items on GitHub's Community Standards checklist (Code of Conduct, Contributing Guidelines, License, Pull Request Template, Accessibility Policy) with a strict organizational requirement: "add in a folder all these to make repo look clean" to ensure the repository root remains clean.
+
+#### Actions Executed
+1. **Local Test & Build Verification on Windows**:
+   - Backend Test Suite: Executed `.\mvnw.cmd test` under Spring Boot 3.3.13. All 71 tests passed cleanly (`BUILD SUCCESS`, 0 failures, 0 errors) verifying Windows parity with Linux CI runner `38726310478`.
+   - Frontend Production Build: Executed `npm run build` under Next.js 16.4.1. All 12 static routes compiled in 6.0s (Turbopack) with 0 errors.
+2. **Community Standards Suite Created in `.github/`**:
+   - `.github/CODE_OF_CONDUCT.md`: Contributor Covenant v2.1 adapted for TriageNet Jharkhand healthcare operations.
+   - `.github/CONTRIBUTING.md`: Comprehensive guidelines covering prerequisites (Java 17, Node 20), cross-platform commands (`./mvnw` vs `mvnw.cmd`), Docker Compose orchestration, testing gates, and documentation sync rules.
+   - `.github/PULL_REQUEST_TEMPLATE.md`: Structured PR template with verification checklists, change categories, and UI screenshot sections.
+   - `.github/ACCESSIBILITY.md`: WCAG 2.1 Level AA accessibility statement detailing high-contrast dark palette, keyboard traversability, ARIA live regions for emergency queues, and minimum 44px touch targets.
+   - `.github/LICENSE`: Standard MIT License (2026 Priyanshu Ghosh and TriageNet Contributors) placed in `.github/` to keep root uncluttered.
+3. **Documentation References Updated**:
+   - Updated `README.md` badge and footer links to point directly to `.github/LICENSE`.
+

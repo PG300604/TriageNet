@@ -14,7 +14,7 @@
 [![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx)](https://nginx.org/)
 [![Security Scan](https://img.shields.io/badge/Trivy-0_Vulnerabilities-00ADD8?logo=aquasec)](https://trivy.dev/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-Spatial_Maps-199900?logo=leaflet)](https://leafletjs.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](.github/LICENSE)
 
 </div>
 
@@ -1485,7 +1485,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 
 ## License
 
-This project is released under the [MIT License](LICENSE). 
+This project is released under the [MIT License](.github/LICENSE). 
 
 Built by **Priyanshu Ghosh**, CSBS Batch 2027, Final Year Project (PG300604).
 

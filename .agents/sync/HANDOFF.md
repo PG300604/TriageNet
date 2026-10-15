@@ -82,3 +82,23 @@
   4. **Local Multi-Container Stack (100% Healthy)**: `postgres:16-alpine`, `redis:7-alpine`, `triagenet-backend`, `triagenet-frontend`, and `nginx:alpine` running locally on port 80, 3000, 8080, 5432, and 6379.
   5. **CI/CD Fully Passing (100% Green)**: Resolved Surefire cross-test foreign key leakage, district seeding idempotence, and test hospital pollution. Run `38726310478` passed all jobs (Backend 71 tests, Frontend Next.js build, Trivy offline security scan).
 
+### [HANDOFF-004] — 2026-10-16: GitHub Community Standards Suite Completed & Windows Parity 100% Verified
+- **From**: Windows Agent (Google Antigravity)
+- **To**: Linux Agent / User
+- **Status**: `RESOLVED`
+- **Summary**:
+  1. **Full Windows Parity Verified**:
+     - `.\backend\mvnw.cmd test` passed all 71 tests cleanly (`BUILD SUCCESS`, 0 failures, 0 errors) on Windows under Spring Boot 3.3.13.
+     - `npm run build` completed in 6.0s (Turbopack) with 12/12 static routes generated cleanly.
+  2. **GitHub Community Standards (Organized in `.github/`)**:
+     - Completed all missing checklist items from GitHub's repository health profile inside `.github/` to keep root clean:
+       - `.github/CODE_OF_CONDUCT.md`
+       - `.github/CONTRIBUTING.md`
+       - `.github/PULL_REQUEST_TEMPLATE.md`
+       - `.github/ACCESSIBILITY.md`
+       - `.github/LICENSE` (MIT)
+  3. **Documentation Updated**:
+     - Linked `README.md` badge and footer to `.github/LICENSE`.
+     - Ready for page-by-page feature breakdown and architectural walkthrough with user.
+
+

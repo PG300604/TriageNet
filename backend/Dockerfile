@@ -1,12 +1,14 @@
 # Multi-stage Dockerfile for TriageNet Spring Boot Backend
 
 # Stage 1: Build
-FROM eclipse-temurin:17-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /app
+# Pre-fetch dependencies for Docker layer caching
 COPY pom.xml .
+RUN mvn dependency:go-offline -B || true
 COPY src ./src
 # Build application jar without running tests during image creation
-RUN ./mvnw package -DskipTests || mvn package -DskipTests
+RUN mvn clean package -DskipTests -B
 
 # Stage 2: Runtime (Hardened Non-Root Container)
 FROM eclipse-temurin:17-jre-alpine

@@ -230,3 +230,19 @@ Created `.env.example` at repository root as a version-controlled template for e
 - Created `.env.example` with all required sections and development defaults.
 - Added top-level warning: "DO NOT COMMIT REAL PRODUCTION SECRETS TO VERSION CONTROL."
 - Verified file is tracked in workspace (not `.env` which remains gitignored).
+
+### [LOG-009] — 2026-10-15: Temurin JDK 17 Setup, Full Verification Suites & Docker Compose Architecture Upgrade
+
+- **Timestamp**: `2026-10-15T14:35:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity (Linux DevOps Session)
+- **Scope / Category**: Java Toolchain Fix, Test Verification, Container Hardening, Compose Topology
+- **Status**: Completed & Verified
+
+#### Context & Issues Addressed
+1. **JDK Compiler Missing**: The Fedora host had OpenJDK JRE installed without `javac`. Provisioned Eclipse Temurin JDK 17 (`17.0.20.1`) in user-space (`~/.local/share/jdk-17`) and configured `JAVA_HOME` in `~/.bashrc`.
+2. **Backend Verification**: Executed `./mvnw clean test` verifying 71/71 test suite passing (100% BUILD SUCCESS) on Linux.
+3. **Frontend Verification**: Executed `npm run build` in `frontend/`, verifying 12/12 static pages build cleanly via Turbopack on Linux.
+4. **Backend Dockerfile Hardening**: Updated `backend/Dockerfile` to utilize `maven:3.9-eclipse-temurin-17-alpine` as builder stage with dependency layer pre-fetching (`dependency:go-offline`) and non-root execution (`UID 1001:1001`). Verified image creation (`docker build -t triagenet-backend:test ./backend` succeeded in 167s).
+5. **Security Scan**: Ran Aqua Security Trivy scan on `triagenet-backend:test` (0 Alpine OS vulnerabilities).
+6. **Docker Compose Topology Upgrade**: Updated `docker-compose.yml` to include `redis:7-alpine` (for telemetry and queue caching), `nginx:alpine` (reverse proxy), healthchecks across all database and cache services, and isolated bridge network `triagenet-network`.

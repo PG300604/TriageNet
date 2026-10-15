@@ -371,4 +371,7 @@ Following the Linux DevOps hardening milestone (`[LOG-014]`), the repository was
    - `.github/LICENSE`: Standard MIT License (2026 Priyanshu Ghosh and TriageNet Contributors) placed in `.github/` to keep root uncluttered.
 3. **Documentation References Updated**:
    - Updated `README.md` badge and footer links to point directly to `.github/LICENSE`.
+4. **GitHub Social Preview Asset Generated**:
+   - Built automated vector rendering pipeline (`scripts/generate_social_preview.js`) using `sharp`.
+   - Rendered pixel-perfect 1280x640 social preview card at `.github/assets/social-preview.png` and `.github/social-preview.png` featuring authentic dark theme styling, Jharkhand state telemetry, algorithm feature pillars, and circular-masked logo HUD.
 

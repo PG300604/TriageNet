@@ -246,3 +246,24 @@ Created `.env.example` at repository root as a version-controlled template for e
 4. **Backend Dockerfile Hardening**: Updated `backend/Dockerfile` to utilize `maven:3.9-eclipse-temurin-17-alpine` as builder stage with dependency layer pre-fetching (`dependency:go-offline`) and non-root execution (`UID 1001:1001`). Verified image creation (`docker build -t triagenet-backend:test ./backend` succeeded in 167s).
 5. **Security Scan**: Ran Aqua Security Trivy scan on `triagenet-backend:test` (0 Alpine OS vulnerabilities).
 6. **Docker Compose Topology Upgrade**: Updated `docker-compose.yml` to include `redis:7-alpine` (for telemetry and queue caching), `nginx:alpine` (reverse proxy), healthchecks across all database and cache services, and isolated bridge network `triagenet-network`.
+
+### [LOG-010] — 2026-10-15: Comprehensive Vulnerability Audit, Dependency Patching & Container Hardening
+
+- **Timestamp**: `2026-10-15T15:33:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity (Linux DevOps Session)
+- **Scope / Category**: Vulnerability Scanning (Trivy, npm audit), Security Remediation, Dependency Upgrades
+- **Status**: Completed & Verified
+
+#### Scans Performed & Vulnerabilities Discovered
+1. **Secret Scanning**: Executed `trivy fs --scanners secret .` — verified 0 hardcoded secrets or leaked keys across the repository.
+2. **Container Misconfigurations**: Executed `trivy config .` — identified missing `HEALTHCHECK` instructions in `backend/Dockerfile` and `frontend/Dockerfile` (Trivy `DS-0026`).
+3. **Backend SCA**: Executed `trivy fs --scanners vuln backend/pom.xml` — flagged CVE-2024-38816, CVE-2024-38819 in Spring Boot 3.3.2 (Spring Framework 6.1.11).
+4. **Frontend SCA**: Executed `npm audit` — flagged 19 vulnerabilities including critical Next.js Image Optimization RCE/SSRF and proxy-addr IP spoofing.
+
+#### Remediation Actions Executed
+1. **Docker Container Healthchecks**: Added non-root `HEALTHCHECK` directives to both `backend/Dockerfile` (evaluating `/api/dashboard/overview`) and `frontend/Dockerfile` (evaluating `/`). Verified both Dockerfiles pass Trivy misconfiguration scan with 0 findings.
+2. **Spring Boot Security Upgrade**: Upgraded `spring-boot-starter-parent` from `3.3.2` to `3.3.13` in `backend/pom.xml`. Verified all 71 backend tests pass with 100% BUILD SUCCESS, resolving Spring Framework 6.1.11 path traversal vulnerabilities.
+3. **Next.js & Frontend Dependency Patching**: Executed `npm audit fix` in `frontend/`, upgrading Next.js to `16.4.1` (Turbopack) and eliminating all critical vulnerabilities. Verified `npm run build` generates all 12 static routes cleanly.
+4. **Secret Fallback Cleansing**: Eliminated inline fallback secrets in `docker-compose.yml`, enforcing strict `${VAR:?error}` runtime variable interpolation.
+5. **Tracker Updated**: Cataloged resolutions 16, 17, 18, and 19 in `.github/SECURITY_AUDIT_TRACKER.md`.

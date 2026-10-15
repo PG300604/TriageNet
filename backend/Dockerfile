@@ -23,4 +23,8 @@ COPY --from=builder --chown=triagenet:triagenet /app/target/*.jar app.jar
 USER 1001:1001
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -q -O - http://127.0.0.1:8080/api/dashboard/overview || exit 1
+
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

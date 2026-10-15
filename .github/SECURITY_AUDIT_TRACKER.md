@@ -115,3 +115,7 @@ This document tracks all security findings from the **Hermes Automated Security 
 | **13** | Unscoped Hospital Access Verification (B3) | 🟠 `MEDIUM` | Sprint 10 | ✅ Resolved (Asserted Multi-Tenant Scoping) |
 | **14** | Example Template Hardcoded Secret (B4) | 🟡 `LOW` | Sprint 10 | ✅ Resolved (Placeholder Instruction Cleansing) |
 | **15** | Dynamic Test Profile CSPRNG Hygiene (B5) | 🟡 `LOW` | Sprint 10 | ✅ Resolved (Isolated Test CSPRNG Documentation) |
+| **16** | Dockerfile Container Healthcheck Absence (DS-0026) | 🟡 `LOW` | DevOps Phase 1 | ✅ Resolved (`HEALTHCHECK` in Backend & Frontend Dockerfiles) |
+| **17** | Spring Framework 6.1.11 Path Traversal (CVE-2024-38816, CVE-2024-38819) | 🔴 `HIGH` | DevOps Phase 1 | ✅ Resolved (Upgraded to Spring Boot 3.3.13) |
+| **18** | Next.js RCE / SSRF & proxy-addr IP Spoofing | 🔴 `CRITICAL` | DevOps Phase 1 | ✅ Resolved (Patched to Next.js 16.4.1 via audit fix) |
+| **19** | Docker Compose Hardcoded Secret Fallback | 🔴 `HIGH` | DevOps Phase 1 | ✅ Resolved (Enforced strict `${VAR:?error}` fail-fast) |

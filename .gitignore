@@ -48,7 +48,7 @@ pnpm-debug.log*
 
 # ──── Java / Spring Boot Backend ────
 backend/target/
-backend/.mvn/
+!backend/.mvn/wrapper/maven-wrapper.properties
 backend/*.jar
 backend/*.war
 backend/*.class

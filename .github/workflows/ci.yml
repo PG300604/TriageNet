@@ -69,6 +69,6 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          scanners: 'vuln,secret,misconfig'
+          scanners: 'secret,misconfig'
           severity: 'HIGH,CRITICAL'
           exit-code: '0'

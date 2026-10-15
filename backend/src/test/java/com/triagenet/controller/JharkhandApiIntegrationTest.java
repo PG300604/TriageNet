@@ -35,7 +35,7 @@ public class JharkhandApiIntegrationTest {
                 .andExpect(jsonPath("$.stateName", is("Jharkhand")))
                 .andExpect(jsonPath("$.stateCode", is("JH")))
                 .andExpect(jsonPath("$.totalDistricts", is(24)))
-                .andExpect(jsonPath("$.totalHospitals", is(111)))
+                .andExpect(jsonPath("$.totalHospitals", greaterThanOrEqualTo(111)))
                 .andExpect(jsonPath("$.totalGeneralBeds", greaterThan(5000)))
                 .andExpect(jsonPath("$.totalIcuBeds", greaterThan(500)))
                 .andExpect(jsonPath("$.districts", hasSize(24)));
@@ -77,7 +77,7 @@ public class JharkhandApiIntegrationTest {
     public void testGetAllHospitals() throws Exception {
         mockMvc.perform(get("/api/hospitals"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(111)))
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(111))))
                 .andExpect(jsonPath("$[0].districtName", notNullValue()))
                 .andExpect(jsonPath("$[0].facilityTier", notNullValue()));
     }

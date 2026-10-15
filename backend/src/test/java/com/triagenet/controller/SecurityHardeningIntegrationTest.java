@@ -555,6 +555,12 @@ public class SecurityHardeningIntegrationTest {
         com.triagenet.entity.Hospital updatedHospital = hospitalRepository.findById(hospital.getId()).orElseThrow();
         org.junit.jupiter.api.Assertions.assertEquals(10, updatedHospital.getUsedBeds(),
                 "Used beds must remain accurately accounted");
+
+        // Clean up test hospital and patients to prevent cross-test hospital count pollution
+        patientRepository.deleteById(assignedPatient.getId());
+        patientRepository.deleteById(waitingPatient1.getId());
+        patientRepository.deleteById(waitingPatient2.getId());
+        hospitalRepository.deleteById(hospital.getId());
     }
 
     @Test

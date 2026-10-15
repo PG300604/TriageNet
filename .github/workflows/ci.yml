@@ -64,11 +64,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          scanners: 'secret,misconfig'
-          severity: 'HIGH,CRITICAL'
-          exit-code: '0'
+      - name: Install Trivy Scanner
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Run Secret and Misconfiguration Scan
+        run: |
+          trivy fs --scanners secret,misconfig --severity HIGH,CRITICAL --exit-code 0 .

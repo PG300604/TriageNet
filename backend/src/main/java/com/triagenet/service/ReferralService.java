@@ -279,4 +279,30 @@ public class ReferralService {
         request.setStatus(mappedStatus);
         return transferRequestRepository.save(request);
     }
+
+    @Transactional
+    public int autoReleaseExpiredReferrals(int ttlMinutes) {
+        java.time.LocalDateTime cutoff = java.time.LocalDateTime.now().minusMinutes(ttlMinutes);
+        List<TransferRequest> active = transferRequestRepository.findByStatusIn(
+                List.of(TransferStatus.PROPOSED, TransferStatus.IN_TRANSIT));
+        int count = 0;
+        for (TransferRequest transfer : active) {
+            if (transfer.getRequestedAt() != null && transfer.getRequestedAt().isBefore(cutoff)) {
+                transfer.setStatus(TransferStatus.REJECTED);
+                transferRequestRepository.save(transfer);
+                patientRepository.findById(transfer.getPatientId()).ifPresent(patient -> {
+                    patient.setHospitalId(transfer.getFromHospitalId());
+                    patient.setStatus(PatientStatus.WAITING);
+                    patientRepository.save(patient);
+                });
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
+    public void scheduledTtlCheck() {
+        autoReleaseExpiredReferrals(45);
+    }
 }

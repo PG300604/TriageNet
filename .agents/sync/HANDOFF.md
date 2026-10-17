@@ -62,7 +62,7 @@
 - [x] **Windows**: Execute Phase 9.4 (Doctor & Clinician Profile Customization system with `<ClinicianProfileModal />`).
 - [x] **Windows**: Clean Landing Page & Dashboard (0 console errors, authentic Jharkhand names, unified color scheme).
 - [ ] **Windows**: Page-by-page feature breakdown & architectural walkthrough with user (Tomorrow).
-- [ ] **Windows**: Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol).
+- [x] **Both**: Execute Phase 9.7 (Inter-District Patient Referral & Cross-Boundary Transfer Protocol with 45m Bed Hold TTL Auto-Release).
 - [ ] **Windows / All (Final Milestone)**: **Phase 10** — High-Impact Pure Motion Graphics & Product Launch Showcase (OBS Studio + Motion Canvas algorithm visuals + Remotion UI telemetry + DaVinci Resolve Free 4K master timeline).
 - [x] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
 - [x] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification (100% Green!).

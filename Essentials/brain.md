@@ -98,7 +98,7 @@ This file serves as the standing, persistent context for the AI coding agent (**
 2. **Explainability**: Every score, queue re-ranking, resource assignment, and spatial routing decision must return a clear, human-readable breakdown of contributing factors.
 3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints with method-level `@PreAuthorize`.
 4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.13 backend and Next.js 16.4.1 frontend deployment with Redis 7-alpine and Nginx reverse proxy.
-5. **Continuous Integration**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (71/71), frontend Turbopack build, and Trivy offline security scanning.
+5. **Continuous Integration**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (72/72), frontend Turbopack build, and Trivy offline security scanning.
 
 ---
 
@@ -114,8 +114,8 @@ TriageNet/
 ├── .github/                  # GitHub Actions CI/CD pipeline (ci.yml) and security trackers
 │   └── workflows/ci.yml      # Parallel Backend test, Frontend build, and Trivy security scans
 ├── nginx/                    # Reverse proxy configuration
-│   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz
-├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 71/71 tests)
+│   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz, /v3/api-docs, /swagger-ui
+├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 72/72 tests)
 │   └── src/main/java/com/triagenet/
 │       ├── config/           # SecurityConfig (CORS, CSP, HSTS, frameOptions), JwtAuthenticationFilter, CustomUserDetails
 │       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard, Admin

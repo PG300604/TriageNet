@@ -343,6 +343,17 @@ public class ReferralControllerTest {
                 .andExpect(jsonPath("$.status", is("PENDING")));
     }
 
+    @Test
+    @DisplayName("POST /api/referrals/auto-release - Successfully triggers referral TTL check")
+    void testAutoReleaseExpiredReferrals() throws Exception {
+        mockMvc.perform(post("/api/referrals/auto-release")
+                        .header("Authorization", "Bearer " + ambulanceToken)
+                        .param("ttlMinutes", "45"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.releasedCount").isNumber())
+                .andExpect(jsonPath("$.ttlMinutes").value(45));
+    }
+
     private String login(String email, String password) throws Exception {
         LoginRequest loginReq = LoginRequest.builder()
                 .email(email)

@@ -1331,4 +1331,31 @@ To enable seamless contract parity across Flutter (`mobile/`), Android (`android
 4. **Mobile Contract Export**:
    - Exported formatted contract to `backend/openapi.json` for consumption by Flutter and Android companion applications.
 
+---
+
+### [LOG-010] — 2026-10-17: Phase 9.7 Referral Protocol & Cross-District Bed Hold TTL Auto-Release
+
+- **Timestamp**: `2026-10-17T13:16:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity & Hermes Agent (Parallel Execution)
+- **Scope / Category**: Core Backend Services, Scheduling, REST API, Test Verification
+- **Status**: Completed & 100% Tests Passing (72/72)
+
+#### Context & Objectives
+To prevent trauma bed lock-in and clinical resource starvation during inter-district ambulance transfers, implement Phase 9.7: automatic 45-minute TTL reservation auto-release. If an ambulance is delayed or does not arrive, stale reservations are released back to available hospital capacity, and the patient's triage status reverts to `WAITING` at the originating hospital.
+
+#### Actions Executed
+1. **Multi-Model Parallel Execution**:
+   - Dispatched backend service and test implementation directly to Hermes Agent (`/home/priyanshughosh/.hermes/hermes-agent/.hermes/bin/hermes`).
+   - Implemented `autoReleaseExpiredReferrals(int ttlMinutes)` and `@Scheduled(fixedRate = 60000)` in `ReferralService.java`.
+   - Exposed `POST /api/referrals/auto-release` in `ReferralController.java`.
+   - Added unit/integration test `testAutoReleaseExpiredReferrals()` in `ReferralControllerTest.java`.
+   - Implemented `ApiClient.autoReleaseExpiredReferrals()` in `frontend/lib/api-client.ts`.
+2. **Verification & Test Results**:
+   - Frontend TypeScript compiler check: `npx tsc --noEmit` passed with 0 errors.
+   - Backend full integration test suite: `./mvnw test -B` executed with JDK 17: **72/72 tests PASS**, `BUILD SUCCESS` (0 failures, 0 errors).
+3. **Cross-Platform Sync**:
+   - Synchronized all 5 `Essentials/` docs (`brain.md`, `PRD.md`, `TRD.md`, `ERD.md`, `instructions.md`), `DECISIONS.md`, and `WINDOWS_STATUS.md`.
+
+
 

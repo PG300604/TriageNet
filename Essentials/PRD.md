@@ -167,7 +167,10 @@ Without automated state-wide coordination:
 ### Module F20 — Multi-Corridor Bypass Routing, AI Specialist Traffic Diversion & SVG Topology Patient Flow
 - **Multi-Corridor Highway Selection**: Real-time toggle between Route 1 (Primary Highway) and Route 2 (Express Bypass), with live calculation of distance and delay deltas.
 - **Dynamic Specialist Traffic Diversion**: When severe gridlock (+10m delay) blocks the primary apex facility, the AI dynamically evaluates alternative hospitals with verified on-duty specialists, presenting an urgent diversion recommendation banner with a 1-click divert action.
-- **Hardware-Accelerated SVG Topology Patient Flow**: Embeds SVG `<animateMotion>` patient flow wave particles streaming along active transfer edges and Dijkstra shortest-path corridors in the network topology view.
+### Module F21 — Phase 9.7: Inter-District Patient Referral & Cross-Boundary Transfer Protocol
+- **Cross-District Bed Hold TTL Engine**: 45-minute automatic reservation TTL (`autoReleaseExpiredReferrals`) preventing resource starvation at receiving tertiary trauma facilities. If an ambulance is delayed or fails to arrive, the bed reservation is auto-released back to general availability, transitioning transfer request status to `REJECTED` and reverting the patient to `WAITING` status at the originating hospital.
+- **Automated Sweep & Manual Override**: 60-second `@Scheduled` background worker continually enforces TTL expiration across all active transfers (`PROPOSED`, `IN_TRANSIT`), paired with an authorized REST endpoint (`POST /api/referrals/auto-release`) for on-demand audit and triage reconciliation.
+- **Frontend ApiClient & Multi-Tenant Support**: Full integration in frontend `ApiClient.autoReleaseExpiredReferrals()` and role-based permissions (`AMBULANCE_DISPATCH`, `HOSPITAL_ADMIN`, `DISTRICT_CMO`, `STATE_HEALTH_DEPT`, `SUPER_ADMIN`).
 
 ---
 

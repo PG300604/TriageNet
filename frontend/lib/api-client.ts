@@ -417,6 +417,9 @@ export const ApiClient = {
   getReferralRecommendation: (): Promise<any> =>
     apiFetch('/referrals/recommendation'),
 
+  autoReleaseExpiredReferrals: (ttlMinutes: number = 45): Promise<{ releasedCount: number; ttlMinutes: number; timestamp: string }> =>
+    apiFetch(`/referrals/auto-release?ttlMinutes=${ttlMinutes}`, { method: 'POST' }),
+
   // Triage Queue
   getTriageQueue: (hospitalId: string): Promise<any[]> =>
     apiFetch(`/triage-queue/hospital/${hospitalId}`),

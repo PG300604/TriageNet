@@ -145,6 +145,10 @@
 | `POST` | `/api/referrals` | Create 108 ambulance transfer referral & pre-book bed |
 | `GET` | `/api/referrals/active` | Get active 108 ambulance transfers |
 | `PUT` | `/api/referrals/{id}/status` | Update referral status (`IN_TRANSIT`, `COMPLETED`) |
+| `POST` | `/api/referrals/auto-release` | Sweep and auto-release stale referrals exceeding TTL (default 45m) |
+| `GET` | `/api/referrals/recommendation` | AI Dijkstra + Hungarian overflow transfer recommendation |
+| `GET` | `/v3/api-docs` | OpenAPI 3.0 specification contract |
+| `GET` | `/swagger-ui/**` | Interactive Swagger UI API documentation console |
 | `GET` | `/api/dashboard/state-summary` | Aggregate state-wide command telemetry stats |
 
 ---

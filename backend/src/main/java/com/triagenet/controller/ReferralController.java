@@ -118,6 +118,17 @@ public class ReferralController {
         return ResponseEntity.ok(recommendation);
     }
 
+    @PostMapping("/auto-release")
+    @PreAuthorize("hasAnyRole('AMBULANCE_DISPATCH', 'HOSPITAL_ADMIN', 'STATE_HEALTH_DEPT', 'DISTRICT_CMO', 'SUPER_ADMIN')")
+    public ResponseEntity<java.util.Map<String, Object>> autoReleaseExpired(@RequestParam(defaultValue = "45") int ttlMinutes) {
+        int released = referralService.autoReleaseExpiredReferrals(ttlMinutes);
+        return ResponseEntity.ok(java.util.Map.of(
+                "releasedCount", released,
+                "ttlMinutes", ttlMinutes,
+                "timestamp", java.time.LocalDateTime.now().toString()
+        ));
+    }
+
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------

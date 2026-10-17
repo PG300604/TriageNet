@@ -34,6 +34,21 @@ export type DirectorEvent =
     }
   | { type: 'TOGGLE_GREEN_WAVE'; active: boolean }
   | {
+      type: 'TRAFFIC_SIGNAL_PREEMPTION_UPDATE'
+      ambulanceNumber: string
+      active: boolean
+      signalsPreempted: number
+      trafficDelayClearedMin: number
+      vmsAlert: string
+      upcomingSignals?: Array<{
+        signalId: string
+        name: string
+        distanceMeters: number
+        etaSec: number
+        phase: string
+      }>
+    }
+  | {
       type: 'UPDATE_PATIENT_VITALS'
       vitals: {
         spo2: number

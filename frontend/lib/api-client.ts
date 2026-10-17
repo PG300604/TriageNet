@@ -459,6 +459,33 @@ export const ApiClient = {
 
   lookupAbhaPatient: (abhaNumber: string): Promise<any> =>
     apiFetch(`/abdm/patient/${encodeURIComponent(abhaNumber)}`),
+
+  // Municipal ITMS & Highway Road Traffic Preemption
+  activateTrafficPreemption: (data: any): Promise<any> =>
+    apiFetch('/traffic/preemption/activate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  streamTrafficTelemetry: (data: any): Promise<any> =>
+    apiFetch('/traffic/preemption/telemetry', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getTrafficCorridorStatus: (ambulanceNumber: string): Promise<any> =>
+    apiFetch(`/traffic/preemption/corridor/${encodeURIComponent(ambulanceNumber)}`),
+
+  getAllTrafficCorridors: (): Promise<any[]> =>
+    apiFetch('/traffic/preemption/corridors'),
+
+  releaseTrafficPreemption: (ambulanceNumber: string): Promise<any> =>
+    apiFetch(`/traffic/preemption/${encodeURIComponent(ambulanceNumber)}/release`, {
+      method: 'POST',
+    }),
+
+  getItmsDiagnosticStatus: (): Promise<any> =>
+    apiFetch('/traffic/itms/status'),
 };
 
 // Referral & Transfer Interfaces

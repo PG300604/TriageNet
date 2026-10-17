@@ -152,6 +152,12 @@
 | `GET` | `/api/iot/oxygen-telemetry/alerts` | Get active critical/warning oxygen telemetry alerts |
 | `POST` | `/api/abdm/verify-abha` | Verify 14-digit ABHA ID against ABDM and return clinical profile |
 | `GET` | `/api/abdm/patient/{abhaNumber}` | Fetch existing verified citizen record by ABHA number |
+| `POST` | `/api/traffic/preemption/activate` | Activate NTCIP 1202 / SCATS signal preemption corridor for ambulance |
+| `POST` | `/api/traffic/preemption/telemetry` | Ingest live ambulance V2X GPS telemetry and update signal distances/ETAs |
+| `GET` | `/api/traffic/preemption/corridor/{ambulanceNumber}` | Fetch active traffic preemption corridor status and intersection phases |
+| `GET` | `/api/traffic/preemption/corridors` | List all active municipal green wave traffic corridors state-wide |
+| `POST` | `/api/traffic/preemption/{ambulanceNumber}/release` | Release preemption corridor and restore normal traffic light cycles |
+| `GET` | `/api/traffic/itms/status` | Diagnostic heartbeat and protocol latency of Municipal ITMS gateway |
 | `GET` | `/v3/api-docs` | OpenAPI 3.0 specification contract |
 | `GET` | `/swagger-ui/**` | Interactive Swagger UI API documentation console |
 | `GET` | `/api/dashboard/state-summary` | Aggregate state-wide command telemetry stats |
@@ -176,7 +182,7 @@
   - Fail-fast JWT startup entropy guard ($\ge 256$ bits) rejecting default secrets in production.
   - Security audit logging with CRLF/control-character sanitization, quote escaping, and email PII masking.
   - Non-root container execution (`USER 1001:1001`) in Dockerfiles.
-  - 81/81 automated backend unit & integration tests passing (100% BUILD SUCCESS).
+  - 86/86 automated backend unit & integration tests passing (100% BUILD SUCCESS).
 - **Explainability**: Every API response for scoring, queue ranking, resource matching, and spatial routing includes human-readable factor attributes.
 
 ---

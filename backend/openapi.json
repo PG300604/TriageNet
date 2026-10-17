@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
+      "url": "http://localhost",
       "description": "Generated server url"
     }
   ],
@@ -193,6 +193,99 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/TransferRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/preemption/{ambulanceNumber}/release": {
+      "post": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "releasePreemption",
+        "parameters": [
+          {
+            "name": "ambulanceNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/preemption/telemetry": {
+      "post": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "updateTelemetry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrafficPreemptionRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficPreemptionStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/preemption/activate": {
+      "post": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "activatePreemption",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrafficPreemptionRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficPreemptionStatusDto"
                 }
               }
             }
@@ -1047,7 +1140,7 @@
           {
             "name": "abhaNumber",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1147,6 +1240,82 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/QueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/preemption/corridors": {
+      "get": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "getAllActiveCorridors",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrafficPreemptionStatusDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/preemption/corridor/{ambulanceNumber}": {
+      "get": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "getCorridorStatus",
+        "parameters": [
+          {
+            "name": "ambulanceNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficPreemptionStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/itms/status": {
+      "get": {
+        "tags": [
+          "traffic-control-controller"
+        ],
+        "operationId": "getItmsDiagnosticStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
                   }
                 }
               }
@@ -1797,6 +1966,154 @@
           "requestedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "TrafficPreemptionRequestDto": {
+        "type": "object",
+        "properties": {
+          "ambulanceNumber": {
+            "type": "string"
+          },
+          "destinationHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "destinationHospitalName": {
+            "type": "string"
+          },
+          "corridorName": {
+            "type": "string"
+          },
+          "currentLat": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentLng": {
+            "type": "number",
+            "format": "double"
+          },
+          "speedKmph": {
+            "type": "number",
+            "format": "double"
+          },
+          "headingDegrees": {
+            "type": "number",
+            "format": "double"
+          },
+          "acuityScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "priorityTier": {
+            "type": "string"
+          },
+          "patientCondition": {
+            "type": "string"
+          }
+        }
+      },
+      "TrafficPreemptionStatusDto": {
+        "type": "object",
+        "properties": {
+          "corridorId": {
+            "type": "string"
+          },
+          "ambulanceNumber": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "preemptionMode": {
+            "type": "string"
+          },
+          "itmsProvider": {
+            "type": "string"
+          },
+          "handshakeLatencyMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalSignalsInCorridor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "signalsPreemptedGreen": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trafficDelayClearedMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "corridorSpeedKmph": {
+            "type": "number",
+            "format": "double"
+          },
+          "activeVmsAlert": {
+            "type": "string"
+          },
+          "upcomingIntersections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrafficSignalIntersectionDto"
+            }
+          },
+          "policeUnitsAlerted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastTelemetrySyncAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrafficSignalIntersectionDto": {
+        "type": "object",
+        "properties": {
+          "signalId": {
+            "type": "string"
+          },
+          "intersectionName": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lng": {
+            "type": "number",
+            "format": "double"
+          },
+          "distanceMeters": {
+            "type": "number",
+            "format": "double"
+          },
+          "etaSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "preemptionStatus": {
+            "type": "string"
+          },
+          "mainStreetPhase": {
+            "type": "string"
+          },
+          "crossStreetPhase": {
+            "type": "string"
+          },
+          "vmsMessage": {
+            "type": "string"
+          },
+          "policeOutpostNotified": {
+            "type": "boolean"
+          },
+          "policeChowkiName": {
+            "type": "string"
           }
         }
       },

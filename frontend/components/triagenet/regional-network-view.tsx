@@ -635,6 +635,14 @@ export function RegionalNetworkView({
             : 'Green Wave preemption released. Standard highway delay factors active.'
         )
         setTimeout(() => setLastDispatchAlert(null), 6000)
+      } else if (ev.type === 'TRAFFIC_SIGNAL_PREEMPTION_UPDATE') {
+        setGreenWaveActive(ev.active)
+        setLastDispatchAlert(
+          ev.active
+            ? `🚦 [ITMS ROAD PREEMPTION] ${ev.ambulanceNumber} connected to Municipal ITMS! ${ev.signalsPreempted} Signals Overridden to Solid Green. VMS: "${ev.vmsAlert}". Delay Cleared: ${ev.trafficDelayClearedMin}m.`
+            : '🚦 [ITMS ROAD PREEMPTION] Highway traffic corridor released to standard municipal traffic cycle.'
+        )
+        setTimeout(() => setLastDispatchAlert(null), 7000)
       } else if (ev.type === 'UPDATE_PATIENT_VITALS') {
         setSpo2(ev.vitals.spo2)
         setHeartRate(ev.vitals.heartRate)

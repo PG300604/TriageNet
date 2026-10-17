@@ -133,6 +133,7 @@ public class SecurityConfig {
                     "/api/routing/optimal",
                     "/api/iot/oxygen-telemetry/**",
                     "/api/abdm/**",
+                    "/api/traffic/**",
                     "/v3/api-docs/**",
                     "/v3/api-docs",
                     "/swagger-ui/**",

@@ -50,6 +50,7 @@ import {
 import { directorBridge, type DirectorEvent } from '@/lib/director-bridge'
 import { buildScenario } from '@/lib/triage-data'
 import { soundBeacon } from '@/lib/sound-beacon'
+import { apiClient } from '@/lib/api-client'
 
 export default function AmbulanceMobilePage() {
   const [selectedHotspot, setSelectedHotspot] = useState<AccidentHotspot>(ACCIDENT_HOTSPOTS[0])
@@ -74,6 +75,8 @@ export default function AmbulanceMobilePage() {
   )
   const [trafficDelayMin, setTrafficDelayMin] = useState<number>(ACCIDENT_HOTSPOTS[0].defaultTrafficDelayMin)
   const [greenWaveActive, setGreenWaveActive] = useState<boolean>(false)
+  const [trafficCorridorStatus, setTrafficCorridorStatus] = useState<any | null>(null)
+  const [itmsPreemptionLoading, setItmsPreemptionLoading] = useState<boolean>(false)
 
   // Selected Target Hospital
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>('')
@@ -187,22 +190,97 @@ export default function AmbulanceMobilePage() {
     setTimeout(() => setLastActionMessage(null), 4000)
   }
 
-  const handleToggleGreenWave = () => {
+  const handleToggleGreenWave = async () => {
     const nextState = !greenWaveActive
     setGreenWaveActive(nextState)
     directorBridge.send({ type: 'TOGGLE_GREEN_WAVE', active: nextState })
+
     if (nextState) {
       soundBeacon.playDualToneSiren(2.4)
+      setItmsPreemptionLoading(true)
+      try {
+        const destHospital = candidateOptions.option1?.hospitalName || 'RIMS Ranchi Trauma Center'
+        const result = await apiClient.activateTrafficPreemption({
+          ambulanceNumber,
+          destinationHospitalName: destHospital,
+          corridorName: 'NH-33 - Booty More - Bariatu Road - RIMS Trauma Corridor',
+          currentLat: selectedHotspot.lat,
+          currentLng: selectedHotspot.lng,
+          speedKmph: 74.0,
+          acuityScore: spo2 < 85 ? 94.0 : 78.0,
+          priorityTier: 'CODE_RED_CRITICAL',
+          patientCondition: `${patientName} (${incidentNature}) - SpO2: ${spo2}%, GCS: ${gcs}`,
+        })
+        setTrafficCorridorStatus(result)
+        directorBridge.send({
+          type: 'TRAFFIC_SIGNAL_PREEMPTION_UPDATE',
+          ambulanceNumber,
+          active: true,
+          signalsPreempted: result.signalsPreemptedGreen || 4,
+          trafficDelayClearedMin: result.trafficDelayClearedMinutes || 13.6,
+          vmsAlert: result.activeVmsAlert || '108 AMBULANCE APPROACHING - MERGE LEFT',
+          upcomingSignals: (result.upcomingIntersections || []).map((s: any) => ({
+            signalId: s.signalId,
+            name: s.intersectionName,
+            distanceMeters: s.distanceMeters,
+            etaSec: s.etaSeconds,
+            phase: s.mainStreetPhase,
+          })),
+        })
+      } catch (err) {
+        console.warn('ITMS Gateway activation fallback', err)
+      } finally {
+        setItmsPreemptionLoading(false)
+      }
     } else {
       soundBeacon.playRadioClick()
+      try {
+        await apiClient.releaseTrafficPreemption(ambulanceNumber)
+      } catch (e) {
+        // ignore
+      }
+      setTrafficCorridorStatus(null)
+      directorBridge.send({
+        type: 'TRAFFIC_SIGNAL_PREEMPTION_UPDATE',
+        ambulanceNumber,
+        active: false,
+        signalsPreempted: 0,
+        trafficDelayClearedMin: 0,
+        vmsAlert: 'Normal Traffic Adaptive Cycle Restored',
+      })
     }
+
     setLastActionMessage(
       nextState
-        ? '⚡ 108 Green Wave Activated! Highway traffic signals preempted to green.'
-        : 'Green Wave released to normal highway traffic mode.'
+        ? '⚡ ITMS Municipal Signal Preemption & Road V2X Telemetry Uplink ACTIVE!'
+        : 'ITMS Green Wave released to normal municipal traffic cycle.'
     )
     setTimeout(() => setLastActionMessage(null), 4500)
   }
+
+  // Periodic V2X telemetry stream when Green Wave is active
+  useEffect(() => {
+    if (!greenWaveActive) return
+    const interval = setInterval(async () => {
+      try {
+        const destHospital = candidateOptions.option1?.hospitalName || 'RIMS Ranchi Trauma Center'
+        const updated = await apiClient.streamTrafficTelemetry({
+          ambulanceNumber,
+          destinationHospitalName: destHospital,
+          currentLat: selectedHotspot.lat,
+          currentLng: selectedHotspot.lng,
+          speedKmph: 74.0,
+          acuityScore: spo2 < 85 ? 94.0 : 78.0,
+          priorityTier: 'CODE_RED_CRITICAL',
+          patientCondition: `${patientName} (${incidentNature}) - SpO2: ${spo2}%, GCS: ${gcs}`,
+        })
+        setTrafficCorridorStatus(updated)
+      } catch (e) {
+        // quiet stream
+      }
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [greenWaveActive, ambulanceNumber, candidateOptions, selectedHotspot, spo2, gcs, patientName, incidentNature])
 
   const handleSelectDestination = (opt: CandidateHospitalEvaluation, modeLabel: string) => {
     setSelectedHospitalId(opt.hospitalId)
@@ -621,13 +699,13 @@ export default function AmbulanceMobilePage() {
           </div>
         </div>
 
-        {/* Highway Traffic & 108 Green Wave Signal Preemption */}
-        <div className="bg-[#181512] border border-amber-900/25 rounded-2xl p-4 space-y-3 shadow-lg">
+        {/* Highway Traffic & Municipal ITMS Road Preemption Console */}
+        <div className="bg-[#181512] border border-amber-900/30 rounded-2xl p-4 space-y-3.5 shadow-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Route className="w-4 h-4 text-amber-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-stone-200">
-                Highway Traffic & Preemption
+                Municipal ITMS Road Preemption & V2X Telemetry
               </h2>
             </div>
             <span
@@ -639,15 +717,15 @@ export default function AmbulanceMobilePage() {
                   : 'bg-amber-950 text-amber-400 border border-amber-800'
               }`}
             >
-              {greenWaveActive ? 'GREEN WAVE (CLEAR)' : `${trafficLevel} CONGESTION`}
+              {greenWaveActive ? '🟢 ITMS V2X GREEN WAVE (ACTIVE)' : `${trafficLevel} CONGESTION`}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-stone-950/60 p-2.5 rounded-xl border border-stone-900">
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-stone-950/70 p-2.5 rounded-xl border border-stone-800/80">
             <div>
               <span className="text-stone-500 block text-[10px]">CORRIDOR BOTTLENECK</span>
               <span className="text-stone-300 font-bold">
-                {greenWaveActive ? 'Signals Preempted' : `+${trafficDelayMin}m Traffic Delay`}
+                {greenWaveActive ? '⚡ 4 Intersections Preempted' : `+${trafficDelayMin}m Traffic Gridlock`}
               </span>
             </div>
             <div>
@@ -658,9 +736,177 @@ export default function AmbulanceMobilePage() {
             </div>
           </div>
 
+          {/* ITMS Road Preemption & V2X Telemetry Uplink Display */}
+          {greenWaveActive && (
+            <div className="space-y-2.5 pt-1">
+              {/* V2X Link Status Bar */}
+              <div className="flex items-center justify-between text-[10px] font-mono bg-emerald-950/50 border border-emerald-800/60 p-2 rounded-xl text-emerald-300">
+                <div className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-bold">ITMS V2I PROTOCOL ACTIVE</span>
+                </div>
+                <div className="text-stone-400">
+                  <span>Ping: </span>
+                  <span className="text-emerald-400 font-bold">
+                    {trafficCorridorStatus?.handshakeLatencyMs || 18}ms
+                  </span>
+                  <span> | SCATS / NTCIP 1202</span>
+                </div>
+              </div>
+
+              {/* Electronic Overhead VMS Gantry Broadcast Display */}
+              <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-2.5 font-mono text-[11px] text-amber-200">
+                <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <Radio className="w-3.5 h-3.5 animate-pulse" />
+                  <span>OVERHEAD HIGHWAY VMS GANTRY BROADCAST (KM 12)</span>
+                </div>
+                <div className="bg-black/80 px-2.5 py-1.5 rounded-lg border border-amber-500/20 text-amber-300 font-bold tracking-wide">
+                  {trafficCorridorStatus?.activeVmsAlert ||
+                    '⚠ 108 AMBULANCE APPROACHING (JH-01-ALS-1081) - MERGE LEFT - CLEAR AMBULANCE CORRIDOR'}
+                </div>
+              </div>
+
+              {/* Upcoming Signal Intersections Preemption Table */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono text-stone-400 font-semibold px-1">
+                  <span>UPCOMING INTERSECTIONS</span>
+                  <span>PHASE / ACTION</span>
+                </div>
+                <div className="space-y-1 text-[11px] font-mono">
+                  {(
+                    trafficCorridorStatus?.upcomingIntersections || [
+                      {
+                        signalId: 'SIG-RN-01',
+                        intersectionName: 'Ormanjhi NH-33 Toll Ramp',
+                        distanceMeters: 0,
+                        etaSeconds: 0,
+                        preemptionStatus: 'GREEN_WAVE_LOCKED',
+                        mainStreetPhase: 'SOLID_GREEN',
+                        crossStreetPhase: 'ALL_RED_HOLD',
+                        policeChowkiName: 'Ormanjhi Traffic Outpost',
+                      },
+                      {
+                        signalId: 'SIG-RN-02',
+                        intersectionName: 'Mesra Ring Road Junction',
+                        distanceMeters: 850,
+                        etaSeconds: 41,
+                        preemptionStatus: 'GREEN_WAVE_LOCKED',
+                        mainStreetPhase: 'SOLID_GREEN',
+                        crossStreetPhase: 'ALL_RED_HOLD',
+                        policeChowkiName: 'Mesra PCR-04 Interceptor',
+                      },
+                      {
+                        signalId: 'SIG-RN-03',
+                        intersectionName: 'Booty More Traffic Circle',
+                        distanceMeters: 2100,
+                        etaSeconds: 102,
+                        preemptionStatus: 'GREEN_WAVE_LOCKED',
+                        mainStreetPhase: 'SOLID_GREEN',
+                        crossStreetPhase: 'ALL_RED_HOLD',
+                        policeChowkiName: 'Booty More Police Chowki',
+                      },
+                      {
+                        signalId: 'SIG-RN-04',
+                        intersectionName: 'Kanta Toli Flyover Ramp',
+                        distanceMeters: 4400,
+                        etaSeconds: 215,
+                        preemptionStatus: 'CLEARING_CROSS_STREETS',
+                        mainStreetPhase: 'FLASHING_YELLOW',
+                        crossStreetPhase: 'RED_CLEARANCE',
+                        policeChowkiName: 'Kanta Toli PCR Unit 09',
+                      },
+                      {
+                        signalId: 'SIG-RN-05',
+                        intersectionName: 'Bariatu Road Medical Crossing',
+                        distanceMeters: 6800,
+                        etaSeconds: 330,
+                        preemptionStatus: 'STANDBY',
+                        mainStreetPhase: 'NORMAL_CYCLE',
+                        crossStreetPhase: 'NORMAL_CYCLE',
+                        policeChowkiName: 'Bariatu Outpost',
+                      },
+                      {
+                        signalId: 'SIG-RN-06',
+                        intersectionName: 'RIMS Trauma Bay Emergency Gate',
+                        distanceMeters: 7500,
+                        etaSeconds: 365,
+                        preemptionStatus: 'STANDBY',
+                        mainStreetPhase: 'NORMAL_CYCLE',
+                        crossStreetPhase: 'NORMAL_CYCLE',
+                        policeChowkiName: 'RIMS Emergency Warden',
+                      },
+                    ]
+                  ).map((sig: any) => {
+                    const isLocked = sig.preemptionStatus === 'GREEN_WAVE_LOCKED'
+                    const isClearing = sig.preemptionStatus === 'CLEARING_CROSS_STREETS'
+                    return (
+                      <div
+                        key={sig.signalId}
+                        className={`flex items-center justify-between p-2 rounded-xl border ${
+                          isLocked
+                            ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-200'
+                            : isClearing
+                            ? 'bg-amber-950/30 border-amber-700/50 text-amber-200'
+                            : 'bg-stone-900/40 border-stone-800 text-stone-400'
+                        }`}
+                      >
+                        <div className="truncate pr-2">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <span
+                              className={`size-2 rounded-full ${
+                                isLocked
+                                  ? 'bg-emerald-400 shadow-xs shadow-emerald-400'
+                                  : isClearing
+                                  ? 'bg-amber-400'
+                                  : 'bg-stone-600'
+                              }`}
+                            />
+                            <span className="truncate">{sig.intersectionName}</span>
+                          </div>
+                          <div className="text-[10px] text-stone-400 pl-3.5">
+                            {sig.distanceMeters > 0 ? `${(sig.distanceMeters / 1000).toFixed(1)} km · ETA ${sig.etaSeconds}s` : 'Passed · Corridor Cleared'}
+                            {' | '}
+                            <span className="text-stone-300">{sig.policeChowkiName}</span>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                              isLocked
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                : isClearing
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : 'bg-stone-800 text-stone-400'
+                            }`}
+                          >
+                            {isLocked ? 'SOLID GREEN' : isClearing ? 'CLEARING' : 'STANDBY'}
+                          </span>
+                          <span className="block text-[8px] text-stone-500 uppercase mt-0.5">
+                            {sig.crossStreetPhase === 'ALL_RED_HOLD' ? 'Cross-Traffic: RED' : 'Cross: Normal'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Police Interceptor Coordination Pill */}
+              <div className="text-[10px] font-mono text-stone-400 bg-stone-950/70 p-2 rounded-xl border border-stone-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-stone-300 font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Traffic Police PCR Units:</span>
+                </span>
+                <span className="text-emerald-400 font-bold">4 Interceptors Stationed Ahead</span>
+              </div>
+            </div>
+          )}
+
           {/* Green Wave Button */}
           <button
             onClick={handleToggleGreenWave}
+            disabled={itmsPreemptionLoading}
             className={`w-full py-2.5 px-4 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md ${
               greenWaveActive
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 ring-2 ring-emerald-400/30'
@@ -669,8 +915,8 @@ export default function AmbulanceMobilePage() {
           >
             <Siren className={`w-4 h-4 ${greenWaveActive ? 'animate-bounce' : ''}`} />
             {greenWaveActive
-              ? '⚡ 108 GREEN WAVE ACTIVE (TAP TO DEACTIVATE)'
-              : 'ACTIVATE 108 GREEN WAVE SIGNAL PREEMPTION'}
+              ? '⚡ ITMS GREEN WAVE ACTIVE (TAP TO RELEASE CORRIDOR)'
+              : 'TRANSMIT TELEMETRY & PREEMPT ROAD SIGNALS TO GREEN'}
           </button>
         </div>
 

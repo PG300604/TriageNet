@@ -633,6 +633,17 @@ export function Dashboard() {
           setTimeout(() => setLastEventMessage(null), 5000)
           break
         }
+        case 'TRAFFIC_SIGNAL_PREEMPTION_UPDATE': {
+          if (ev.active) {
+            setLastEventMessage(
+              `🚦 [ITMS ROAD PREEMPTION] ${ev.ambulanceNumber} engaged Green Corridor! ${ev.signalsPreempted} Signals Overridden to Solid Green. VMS: "${ev.vmsAlert}". Delay Cleared: ${ev.trafficDelayClearedMin}m.`
+            )
+          } else {
+            setLastEventMessage('🚦 [ITMS ROAD PREEMPTION] Highway corridor released to standard municipal traffic cycle.')
+          }
+          setTimeout(() => setLastEventMessage(null), 7000)
+          break
+        }
         case 'RETRY_BACKEND':
           retryConnection()
           break

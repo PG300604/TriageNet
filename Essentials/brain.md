@@ -98,7 +98,7 @@ This file serves as the standing, persistent context for the AI coding agent (**
 2. **Explainability**: Every score, queue re-ranking, resource assignment, and spatial routing decision must return a clear, human-readable breakdown of contributing factors.
 3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints with method-level `@PreAuthorize`.
 4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.13 backend and Next.js 16.4.1 frontend deployment with Redis 7-alpine and Nginx reverse proxy.
-5. **Continuous Integration & Testing Gates**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (81/81 passing), frontend Turbopack build (20/20 routes), and Trivy offline security scanning.
+5. **Continuous Integration & Testing Gates**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (86/86 passing), frontend Turbopack build (20/20 routes), and Trivy offline security scanning.
 
 ---
 
@@ -115,19 +115,19 @@ TriageNet/
 │   └── workflows/ci.yml      # Parallel Backend test, Frontend build, and Trivy security scans
 ├── nginx/                    # Reverse proxy configuration
 │   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz, /v3/api-docs, /swagger-ui
-├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 81/81 tests)
+├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 86/86 tests)
 │   └── src/main/java/com/triagenet/
 │       ├── config/           # SecurityConfig, JwtAuthenticationFilter, OpenApiConfig, CustomUserDetails
-│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, OxygenTelemetry, Abdm, Dashboard, Admin
-│       ├── dto/              # Login, Register, User, Response, Referral, Shortage, OxygenTelemetry, AbdmProfile DTOs
+│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, OxygenTelemetry, Abdm, TrafficControl, Dashboard, Admin
+│       ├── dto/              # Login, Register, User, Response, Referral, Shortage, OxygenTelemetry, AbdmProfile, TrafficPreemption DTOs
 │       ├── engine/           # SeverityScorer, HungarianMatcher, DijkstraRouter
 │       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, OxygenTelemetry, StaffUser, ShiftSession, RefreshToken
 │       ├── repository/       # Spring Data JPA Repositories (including OxygenTelemetryRepository)
-│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, OxygenTelemetry, AbdmIntegration, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
+│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, OxygenTelemetry, AbdmIntegration, TrafficControlGateway, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
 ├── frontend/                 # React 19 + Next.js 16.4.1 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
 │   ├── app/                  # 20 routes (/ambulance, /portal, /simulator, /downloads, /onboarding, /control, /dashboard, etc.)
 │   ├── components/triagenet/ # Capacity (PSA Oxygen IoT Monitor), Queue (ABHA Console), Regional Network, Doctors Roster, Supplies Governance, Modals
-│   └── lib/                  # api-client, auth-context, sound-beacon (Web Audio API), jharkhand-data, predictive-supply-engine, triage-data
+│   └── lib/                  # api-client, auth-context, sound-beacon (Web Audio API), director-bridge, jharkhand-data, predictive-supply-engine, triage-data
 ├── mobile/                   # (Phase 3) Flutter monorepo (108 Ambulance, Bedside Nurse, Command Monitor)
 ├── android-app/              # Native Android companion wrapper with build-apk.ps1
 ├── ml/                       # Python ML training & 4-dataset benchmarking scripts
@@ -151,11 +151,12 @@ TriageNet/
 - **Phases Completed & Verified**:
   - Phase 1–10: Core Algorithms, RBAC, Emergency Triage, Spatial Map, 108 CAD, Motion Graphics, Staging Automation.
   - Phase 11: Real-Time Bed & PSA Oxygen Plant IoT Telemetry Monitor (Entity, Service, Controller, Live Gauge Monitor).
+  - Phase 12: Municipal ITMS & Police Interceptor Telemetry Clearance System (NTCIP 1202 / SCATS Emergency Vehicle Preemption, Highway corridor signal overriding, dynamic VMS alerts, Police PCR dispatch coordination).
   - Phase 13: Acoustic Siren & Sound Beacon (Native Web Audio API synthesizer: 108 emergency sirens, critical vitals chimes, Hungarian chords).
   - Phase 14: Ayushman Bharat Digital Mission (ABDM / ABHA Patient Intake Integration with 14-digit verification & clinical prefill).
 - **Quality & Test Gates**:
-  - Backend: **81 / 81 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors).
+  - Backend: **86 / 86 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors).
   - Frontend: 0 TypeScript errors, 20/20 routes compile cleanly with Turbopack.
   - Containerization: 5/5 containers running and healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
-  - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 45+ REST endpoints.
+  - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 50+ REST endpoints.
 

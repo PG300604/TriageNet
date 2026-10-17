@@ -223,6 +223,13 @@ erDiagram
 - `alert_triggered`: Boolean flag set to true when purity drops below 93% or line pressure drops below 4.5 bar.
 - `alert_severity`: Escalation tier (`NORMAL`, `WARNING`, `CRITICAL`).
 
+### 2.9 `TRAFFIC_PREEMPTION_CORRIDOR` (In-Memory Gateway State & V2X Telemetry)
+- Real-time in-memory concurrent registry (`TrafficControlGatewayService`) tracking active NTCIP 1202 / SCATS emergency corridors.
+- `corridorId`: Ephemeral corridor session token (`CORR-XXXXXXXX`).
+- `ambulanceNumber`: 108 ALS vehicle identifier.
+- `upcomingIntersections`: Ordered list of signal nodes (`signalId`, `intersectionName`, `lat`, `lng`, `distanceMeters`, `etaSeconds`, `mainStreetPhase`, `crossStreetPhase`, `vmsMessage`, `policeOutpostNotified`, `policeChowkiName`).
+- `policeUnitsAlerted`: Central Police Control Room, PCR interceptors, and trauma gate security details.
+
 ---
 
 ## 3. Database Indexes for High-Performance Queries

@@ -1407,6 +1407,54 @@ Following Phase 10 completion, user requested addressing all broken parts of ful
 - Backend now has 81 unit & integration tests (`.\backend\mvnw.cmd test -B`).
 - Frontend features acoustic sound beacon, PSA oxygen telemetry monitor, and digital ABHA patient intake console.
 
+---
+
+### [LOG-012] — 2026-10-17: VM Crash Recovery, Phase 12 Municipal ITMS Road Preemption & 86-Test Suite Multi-Container Deployment
+
+- **Timestamp**: `2026-10-17T14:55:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity Orchestrating Hermes Agent
+- **Scope / Category**: Core Backend Services, Intelligent Traffic Systems (ITMS), Police Interceptor Dispatch, Web Audio/Radar HUD, Container Orchestration
+- **Status**: Completed, 100% Tests Passing (86/86), 5/5 Containers Healthy
+
+#### Context & Objectives
+Following an unexpected virtual machine crash, Antigravity inspected Hermes agent session lineages, recovered uncommitted working tree changes, and finalized Phase 12: Municipal Intelligent Traffic Management System (ITMS) Road Preemption with Police Interceptor Telemetry Clearance.
+
+#### Actions Executed
+1. **Crash Recovery & Reconciliation**:
+   - Inspected Hermes SQLite database `~/.hermes/state.db` and sessions (`20261017_133207_9d0498`, etc.).
+   - Recovered in-flight traffic clearance classes and endpoints.
+   - Restarted fallen Postgres and Redis Docker containers.
+2. **Phase 12: Municipal ITMS Road Preemption & Police Interceptor Telemetry Clearance**:
+   - `TrafficControlController.java`: Implemented 6 REST endpoints (`/api/traffic/preemption/activate`, `/telemetry`, `/corridor/{ambulanceNumber}`, `/corridors`, `/{ambulanceNumber}/release`, `/itms/status`).
+   - `TrafficControlGatewayService.java`: In-memory concurrent registry modeling NTCIP 1202 / SCATS Emergency Vehicle Preemption (EVP) for Ranchi trauma corridors (Ormanjhi NH-33, Mesra Ring Road, Booty More, Kanta Toli, Bariatu Road, RIMS Trauma Bay).
+   - Dynamic signal overriding: Main street locked to `SOLID_GREEN`, cross-traffic locked to `ALL_RED_HOLD`.
+   - Variable Message Signs (VMS): Automatic gantry alerts warning civilian drivers to clear corridors.
+   - Police Interceptors: Automated telemetry notifications to Ranchi Traffic Police Control Room and stationing of PCR units (PCR-04, PCR-09).
+   - Frontend: Live ITMS radar feed in `ambulance/page.tsx`, `director-bridge.ts` `TRAFFIC_SIGNAL_PREEMPTION_UPDATE` events, and dashboard/regional-network toast alerts.
+3. **Integration Testing & Test Suite Expansion**:
+   - Added 5 integration tests in `TrafficControlControllerTest.java`.
+   - Backend test suite: **86/86 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 37.4s).
+   - Frontend TypeScript check: `npx tsc --noEmit` passed with 0 errors.
+   - Frontend build: Next.js Turbopack compiled 20/20 routes in 3.6s with 0 errors.
+   - Verified system integrity with `python3 scripts/verify_system_integrity.py` (all checks passed).
+4. **Container Rebuild & Healthcheck Verification**:
+   - Rebuilt `triagenet-backend` and `triagenet-frontend` multi-stage Docker images.
+   - 5/5 containers running and healthy: `triagenet-backend` (healthy), `triagenet-frontend`, `triagenet-db` (healthy), `triagenet-redis` (healthy), `triagenet-proxy`.
+   - Live endpoints validated:
+     - `http://localhost/healthz` → `200 healthy`
+     - `http://localhost/api/traffic/itms/status` → `200 CONNECTED`
+     - `http://localhost/api/traffic/preemption/activate` → `200` (corridor lock active)
+     - `http://localhost/api/traffic/preemption/JH-01-AMB-1081/release` → `200` (normal traffic restored)
+5. **OpenAPI 3.0 Contract Synchronized**:
+   - Re-exported live OpenAPI JSON to `backend/openapi.json` (74 KB, 50+ REST endpoints).
+
+#### Instructions for Windows Agents
+- Pull the latest `main` branch.
+- Backend now has 86 unit & integration tests (`.\backend\mvnw.cmd test -B`).
+- Frontend features live ITMS green wave radar and corridor preemption alongside sound beacon, PSA oxygen telemetry, and digital ABHA patient intake.
+
+
 
 
 

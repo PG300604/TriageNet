@@ -591,3 +591,27 @@ git status
      - Docker containers rebuilt and verified healthy (`backend`, `frontend`, `db`, `redis`, `proxy`).
      - OpenAPI spec re-exported to `backend/openapi.json` (45+ endpoints).
 
+---
+
+### [HANDOFF-019] — 2026-10-17: VM Crash Recovery & Phase 12 Municipal ITMS Road Preemption Deployed
+- **From**: Linux Agent (Google Antigravity Orchestrating Hermes)
+- **To**: Windows Agent & Public Release
+- **Status**: `RESOLVED` (86/86 Tests Green, 5/5 Containers Healthy, All Endpoints Verified)
+- **Summary**:
+  1. **Crash Recovery & Reconciliation**:
+     - System inspected past Hermes session lineages and Antigravity logs following abrupt virtual machine crash.
+     - Recovered uncommitted working tree changes covering Phase 12 Traffic Clearance & Emergency Vehicle Preemption (EVP).
+  2. **Phase 12 (Municipal ITMS & Police Interceptor Telemetry Clearance)**:
+     - Implemented `TrafficControlGatewayService` and `TrafficControlController` with 6 endpoints (`/preemption/activate`, `/telemetry`, `/corridor/{ambulanceNumber}`, `/corridors`, `/{ambulanceNumber}/release`, `/itms/status`).
+     - Ranchi corridor intersections (`SIG-RN-01` Ormanjhi to `SIG-RN-06` RIMS Trauma Bay) dynamically locked to `SOLID_GREEN` with `ALL_RED_HOLD` on cross-traffic.
+     - Electronic highway gantry Variable Message Signs (VMS) broadcast lane-clearing directives to civilian drivers.
+     - Ranchi Police Control Room and highway patrol PCR interceptors alerted with automated telemetry for intersection clearance.
+     - Live ITMS radar feed and signal countdowns wired into `/ambulance`.
+  3. **Verification & Multi-Container Redeployment**:
+     - 86/86 Spring Boot backend tests passing (`BUILD SUCCESS`, 0 failures, 0 errors in 37.4s).
+     - Frontend Next.js Turbopack compiles 20/20 routes in 3.6s with 0 errors.
+     - All 5 Docker Compose services rebuilt and running healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
+     - Live endpoints validated: `http://localhost/healthz` (200), `http://localhost/api/traffic/itms/status` (200), `http://localhost/api/traffic/preemption/activate` (200).
+     - Exported updated OpenAPI 3.0 contract to `backend/openapi.json` (74 KB, 50+ endpoints).
+
+

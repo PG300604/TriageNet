@@ -193,6 +193,13 @@ Without automated state-wide coordination:
 - **Pre-Configured Jharkhand Cultural Preset**: Built-in 1-click test preset for legendary tribal leader **Birsa Munda** (`12-3456-7890-1234`) with complete verified clinical profile and Ayushman Bharat PM-JAY gold card coverage.
 - **Automated Clinical Intake Prefill**: Directly injects patient demographics, age, gender, blood group, chronic conditions, and known allergies into frontline nurse intake vitals.
 
+### Module F25 — Phase 12: Municipal ITMS & Police Interceptor Road Clearance Preemption System
+- **NTCIP 1202 & SCATS Preemption Protocol**: High-speed traffic signal preemption gateway (`TrafficControlGatewayService`, `TrafficControlController`) establishing automated corridor locks for 108 ALS ambulances.
+- **Dynamic Green Wave Corridor Signal Overriding**: Overrides traffic light phases along the Ranchi trauma route (Ormanjhi NH-33, Mesra Ring Road, Booty More, Kanta Toli Flyover, Bariatu Road, RIMS Trauma Bay) to `SOLID_GREEN` on the transit street while enforcing `ALL_RED_HOLD` on conflicting cross-streets.
+- **Electronic Variable Message Sign (VMS) Uplink**: Broadcasts emergency vehicle warnings to roadway gantries ahead of the ambulance to clear civilian traffic to the left lane.
+- **Police Interceptor & PCR Wireless Dispatch**: Automatically notifies the Ranchi Traffic Police Control Room and stations highway patrol PCR interceptors at key junctions for hands-on intersection clearance.
+- **Real-Time Paramedic Radar HUD**: Dedicated live corridor radar feed embedded in `/ambulance` with real-time ETA countdowns, distance meters, and signal lock statuses.
+
 ---
 
 ## 5. Success Metrics

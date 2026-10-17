@@ -1,0 +1,122 @@
+#### 🌟 Method 1: 1-Click Infrastructure Blueprint (Recommended — ~3 Minutes)
+
+  Since the repository is already synchronized on GitHub (PG300604/TriageNet
+  https://github.com/PG300604/TriageNet), Render can automatically provision the database, backend,
+  and frontend in one step.
+
+  1. Log in to Render:
+      • Open https://dashboard.render.com.
+      • Sign in with your GitHub account (PG300604).
+  2. Launch Blueprint:
+      • Click the New + button at the top right of the dashboard.
+      • Select Blueprint from the dropdown.
+      • Choose or search for your repository: PG300604/TriageNet.
+      • Select the branch: main.
+  3. Review Resources:
+  Render will inspect render.yaml and automatically configure 3 services:
+      • 🗄 triagenet-db: PostgreSQL 16 Managed Database (Free).
+      • ⚙ triagenet-backend: Docker Web Service running Spring Boot 3.3.13 (Free).
+      • 💻 triagenet-frontend: Docker Web Service running Next.js 16.4.1 (Free).
+  4. Click Apply:
+      • Render will generate a cryptographic JWT_SECRET, wire the database connection string directly
+      into the backend, set up CORS, and connect the frontend to the backend API.
+      • The deployment will build and start automatically.
+
+  ──────
+  #### 🛠 Method 2: Manual Dashboard Setup (If Deploying Services Individually)
+
+  If you prefer to configure each service manually in the Render web console:
+
+  ##### Step 1: Create the PostgreSQL Database
+
+  1. In Render Dashboard, click New + ➔ PostgreSQL.
+  2. Set the fields:
+      • Name: triagenet-db
+      • Database: triagenet
+      • User: triagenet
+      • Region: Choose closest to you (e.g. Singapore or Frankfurt)
+      • Instance Type: Free
+  3. Click Create Database.
+  4. Once created, copy the Internal Database URL (postgres://triagenet:...@.../triagenet).
+
+  ##### Step 2: Deploy the Spring Boot Backend Web Service
+
+  1. Click New + ➔ Web Service.
+  2. Select your repository PG300604/TriageNet.
+  3. Set the configuration:
+      • Name: triagenet-backend
+      • Language: Docker
+      • Root Directory: backend
+      • Dockerfile Path: ./Dockerfile
+      • Instance Type: Free
+      • Health Check Path: /api/dashboard/state-overview
+  4. Add Environment Variables:
+   Key                    | Value                                    | Notes
+  ------------------------|------------------------------------------|--------------------------------
+   SPRING_PROFILES_ACTIVE | prod                                     | Activates application-prod.yml
+   SPRING_DATASOURCE_URL  | <Internal Database URL>                  | Pasted from Step 1
+   DB_USER                | triagenet                                |
+   DB_PASSWORD            | <Database Password>                      | From Step 1
+   JWT_SECRET             | (Click "Generate" for 64-char key)       | Must be ≥ 256 bits
+   CORS_ALLOWED_ORIGINS   | https://triagenet-                       | Adjust with your frontend URL
+                          | frontend.onrender.com,http://localhost:3 |
+                          | 000                                      |
+
+  5. Click Create Web Service.
+
+  ##### Step 3: Deploy the Next.js Frontend Web Service
+
+  1. Click New + ➔ Web Service.
+  2. Select your repository PG300604/TriageNet.
+  3. Set the configuration:
+      • Name: triagenet-frontend
+      • Language: Docker
+      • Root Directory: frontend
+      • Dockerfile Path: ./Dockerfile
+      • Instance Type: Free
+      • Health Check Path: /
+  4. Add Environment Variables:
+   Key                      | Value                                      | Notes
+  --------------------------|--------------------------------------------|----------------------------
+   NEXT_PUBLIC_API_BASE_URL | https://triagenet-backend.onrender.com/api | Points to your backend URL
+   NODE_ENV                 | production                                 | Enables optimized SSR build
+
+  5. Click Create Web Service.
+  ──────
+  ### ⏰ Preventing Free Tier Spin-Down (24/7 Anti-Sleep Keep-Alive)
+
+  Render free-tier instances spin down into a sleep state after 15 minutes of inactivity, causing a
+  ~45s cold start delay on subsequent requests.
+
+  We have already automated 24/7 uptime using the pre-configured workflow (keep-alive.yml):
+
+  1. In your GitHub repository: Go to Settings ➔ Secrets and variables ➔ Actions.
+  2. Click the Variables tab (next to Secrets), then click New repository variable.
+  3. Set:
+      • Name: TARGET_URL
+      • Value:
+	https://triagenet-frontend.onrender.com/healthz,https://triagenet-backend.onrender.
+      com/api/traffic/itms/status
+
+  4. Click Add variable.
+
+  The GitHub Actions workflow will automatically ping your Render endpoints every 14 minutes (cron:
+  '*/14 * * * *'), keeping both services awake around the clock.
+  ──────
+  ### ✅ Deployment Verification Checklist
+
+  Once Render finishes deploying:
+
+  1. Verify Backend Health:
+    curl -I https://triagenet-backend.onrender.com/api/dashboard/state-overview
+    # Expected: HTTP/2 200 OK (Returns 111 Jharkhand hospitals)
+
+  2. Verify ITMS Traffic Gateway:
+    curl https://triagenet-backend.onrender.com/api/traffic/itms/status
+    # Expected: {"status":"CONNECTED","gateway":"Ranchi Smart City ITMS..."}
+
+  3. Verify Public Frontend & SEO:
+      • Open https://triagenet-frontend.onrender.com/ in your browser.
+      • Check https://triagenet-frontend.onrender.com/portal (Citizen Emergency Portal).
+      • Check https://triagenet-frontend.onrender.com/sitemap.xml (Live Sitemaps).
+      • Check https://triagenet-frontend.onrender.com/api/app/version (Mobile OTA API).

@@ -1,14 +1,14 @@
-services:
+databases:
   # -------------------------------------------------------------------------
   # TriageNet PostgreSQL Database (Managed)
   # -------------------------------------------------------------------------
-  - type: postgres
-    name: triagenet-db
+  - name: triagenet-db
     databaseName: triagenet
     user: triagenet
     plan: free
-    ipAllowList: []
+    postgresMajorVersion: "16"
 
+services:
   # -------------------------------------------------------------------------
   # TriageNet Spring Boot 3.3.13 Backend
   # -------------------------------------------------------------------------
@@ -51,10 +51,6 @@ services:
     healthCheckPath: /
     envVars:
       - key: NEXT_PUBLIC_API_BASE_URL
-        fromService:
-          type: web
-          name: triagenet-backend
-          property: host
-          transform: https://{{host}}/api
+        value: https://triagenet-backend.onrender.com/api
       - key: NODE_ENV
         value: production

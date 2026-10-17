@@ -73,7 +73,7 @@ if docker ps --format '{{.Names}}' | grep -q "triagenet-db"; then
 fi
 
 # 4. Check Container States
-CONTAINERS_STATUS=$(docker compose ps --format '{{.Service}}: {{.Status}}' 2>/dev/null | tr '\n' ', ' || echo "No docker compose active")
+CONTAINERS_STATUS=$(docker compose -f docker/docker-compose.yml ps --format '{{.Service}}: {{.Status}}' 2>/dev/null | tr '\n' ', ' || echo "No docker compose active")
 
 # 5. Git Commit & Tag Snapshot
 git add -A

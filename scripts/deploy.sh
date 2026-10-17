@@ -191,8 +191,9 @@ cmd_deploy() {
 
     # --- Step 3: Transfer deployment configs ---
     log_info "[3/5] Transferring deployment configs to ${DEPLOY_HOST}:${DEPLOY_DIR}..."
-    scp_cmd "${PROJECT_ROOT}/docker-compose.yml" "${DEPLOY_HOST}:${DEPLOY_DIR}/"
-    scp_cmd "${PROJECT_ROOT}/docker-compose.prod.yml" "${DEPLOY_HOST}:${DEPLOY_DIR}/"
+    ssh_cmd "mkdir -p ${DEPLOY_DIR}/docker"
+    scp_cmd "${PROJECT_ROOT}/docker/docker-compose.yml" "${DEPLOY_HOST}:${DEPLOY_DIR}/docker/"
+    scp_cmd "${PROJECT_ROOT}/docker/docker-compose.prod.yml" "${DEPLOY_HOST}:${DEPLOY_DIR}/docker/"
     scp_cmd "${PROJECT_ROOT}/.env" "${DEPLOY_HOST}:${DEPLOY_DIR}/"
 
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/nginx"
@@ -211,17 +212,17 @@ set -euo pipefail
 cd ${DEPLOY_DIR}
 
 echo "Pulling latest images..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend frontend 2>/dev/null || true
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml pull backend frontend 2>/dev/null || true
 
 echo "Starting stack with zero-downtime rolling update..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --build
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --remove-orphans --build
 
 echo "Waiting for services to become healthy (up to 90s)..."
 TIMEOUT=90
 ELAPSED=0
 while [[ \$ELAPSED -lt \$TIMEOUT ]]; do
-    HEALTHY=\$(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -c '"healthy"' || echo 0)
-    TOTAL=\$(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps --format json 2>/dev/null | wc -l || echo 0)
+    HEALTHY=\$(docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml ps --format json 2>/dev/null | grep -c '"healthy"' || echo 0)
+    TOTAL=\$(docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml ps --format json 2>/dev/null | wc -l || echo 0)
     echo "  [\${ELAPSED}s] Healthy containers: \${HEALTHY}/\${TOTAL}"
     if [[ \$HEALTHY -ge 3 ]]; then
         echo "  All critical services healthy!"
@@ -233,7 +234,7 @@ done
 
 echo ""
 echo "=== Container Status ==="
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml ps
 REMOTE_DEPLOY
 
     log_success "Stack deployed."
@@ -271,7 +272,7 @@ sudo certbot certonly \
     || {
         echo "Certbot failed. Restarting Nginx on port 80..."
         cd ${DEPLOY_DIR}
-        docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d nginx
+        docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d nginx
         exit 1
     }
 
@@ -281,7 +282,7 @@ sudo cp /etc/letsencrypt/live/${DEPLOY_DOMAIN}/privkey.pem ${DEPLOY_DIR}/certbot
 sudo chown \$(whoami):\$(whoami) ${DEPLOY_DIR}/certbot/conf/*.pem
 
 cd ${DEPLOY_DIR}
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d nginx
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d nginx
 
 echo ""
 echo "=== TLS Certificate Info ==="
@@ -304,7 +305,7 @@ set -euo pipefail
 cd ${DEPLOY_DIR}
 
 echo "=== Docker Compose Status ==="
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml ps
 
 echo ""
 echo "=== Resource Usage ==="
@@ -327,9 +328,9 @@ cmd_logs() {
 
     local service="${2:-}"
     if [[ -n "${service}" ]]; then
-        ssh_cmd "cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f --tail=100 ${service}"
+        ssh_cmd "cd ${DEPLOY_DIR} && docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml logs -f --tail=100 ${service}"
     else
-        ssh_cmd "cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f --tail=50"
+        ssh_cmd "cd ${DEPLOY_DIR} && docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml logs -f --tail=50"
     fi
 }
 
@@ -348,14 +349,14 @@ set -euo pipefail
 cd ${DEPLOY_DIR}
 
 echo "Stopping current stack..."
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml down
 
 echo "Restarting with tag: ${rollback_tag}..."
-IMAGE_TAG=${rollback_tag} docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+IMAGE_TAG=${rollback_tag} docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
 
 echo ""
 echo "=== Rollback Status ==="
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml ps
 REMOTE_ROLLBACK
 
     log_success "Rollback to '${rollback_tag}' complete."
@@ -377,7 +378,7 @@ cmd_backup() {
 set -euo pipefail
 cd ${DEPLOY_DIR}
 
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml exec -T postgres \
     pg_dump -U \${DB_USER:-triagenet} -d \${DB_NAME:-triagenet} --clean --if-exists \
     | gzip > ${DEPLOY_DIR}/backups/${backup_file}
 
@@ -431,7 +432,7 @@ set -euo pipefail
 cd ~/triagenet
 
 echo "Restoring database from backup..."
-gunzip -c backups/restore.sql.gz | docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+gunzip -c backups/restore.sql.gz | docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml exec -T postgres \
     psql -U "${DB_USER:-triagenet}" -d "${DB_NAME:-triagenet}"
 
 echo "Cleaning up..."

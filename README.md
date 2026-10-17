@@ -243,6 +243,31 @@ Where vital risk coefficients prioritize acute failure:
   <em>Live Web Console: Frontline clinicians and paramedics tune vital sliders with real-time recalculation.</em>
 </p>
 
+#### 📊 Multi-Dataset ML Benchmarking & Model Evaluation
+📖 **Technical Specification & Benchmark Suite**: [`ml/README.md`](ml/README.md) • **Benchmark Engine**: [`ml/benchmark_multi_kaggle_triage.py`](ml/benchmark_multi_kaggle_triage.py) • **Model Trainer**: [`ml/train_severity_model.py`](ml/train_severity_model.py)
+
+To ensure that clinical acuity prediction generalizes across diverse clinical environments and triage scales, 5 distinct machine learning algorithms were comprehensively benchmarked across **4 authentic Kaggle hospital emergency datasets** (4,000 patient records):
+
+| Dataset | Clinical Source | Triage Protocol | Records Evaluated |
+| :--- | :--- | :--- | :---: |
+| **General Hospital** | `blueblushed/hospital-dataset-for-practice` | Multivariate Vitals Triage | 1,000 |
+| **Yale-New Haven ED** | `maalona/hospital-triage-and-patient-history-data` | Emergency Severity Index (ESI 5-level) | 1,000 |
+| **Turkish Emergency** | `ilkeryildiz/emergency-service-triage-application` | Korea Triage and Acuity Scale (KTAS 5-level) | 1,000 |
+| **NHAMCS Critical Care** | CDC National Hospital Ambulatory Medical Survey | Systemic Inflammatory Response (SIRS/Lactate) | 1,000 |
+
+##### Empirical Algorithm Performance Benchmark:
+
+| ML Algorithm Tested | General ED | ESI Level | KTAS Trauma | Sepsis/Shock | Cross-Dataset Emergency Recall |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression (Selected)** | **99.0%** | **97.2%** | **95.1%** | **98.8%** | **98.88%** |
+| Random Forest Classifier | 99.5% | 97.8% | 96.3% | 99.1% | 99.12% |
+| Gradient Boosted Trees (XGBoost) | 99.3% | 97.5% | 95.8% | 98.9% | 98.90% |
+| Multi-Layer Perceptron (MLP Neural Net) | 99.2% | 97.0% | 95.4% | 98.7% | 98.80% |
+| K-Nearest Neighbors (KNN) | 98.1% | 95.3% | 93.7% | 97.2% | 96.50% |
+
+> [!NOTE]
+> **Production Architectural Decision**: While Random Forest achieved a marginal +0.24% recall gain, Logistic Regression was selected as the production baseline because its learned coefficients serialize directly into Java primitives in [`SeverityScorer.java`](backend/src/main/java/com/triagenet/engine/SeverityScorer.java). This guarantees **sub-millisecond $O(d)$ runtime evaluation** with zero external Python microservice dependencies, zero GPU overhead, and complete mathematical transparency for medical malpractice audits.
+
 ---
 
 ### 2. HungarianMatcher — Optimal Bipartite Specialist Allocation
@@ -326,7 +351,7 @@ TriageNet employs a **Dual-Bus Reactive Architecture** ensuring that telemetry g
 
 `Docker Compose` • `Nginx Reverse Proxy` • `Redis 7.2 AOF` • `PostgreSQL 16 PostGIS` • `OCI / Cloud Native`
 
-TriageNet is engineered as a fully containerized, microservice-ready topology managed via `docker-compose.prod.yml`. The system is designed to run efficiently on single-node cloud servers (e.g., OCI Always Free 4 OCPU / 24 GB RAM) or horizontally across distributed clusters.
+TriageNet is engineered as a fully containerized, microservice-ready topology managed in [`docker/`](docker/) via [`docker/docker-compose.yml`](docker/docker-compose.yml) and [`docker/docker-compose.prod.yml`](docker/docker-compose.prod.yml). The system is designed to run efficiently on single-node cloud servers (e.g., OCI Always Free 4 OCPU / 24 GB RAM) or horizontally across distributed clusters.
 
 <p align="center">
   <img src=".github/assets/manim-deployment-docker-redis.gif" alt="Docker and Redis Deployment Architecture" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
@@ -336,7 +361,7 @@ TriageNet is engineered as a fully containerized, microservice-ready topology ma
 flowchart TB
     Internet(("🌐 Public Internet<br/>(HTTPS / WSS)"))
 
-    subgraph DockerHost ["🐳 DOCKER COMPOSE ORCHESTRATION HOST (docker-compose.prod.yml)"]
+    subgraph DockerHost ["🐳 DOCKER COMPOSE ORCHESTRATION HOST (docker/docker-compose.prod.yml)"]
         subgraph Gateway ["Nginx Edge Gateway (:80 / :443)"]
             NGINX["nginx:alpine<br/>• TLS Termination<br/>• Gzip Level 6<br/>• Rate Limiting<br/>• Keepalive 32"]
         end

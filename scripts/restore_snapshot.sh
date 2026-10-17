@@ -26,7 +26,7 @@ else
 fi
 
 echo "1. Restarting Docker Compose services..."
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 
 echo "2. Waiting for database and services to reach healthy state..."
 for i in {1..30}; do
@@ -37,7 +37,7 @@ for i in {1..30}; do
     sleep 1
 done
 
-docker compose ps
+docker compose -f docker/docker-compose.yml ps
 
 echo "3. Testing system endpoints..."
 curl -s http://localhost/healthz || echo "Proxy starting up..."

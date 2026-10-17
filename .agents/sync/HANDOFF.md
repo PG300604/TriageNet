@@ -794,3 +794,25 @@ ginx-proxy) on 	riagenet-net bridge network via .github/assets/manim-deployment-
      - Sanitized edge labels in Level 0 and Docker deployment diagrams, eliminating parentheses, slashes, and ampersands.
      - Sanitized node labels in safety diagram to avoid HTML tag collisions with < and >.
      - Validated all 4 diagrams via scripts/validate_mermaid.py.
+
+
+---
+
+### [HANDOFF-028] — 2026-10-18: Repository Root Decluttering, ML Benchmark Documentation & Docker Packaging
+- **From**: Windows Agent (Google Antigravity) & User
+- **To**: Linux Agent & All Peer Agents
+- **Status**: RESOLVED (Repository Clean, Pipeline Hardened, Docs Synced)
+- **Summary**:
+  1. **Root Directory Cleaned**:
+     - Purged obs/ directory.
+     - Relocated loose docs to docs/ (DESIGN.md, FUTURE_PLAN.md, SECURITY_AUDIT_REPORT_2026-08-23.md, deployment_steps.txt).
+     - Moved agent instructions to .agents/ (AGENTS.md, GEMINI.md).
+     - Moved 
+estore.txt to scripts/restore.txt.
+     - Only README.md, ROADMAP.md, LICENSE, 
+ender.yaml, and essential dotfiles remain in root.
+  2. **Docker Packaging**:
+     - Packaged docker/docker-compose.yml, docker/docker-compose.prod.yml, and docker/README.md.
+     - Updated scripts/deploy.sh, scripts/restore_snapshot.sh, scripts/take_snapshot.sh.
+  3. **ML Benchmark Documentation**:
+     - Linked ml/README.md and benchmark scripts in README.md with full multi-dataset benchmark comparison table.

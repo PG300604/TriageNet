@@ -1834,3 +1834,44 @@ User requested:
    - Removed unquoted parentheses from edge labels (e.g., |Corridor Preemption Requests (NH-33, GT Road)| -> |Corridor Preemption Requests: NH-33 and GT Road| and |/ws/ (WebSocket STOMP)| -> |Live STOMP WebSocket Telemetry|).
    - Replaced < and > inside safety nodes with safe descriptive phrasing to avoid HTML parser conflicts (SpO2 below 90%, SI exceeding 0.9).
    - Verified 100% clean parsing via scripts/validate_mermaid.py.
+
+
+---
+
+### Entry: 2026-10-18 - Repository Root Decluttering, ML Benchmark Documentation & Docker Packaging
+- **Timestamp**: 2026-10-18T02:07:00+05:30
+- **Environment**: Windows 11 (P:\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Repository Hygiene, ML Documentation, Docker Packaging, CI/CD Integrity
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+User requested:
+1. Add ML benchmark documentation links and performance evaluation tables to the machine learning section in README.md.
+2. Remove the obs/ directory containing local screen recording scripts to eliminate clutter.
+3. Organize root files into designated directories/packages, leaving only README.md, ROADMAP.md, LICENSE, and essential deployment infrastructure files at the root.
+4. Move Docker Compose files into docker/ and ensure all deployment scripts (deploy.sh, 
+estore_snapshot.sh, 	ake_snapshot.sh) continue to work without breaking pipelines.
+
+#### Actions Executed
+1. **Machine Learning Benchmarking Integration**:
+   - Added links to [ml/README.md](ml/README.md), [ml/benchmark_multi_kaggle_triage.py](ml/benchmark_multi_kaggle_triage.py), and [ml/train_severity_model.py](ml/train_severity_model.py) in the SeverityScorer section of README.md.
+   - Embedded full empirical benchmark comparison table across 4 authentic Kaggle hospital datasets (General Hospital, Yale-New Haven ED, Turkish Emergency KTAS, NHAMCS Critical Care) testing 5 algorithms (Logistic Regression 98.88% recall, Random Forest 99.12%, XGBoost 98.90%, MLP 98.80%, KNN 96.50%).
+2. **Purged obs/ Directory**:
+   - Deleted obs/auto_actor_mobile.ps1, obs/auto_actor_web.ps1, obs/obs_auto_zoom_director.lua.
+3. **Repository Root Decluttering**:
+   - Moved DESIGN.md -> docs/DESIGN.md.
+   - Moved FUTURE_PLAN.md -> docs/FUTURE_PLAN.md.
+   - Moved SECURITY_AUDIT_REPORT_2026-08-23.md -> docs/SECURITY_AUDIT_REPORT_2026-08-23.md.
+   - Moved deployement_steps.txt -> docs/deployment_steps.txt.
+   - Moved 
+estore.txt -> scripts/restore.txt.
+   - Moved AGENTS.md -> .agents/AGENTS.md.
+   - Moved GEMINI.md -> .agents/GEMINI.md.
+4. **Docker Packaging & Pipeline Hardening**:
+   - Created docker/ directory containing docker-compose.yml, docker-compose.prod.yml, and docker/README.md.
+   - Configured relative context and volume mounts (../backend, ../frontend, ../nginx/...).
+   - Hardened scripts/deploy.sh to transfer configs to ${DEPLOY_DIR}/docker/ and execute compose from docker/.
+   - Updated scripts/restore_snapshot.sh and scripts/take_snapshot.sh with -f docker/docker-compose.yml.
+   - Retained 
+ender.yaml at root to maintain Render.com Blueprint Infrastructure-as-Code automation.

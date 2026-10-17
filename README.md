@@ -1302,7 +1302,7 @@ For complete technical specifications, see [**ROADMAP.md**](ROADMAP.md).
 
 ```mermaid
 graph TD
-    subgraph CoreBackend ["TriageNet Core Engine (Spring Boot 3.3.2)"]
+    subgraph CoreBackend ["TriageNet Core Engine (Spring Boot 3.3.13)"]
         AUTH["Zero-Email Auth & Dual-Control Engine"]
         TRIAGE["Dynamic MEWS Triage & Acuity Engine"]
         ROUTING["Statewide Dijkstra Capacity Router"]
@@ -1447,19 +1447,22 @@ See the [Getting Started](#getting-started) section for technical setup instruct
 Key entry points for development:
 - **Frontend**: `frontend/components/triagenet/dashboard.tsx` — the central view router
 - **Backend**: `src/main/java/com/triagenet/TriageNetApplication.java` — Spring Boot entry
-- **Data**: `frontend/lib/jharkhand-data.ts` — all 79 hospital facilities with GPS coordinates
+- **Data**: `frontend/lib/jharkhand-data.ts` — all 111 authentic hospital facilities across 24 districts with GPS coordinates
 - **Algorithms**: `backend/src/main/java/com/triagenet/engine/` — Dijkstra, Hungarian Matcher, Severity Scorer
+- **API Contract**: `backend/openapi.json` & Swagger UI (`/swagger-ui/index.html`) — OpenAPI 3.0.1 with 41 endpoints
+- **Companion Monorepo**: `mobile/` (Flutter) and `android-app/` (Native Android companion wrapper)
+- **Video Production**: `video_production/my-video/` — 4K 60FPS Apple Keynote Explainer Video suite in Remotion
 
 ### For Recruiters & Evaluators
 
 This project demonstrates:
-- **Full-stack engineering**: Next.js 16 + Spring Boot 3.3.2 + PostgreSQL
-- **Real-world data**: 79 actual government hospitals across 24 districts of Jharkhand with GPS coordinates
-- **Production security**: JWT + TOTP 2FA + BIP-39 recovery + CSRF protection + 54+ automated tests
+- **Full-stack engineering**: Next.js 16 (20 routes) + Spring Boot 3.3.13 (Java 17 LTS) + PostgreSQL 16 + Redis 7 + Nginx
+- **Real-world data**: 111 actual government healthcare facilities across all 24 districts of Jharkhand with GPS coordinates
+- **Production security**: JWT + TOTP 2FA + BIP-39 recovery + CSRF protection + 72/72 automated tests (100% Green CI)
 - **AI/ML integration**: Logistic Regression severity scoring with 98.88% cross-dataset transfer recall
-- **GIS & spatial computing**: Leaflet maps, Haversine distance, Dijkstra routing, OpenRouteService
-- **Role-based access control**: 6 hierarchical roles with 3-tier approval precedence
-- **Government healthcare domain**: Designed for Jharkhand State Health Department operations
+- **GIS & spatial computing**: Leaflet maps, Haversine distance, Dijkstra routing, OpenRouteService, 108 Green Wave
+- **Role-based access control**: 6 hierarchical roles with 3-tier approval precedence and multi-tenant isolation
+- **Automated Staging**: Single-command Docker Compose (`docker compose up -d`) and production deploy script (`scripts/deploy.sh`)
 
 ---
 

@@ -1565,6 +1565,45 @@ Following a virtual machine crash triggered by opening VS Code during concurrent
 - All SEO, sitemaps, robots, metadata, and favicon assets are integrated and compiling cleanly across 23 routes.
 - Docker multi-container stack is operational on port 80/3000/8080/5432/6379.
 
+---
+
+### [LOG-015] — 2026-10-17: Cloud Production Deployment 100% Live on Render.com
+
+- **Timestamp**: `2026-10-17T18:26:00+05:30`
+- **Environment**: Cloud Production (Render.com + Linux Fedora 44 Workspace)
+- **Operator / Agent**: Google Antigravity & User Pair Deployment
+- **Scope / Category**: Production Cloud Launch, PostgreSQL Managed Database, Spring Boot 3.3.13, Next.js 16.4.1, Live Cloud Verification
+- **Status**: Completed, 100% LIVE IN PRODUCTION
+
+#### Context & Objectives
+TriageNet was deployed to Render.com using Infrastructure-as-Code Blueprint (`render.yaml`). Resolved Render's Blueprint database type syntax (`databases:` root key) and cloud PostgreSQL URI JDBC driver normalization (`DatabaseUrlEnvironmentPostProcessor.java`).
+
+#### Actions Executed
+1. **Cloud Architecture Provisioned & Deployed**:
+   - `triagenet-db`: Managed PostgreSQL 16 database.
+   - `triagenet-backend`: Spring Boot 3.3.13 Docker web service (Java 17 LTS, non-root container).
+   - `triagenet-frontend`: Next.js 16.4.1 Turbopack Docker web service (React 19, Tailwind, Leaflet HUD).
+2. **Cloud JDBC URL Normalizer Verified in Production**:
+   - `DatabaseUrlEnvironmentPostProcessor.java` intercepted Render's internal `postgresql://` URI and dynamically converted it into valid `jdbc:postgresql://<host>:5432/triagenet`.
+   - HikariCP pool initialized cleanly with 20 connections; Hibernate schema created with `ddl-auto: update`.
+   - All 111 authentic Jharkhand facilities across 24 districts seeded.
+3. **Public Cloud Endpoints Verified**:
+   - Backend State Overview: `https://triagenet-backend.onrender.com/api/dashboard/state-overview` (HTTP 200).
+   - ITMS Traffic Gateway: `https://triagenet-backend.onrender.com/api/traffic/itms/status` (HTTP 200).
+   - Public Frontend: `https://triagenet-frontend.onrender.com/` (HTTP 200).
+   - Citizen Emergency Portal: `https://triagenet-frontend.onrender.com/portal` (HTTP 200).
+   - Mobile OTA Manifest: `https://triagenet-frontend.onrender.com/api/app/version` (HTTP 200).
+4. **Crash-Proof Checkpointing**:
+   - Captured final production snapshot (`snapshot-20261017_182635`).
+   - Pushed to GitHub `origin/main`.
+
+#### Instructions for Windows & Peer Agents
+- TriageNet is now live in production on Render.
+- Cloud URLs:
+  - Frontend: `https://triagenet-frontend.onrender.com`
+  - Backend API: `https://triagenet-backend.onrender.com/api`
+
+
 
 
 

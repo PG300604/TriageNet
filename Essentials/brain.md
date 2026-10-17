@@ -157,13 +157,16 @@ TriageNet/
   - Phase 14: Ayushman Bharat Digital Mission (ABDM / ABHA Patient Intake Integration with 14-digit verification & clinical prefill).
   - Phase 15: Production Hardening & Resilience (Sliding-window IP rate limiting with `Retry-After`, automated DB backups with SHA-256 and 7-day retention, RLS policies, Render infrastructure manifest `render.yaml`, GitHub Actions keep-alive cron, clinical error boundaries `error.tsx`, 404 handler `not-found.tsx`, healthcare privacy/terms pages, mobile OTA manifest v1.3.0, and 8/8 automated E2E sanity checks).
   - Phase 16: Complete SEO Suite, Favicons, Public Deployment & Crash Recovery (Dynamic and static `sitemap.xml`, `robots.txt`, `site.webmanifest`, full favicon suite `16x16` to `512x512` + `apple-touch-icon`, `opengraph-image.png`, route-specific `layout.tsx` metadata across 23 routes, descriptive image alt text standardization, and mobile OTA endpoint permissions).
+  - Phase 17: Production Cloud Launch on Render.com (100% Live: Managed PostgreSQL 16 DB, Spring Boot 3.3.13 Backend, Next.js 16.4.1 Frontend, cloud JDBC URI normalizer, 24/7 anti-sleep keep-alive workflow).
 - **Quality & Test Gates**:
   - Backend: **86 / 86 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 33.2s).
   - Frontend: 0 TypeScript errors, **23/23 routes** compile cleanly with Turbopack in 11.8s.
   - Containerization: 5/5 containers running and healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
+  - Production Deployment: **LIVE ON RENDER** (`https://triagenet-frontend.onrender.com` & `https://triagenet-backend.onrender.com`).
   - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 50+ REST endpoints.
   - E2E Sanity Flow (`scripts/test_e2e_flow.py`): **8/8 checks PASS** (Healthcheck, State Overview, Severity Scorer, ITMS Gateway, Traffic Preemption, ABDM, IoT Oxygen Telemetry, Mobile OTA).
   - Rate Limiting (`scripts/stress_test_api.py`): **PASS** (HTTP 429 verified with `Retry-After` header).
+
 
 
 

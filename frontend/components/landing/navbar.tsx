@@ -56,6 +56,18 @@ export function Navbar() {
           >
             TELEMETRY
           </a>
+          <Link
+            href="/portal"
+            className="text-amber-300 hover:text-amber-200 transition-colors font-bold flex items-center gap-1 border-b border-dashed border-amber-500/30 pb-0.5"
+          >
+            <span>CITIZEN PORTAL</span>
+          </Link>
+          <Link
+            href="/downloads"
+            className="text-[#ea580c] hover:text-orange-400 transition-colors font-bold flex items-center gap-1"
+          >
+            <span>📱 GET APP</span>
+          </Link>
         </div>
 
         {/* Right: Solid Bark Brown Pill Action Button */}

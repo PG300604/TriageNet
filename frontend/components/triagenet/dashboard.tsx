@@ -8,6 +8,7 @@ import {
   type ReferralRecommendation,
   type ScenarioKey,
   type TriageState,
+  type DischargeResult,
   advanceTime,
   buildScenario,
   executeRegionalReferral,
@@ -41,9 +42,48 @@ import { DocsView } from './docs-view'
 import { SuppliesView } from './supplies-view'
 import { ReportsView } from './reports-view'
 import { CommsView } from './comms-view'
-import { Siren, Wifi, WifiOff, Server, UserCheck } from 'lucide-react'
+import { Siren, Wifi, WifiOff, Server, UserCheck, CheckCircle2, Activity, ArrowRight, BedDouble, Radio, Clock } from 'lucide-react'
 import { ApiClient, type HospitalApiData, type StateOverviewData } from '@/lib/api-client'
 import { StaffApprovalModal } from '@/components/staff-approval-modal'
+import { directorBridge, type DirectorEvent } from '@/lib/director-bridge'
+
+const VIEW_ALIASES: Record<string, ViewKey> = {
+  capacity: 'capacity',
+  dashboard: 'capacity',
+  matrix: 'capacity',
+  triage: 'queue',
+  queue: 'queue',
+  'triage-queue': 'queue',
+  regional: 'network',
+  network: 'network',
+  'regional-network': 'network',
+  map: 'network',
+  patients: 'patients',
+  patient: 'patients',
+  census: 'patients',
+  'ai-cds': 'aicds',
+  aicds: 'aicds',
+  cds: 'aicds',
+  doctors: 'doctors',
+  doctor: 'doctors',
+  roster: 'doctors',
+  clinical: 'clinical',
+  ops: 'clinical',
+  billing: 'billing',
+  ayushman: 'billing',
+  escrow: 'billing',
+  docs: 'docs',
+  ehr: 'docs',
+  records: 'docs',
+  supplies: 'supplies',
+  oxygen: 'supplies',
+  inventory: 'supplies',
+  reports: 'reports',
+  audit: 'reports',
+  analytics: 'reports',
+  comms: 'comms',
+  relay: 'comms',
+}
 
 // ---------------------------------------------------------------------------
 // Data Source Mode: 'live' = Spring Boot API, 'simulated' = in-memory engine
@@ -264,8 +304,26 @@ export function Dashboard() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastEventMessage, setLastEventMessage] = useState<string | null>(null)
 
-  // Auto-lock district for DISTRICT_CMO or HOSPITAL_ADMIN
+  // Remote director override refs (bypasses persona locks when controlled via /control)
+  const directorDistrictOverrideRef = useRef(false)
+  const directorViewOverrideRef = useRef(false)
+
+  // Live operational banners for discharges and emergency clinical arrivals
+  const [latestDischargeEvent, setLatestDischargeEvent] = useState<DischargeResult | null>(null)
+  const [latestArrivalEvent, setLatestArrivalEvent] = useState<{
+    id: string
+    patientName: string
+    severity: number
+    hospitalName: string
+    details: string
+    waitMinutes: number
+    assignedWaitMinutes?: number
+    status: string
+  } | null>(null)
+
+  // Auto-lock district for DISTRICT_CMO or HOSPITAL_ADMIN (bypassed if director remotely overrides)
   useEffect(() => {
+    if (directorDistrictOverrideRef.current) return
     if (user?.districtName && (user.role === 'DISTRICT_CMO' || user.role === 'HOSPITAL_ADMIN')) {
       if (selectedDistrict !== user.districtName) {
         setSelectedDistrict(user.districtName)
@@ -305,8 +363,9 @@ export function Dashboard() {
 
 
 
-  // Auto-redirect if current view is disallowed for the active role
+  // Auto-redirect if current view is disallowed for the active role (bypassed if director overrides)
   useEffect(() => {
+    if (directorViewOverrideRef.current) return
     if (!allowedViews.includes(view)) {
       setView(allowedViews[0])
     }
@@ -338,11 +397,15 @@ export function Dashboard() {
     return () => clearInterval(interval)
   }, [checkPendingStaff])
 
-  // Handle District Switch
-  const handleSelectDistrict = useCallback((newDistrict: string) => {
-    // Prevent restricted roles from switching districts
-    if ((user?.role === 'DISTRICT_CMO' || user?.role === 'HOSPITAL_ADMIN') && user?.districtName && newDistrict !== user.districtName) {
+  // Handle District Switch (supports force = true for remote Director override)
+  const handleSelectDistrict = useCallback((newDistrict: string, force = false) => {
+    // Prevent restricted roles from switching districts unless forced by remote Director
+    if (!force && (user?.role === 'DISTRICT_CMO' || user?.role === 'HOSPITAL_ADMIN') && user?.districtName && newDistrict !== user.districtName) {
       return
+    }
+
+    if (force) {
+      directorDistrictOverrideRef.current = true
     }
 
     setSelectedDistrict(newDistrict)
@@ -408,38 +471,77 @@ export function Dashboard() {
 
   const injectArrival = useCallback(
     (severity: number, name: string, complaint: string) => {
+      // Collision-proof unique ID
+      const newPtId = `P-${Date.now().toString().slice(-4)}-${Math.floor(1000 + Math.random() * 9000)}`
+      const initialWait = Math.floor(4 + Math.random() * 3)
+
       const newPt: Patient = {
-        id: `P-${Math.floor(1000 + Math.random() * 9000)}`,
+        id: newPtId,
         name,
         hospitalId: selectedHospitalId,
         severity,
-        waitMinutes: 0,
+        waitMinutes: initialWait,
         topFactor: complaint,
         status: 'Waiting',
       }
 
-      const { state: nextState, preemptedPatientName } = processNewArrival(state, newPt)
+      const { state: nextState, preemptedPatientName, arrivalStatus } = processNewArrival(state, newPt)
       setState(nextState)
       setUpdatedIds(new Set([newPt.id]))
 
       if (preemptedPatientName) {
-        setLastEventMessage(
-          `Critical arrival ${newPt.name} (Severity: ${severity}) assigned at ${selectedHospital.name}. Preempted lower-acuity patient ${preemptedPatientName} to step-down holding!`,
-        )
+        const msg = `🚨 Code Red Preemption: ${newPt.name} (Severity: ${severity}) assigned at ${selectedHospital.name}. Preempted ${preemptedPatientName} to step-down holding (Assigned in ${newPt.assignedWaitMinutes}m).`
+        setLastEventMessage(msg)
+        setLatestArrivalEvent({
+          id: newPt.id,
+          patientName: newPt.name,
+          severity,
+          hospitalName: selectedHospital.name,
+          details: `Acuity ${severity}/100 · Preempted lower-acuity patient (${preemptedPatientName}) to step-down holding. Bed allocated at ${newPt.assignedWaitMinutes}m mark.`,
+          waitMinutes: newPt.waitMinutes,
+          assignedWaitMinutes: newPt.assignedWaitMinutes,
+          status: 'Assigned',
+        })
+      } else if (arrivalStatus === 'assigned_overflow') {
+        const msg = `🚨 Regional Transfer: ${newPt.name} (Severity: ${severity}) assigned to overflow facility with open ICU capacity.`
+        setLastEventMessage(msg)
+        setLatestArrivalEvent({
+          id: newPt.id,
+          patientName: newPt.name,
+          severity,
+          hospitalName: selectedHospital.name,
+          details: `Acuity ${severity}/100 · Transferred to overflow facility. Initial intake wait: ${newPt.waitMinutes}m.`,
+          waitMinutes: newPt.waitMinutes,
+          assignedWaitMinutes: newPt.assignedWaitMinutes,
+          status: 'Assigned',
+        })
       } else {
-        setLastEventMessage(`Arrival registered: ${newPt.name} entered ${selectedHospital.name} queue in Holding state.`)
+        const msg = `🚨 Emergency Intake: ${newPt.name} (Severity: ${severity}) arrived at ${selectedHospital.name}. Triage wait: ${newPt.waitMinutes}m. Ranked #1 in queue heap.`
+        setLastEventMessage(msg)
+        setLatestArrivalEvent({
+          id: newPt.id,
+          patientName: newPt.name,
+          severity,
+          hospitalName: selectedHospital.name,
+          details: `Acuity ${severity}/100 · Triage evaluation completed (${newPt.waitMinutes}m wait). Placed at Rank #1 awaiting bed assignment.`,
+          waitMinutes: newPt.waitMinutes,
+          status: 'Waiting',
+        })
       }
-      setTimeout(() => setLastEventMessage(null), 6000)
+      setTimeout(() => setLastEventMessage(null), 8000)
+      setTimeout(() => setLatestArrivalEvent(null), 10000)
     },
     [state, selectedHospitalId, selectedHospital],
   )
 
   const handleBedRelease = useCallback(
-    (reason: 'recovery' | 'family_ama') => {
-      const { state: nextState, message } = triggerBedRelease(state, selectedHospitalId, reason)
-      setState(nextState)
-      setLastEventMessage(message)
-      setTimeout(() => setLastEventMessage(null), 6000)
+    (reason: 'recovery' | 'family_ama', targetPatientId?: string) => {
+      const result = triggerBedRelease(state, selectedHospitalId, reason, targetPatientId)
+      setState(result.state)
+      setLastEventMessage(result.message)
+      setLatestDischargeEvent(result)
+      setTimeout(() => setLastEventMessage(null), 8000)
+      setTimeout(() => setLatestDischargeEvent(null), 10000)
     },
     [state, selectedHospitalId],
   )
@@ -471,6 +573,84 @@ export function Dashboard() {
     }, 1600)
     return () => clearInterval(interval)
   }, [isPlaying])
+
+  // Director Bridge: Remote Orchestration via /control (Cross-Tab BroadcastChannel)
+  useEffect(() => {
+    const unsubscribe = directorBridge.subscribe((ev: DirectorEvent) => {
+      switch (ev.type) {
+        case 'TRIGGER_SCENARIO':
+          runScenario(ev.scenario)
+          break
+        case 'SET_PLAYING':
+          setIsPlaying(ev.isPlaying)
+          break
+        case 'STEP_TIME':
+          simulateTime(ev.minutes || 15)
+          break
+        case 'INJECT_PATIENT': {
+          const ptMap: Record<string, { severity: number; name: string; complaint: string }> = {
+            critical_trauma: { severity: 95, name: 'Rahul Verma', complaint: 'Severe Polytrauma (Chest & Pelvic Fracture)' },
+            cardiac_arrest: { severity: 98, name: 'Anand Kumar', complaint: 'STEMI Acute Ventricular Fibrillation' },
+            pediatric_respiratory: { severity: 88, name: 'Aarav Roy (Child 4y)', complaint: 'Acute Status Asthmaticus w/ Stridor' },
+            sepsis_shock: { severity: 92, name: 'Pooja Kumari', complaint: 'Septic Shock w/ Refractory Hypotension' },
+          }
+          const pt = ptMap[ev.patientType] || ptMap.critical_trauma
+          injectArrival(pt.severity, pt.name, pt.complaint)
+          break
+        }
+        case 'TRIGGER_BED_RELEASE':
+          handleBedRelease(ev.reason)
+          break
+        case 'RESET_SIMULATION':
+          runScenario('steady')
+          break
+        case 'SET_VIEW': {
+          if (ev.view) {
+            const raw = ev.view.toLowerCase().trim()
+            const targetView = VIEW_ALIASES[raw] || (ev.view as ViewKey)
+            directorViewOverrideRef.current = true
+            setView(targetView)
+            setLastEventMessage(`Remote Director set display view to: ${VIEW_TITLES[targetView] || targetView}`)
+            setTimeout(() => setLastEventMessage(null), 5000)
+          }
+          break
+        }
+        case 'SET_DISTRICT': {
+          if (ev.district) {
+            handleSelectDistrict(ev.district, true)
+          }
+          break
+        }
+        case 'TRIGGER_ACCIDENT_HOTSPOT': {
+          directorViewOverrideRef.current = true
+          setView('network')
+          setLastEventMessage(`🚨 [AI BLACKSPOT SIMULATOR] Collision cluster at ${ev.name}! Req: ${ev.requiredSpecialistRole}. 108 ALS Dispatched.`)
+          setTimeout(() => setLastEventMessage(null), 8000)
+          break
+        }
+        case 'TOGGLE_GREEN_WAVE': {
+          setLastEventMessage(ev.active ? '⚡ 108 GREEN WAVE PREEMPTION ENGAGED (Signals Synchronized to Green)' : 'Green Wave preemption released')
+          setTimeout(() => setLastEventMessage(null), 5000)
+          break
+        }
+        case 'RETRY_BACKEND':
+          retryConnection()
+          break
+        case 'PING':
+          directorBridge.send({
+            type: 'PONG',
+            activeView: view,
+            role: user?.role,
+            dataSourceMode,
+            hospitalCount: state.hospitals.length,
+            scenario,
+            isPlaying,
+          })
+          break
+      }
+    })
+    return () => unsubscribe()
+  }, [runScenario, simulateTime, injectArrival, handleBedRelease, setView, handleSelectDistrict, retryConnection, view, user?.role, dataSourceMode, state.hospitals.length, scenario, isPlaying])
 
   const hospitalPatients = useMemo(
     () => state.patients.filter((p) => p.hospitalId === selectedHospitalId),
@@ -510,11 +690,6 @@ export function Dashboard() {
           onSelectHospital={setSelectedHospitalId}
           selectedDistrict={selectedDistrict}
           onSelectDistrict={handleSelectDistrict}
-          scenario={scenario}
-          onRunScenario={runScenario}
-          onFastForward={simulateTime}
-          isPlaying={isPlaying}
-          onTogglePlay={() => setIsPlaying((p) => !p)}
           onNavigateView={(v) => setView(v as ViewKey)}
         />
 
@@ -540,34 +715,6 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 font-mono text-[10px]">
-                {/* Data Source Mode Indicator */}
-                <button
-                  onClick={dataSourceMode === 'simulated' ? retryConnection : undefined}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold transition-colors',
-                    dataSourceMode === 'live'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                      : isCheckingBackend
-                        ? 'bg-slate-50 border-slate-300 text-slate-500 animate-pulse'
-                        : 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 cursor-pointer',
-                  )}
-                  title={
-                    dataSourceMode === 'live'
-                      ? `Connected to Spring Boot API${stateOverview ? ` · ${stateOverview.totalHospitals} hospitals loaded` : ''}`
-                      : isCheckingBackend
-                        ? 'Probing backend connection…'
-                        : 'Backend unreachable — using in-memory simulation engine. Click to retry.'
-                  }
-                >
-                  {dataSourceMode === 'live' ? (
-                    <><Wifi className="size-3" /> LIVE API</>
-                  ) : isCheckingBackend ? (
-                    <><Server className="size-3" /> CONNECTING…</>
-                  ) : (
-                    <><WifiOff className="size-3" /> SIMULATED</>
-                  )}
-                </button>
-
                 {/* Admin Staff Verification Queue Trigger */}
                 {user && ['SUPER_ADMIN', 'DISTRICT_CMO', 'HOSPITAL_ADMIN'].includes(user.role) && (
                   <button
@@ -603,49 +750,117 @@ export function Dashboard() {
                 </h1>
               </div>
 
-              {/* Simulation Scenario Pill Switcher (Inspired by Boltshift) */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 rounded-2xl border border-stone-200 bg-white p-1 shadow-2xs">
-                  <span className="px-2.5 text-[11px] font-semibold text-stone-400 uppercase tracking-wider hidden sm:inline-block">
-                    Scenario:
+              {/* Active Emergency Status Alert (Triggered via remote Director Command) */}
+              {scenario !== 'steady' && (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md animate-pulse">
+                    <Siren className="size-4 animate-bounce text-white" />
+                    <span>{scenario === 'mass-casualty' ? 'CRITICAL MASS CASUALTY PROTOCOL ACTIVE' : 'REGIONAL SURGE PROTOCOL ACTIVE'}</span>
                   </span>
-                  {[
-                    { key: 'steady', label: 'Steady State' },
-                    { key: 'mass-casualty', label: 'Mass Casualty' },
-                    { key: 'regional-surge', label: 'Regional Surge' },
-                  ].map((sc) => (
-                    <button
-                      key={sc.key}
-                      type="button"
-                      onClick={() => runScenario(sc.key as ScenarioKey)}
-                      className={cn(
-                        'rounded-xl px-3 py-1 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
-                        scenario === sc.key
-                          ? 'bg-[#382416] text-[#ffedd7] shadow-2xs'
-                          : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
-                      )}
-                    >
-                      {sc.label}
-                    </button>
-                  ))}
                 </div>
-
-                {scenario !== 'steady' && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-bold text-rose-700">
-                    <Siren className="size-3.5 animate-pulse text-rose-600" />
-                    {scenario === 'mass-casualty' ? 'Mass Casualty Event' : 'Regional Surge'} Active
-                  </span>
-                )}
-              </div>
+              )}
             </div>
 
+            {/* Live Discharge Notification Banner */}
+            {latestDischargeEvent && (
+              <div className="mb-5 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/70 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs shrink-0">
+                    <CheckCircle2 className="size-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded uppercase">
+                        BED FREED &amp; PATIENT DISCHARGED
+                      </span>
+                      <span className="text-xs font-bold text-emerald-950">
+                        {latestDischargeEvent.dischargedName} discharged ({latestDischargeEvent.reason === 'recovery' ? 'Clinical Recovery' : 'Transfer/AMA'}) from {latestDischargeEvent.hospitalName}
+                      </span>
+                    </div>
+                    {latestDischargeEvent.reassignedName ? (
+                      <p className="text-xs text-stone-600 mt-1">
+                        🎉 Freed bed immediately reallocated to waiting patient: <strong className="text-emerald-900">{latestDischargeEvent.reassignedName}</strong> (Queue wait: {latestDischargeEvent.reassignedWaitMinutes}m).
+                      </p>
+                    ) : (
+                      <p className="text-xs text-stone-600 mt-1">
+                        Bed successfully freed and restored to available facility capacity pool. 0 waiting patients.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      directorViewOverrideRef.current = true
+                      setView('queue')
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 text-xs font-bold text-emerald-800 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <span>View Triage Queue</span>
+                    <ArrowRight className="size-3.5 text-emerald-600" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLatestDischargeEvent(null)}
+                    className="px-2.5 py-2 rounded-xl border border-stone-200 text-stone-400 hover:text-stone-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Live Clinical Arrival & Intake Banner */}
+            {latestArrivalEvent && (
+              <div className="mb-5 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-white to-amber-50/70 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-[#ea580c] text-white shadow-xs shrink-0 animate-pulse">
+                    <Activity className="size-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded uppercase">
+                        {latestArrivalEvent.status === 'Assigned' ? 'CODE RED PREEMPTION' : 'NEW EMERGENCY ARRIVAL'}
+                      </span>
+                      <span className="text-xs font-bold text-[#382416]">
+                        {latestArrivalEvent.patientName} (Acuity: {latestArrivalEvent.severity}/100) arrived at {latestArrivalEvent.hospitalName}
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-600 mt-1">
+                      {latestArrivalEvent.details}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      directorViewOverrideRef.current = true
+                      setView('queue')
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-orange-300 bg-white hover:bg-orange-50 text-xs font-bold text-[#ea580c] shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <span>Inspect Triage Queue</span>
+                    <ArrowRight className="size-3.5 text-orange-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLatestArrivalEvent(null)}
+                    className="px-2.5 py-2 rounded-xl border border-stone-200 text-stone-400 hover:text-stone-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
 
             {view === 'capacity' && (
               <CapacityView
                 state={state}
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={setSelectedHospitalId}
-                onNavigateView={setView}
+                onNavigateView={(v) => setView(v as ViewKey)}
                 isPlaying={isPlaying}
                 onTogglePlay={() => setIsPlaying((v) => !v)}
                 onFastForward={simulateTime}

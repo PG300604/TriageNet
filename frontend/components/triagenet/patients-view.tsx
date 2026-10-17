@@ -208,7 +208,7 @@ export function PatientsView({ state }: PatientsViewProps) {
 
           {/* Patient Cards List */}
           <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
-            {filteredPatients.map((p) => {
+            {filteredPatients.map((p, idx) => {
               const isSelected = activePatient?.id === p.id
               const isHighRisk = p.severity >= 80
               const isModRisk = p.severity >= 50 && p.severity < 80
@@ -217,7 +217,7 @@ export function PatientsView({ state }: PatientsViewProps) {
 
               return (
                 <div
-                  key={p.id}
+                  key={`${p.id}-${p.hospitalId}-${idx}`}
                   onClick={() => setSelectedPatient(p)}
                   className={cn(
                     'flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 cursor-pointer transition-all',
@@ -400,17 +400,17 @@ export function PatientsView({ state }: PatientsViewProps) {
                   <span className="text-xs font-semibold text-stone-600">Predicted Acuity Score:</span>
                   <span className={cn(
                     'rounded-full px-2.5 py-0.5 text-xs font-bold border',
-                    prediction.score >= 80 ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                    prediction.score >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    prediction.severityScore >= 80 ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                    prediction.severityScore >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200' :
                     'bg-emerald-50 text-emerald-700 border-emerald-200'
                   )}>
-                    {prediction.score} / 100
+                    {prediction.severityScore} / 100
                   </span>
                 </div>
                 <p className="text-[11px] text-stone-500">
-                  Top Risk Driver: <strong className="text-stone-700">{prediction.topFactor}</strong>
+                  Top Risk Driver: <strong className="text-stone-700">{prediction.topFactors?.[0]?.factor || 'Hypoxia (SpO₂ < 90%)'}</strong>
                 </p>
-                {prediction.sepsisWarning && (
+                {prediction.sepsisAlert && (
                   <div className="rounded-lg bg-rose-100/80 border border-rose-200 p-2 text-rose-800 text-[11px] font-bold flex items-center gap-1.5 animate-pulse">
                     <AlertTriangle className="size-3.5 text-rose-600" />
                     <span>Clinical Sepsis Early Warning Protocol Triggered</span>

@@ -1,0 +1,70 @@
+TITLE: TRIAGENET_TIMELINE_MARKERS
+FCM: NON-DROP FRAME
+
+001  AX       V     C        00:00:00:00 00:00:12:00 00:00:00:00 00:00:12:00
+* FROM CLIP NAME: motion_01_intro_hook.mp4
+ |C:ResolveColorBlue |M:ACT 1: Hook |D:1200
+
+002  AX       V     C        00:00:00:00 00:00:06:00 00:00:12:00 00:00:18:00
+* FROM CLIP NAME: motion_02_system_architecture.mp4
+ |C:ResolveColorCyan |M:BEAT DROP: Tech Architecture |D:600
+
+003  AX       V     C        00:00:00:00 00:00:06:00 00:00:18:00 00:00:24:00
+* FROM CLIP NAME: motion_02_system_architecture.mp4
+ |C:ResolveColorYellow |M:Tech Stack Buses |D:600
+
+004  AX       V     C        00:00:00:00 00:00:08:00 00:00:24:00 00:00:32:00
+* FROM CLIP NAME: clip_01_web_analytics_gauge.mp4
+ |C:ResolveColorGreen |M:Web Analytics Gauge |D:800
+
+005  AX       V     C        00:00:00:00 00:00:06:00 00:00:32:00 00:00:38:00
+* FROM CLIP NAME: clip_02_web_acuity_sliders.mp4
+ |C:ResolveColorPurple |M:Algo 1: SeverityScorer Sigmoid |D:600
+
+006  AX       V     C        00:00:00:00 00:00:06:00 00:00:38:00 00:00:44:00
+* FROM CLIP NAME: clip_03_web_triage_heap.mp4
+ |C:ResolveColorPurple |M:Algo 2: HungarianMatcher |D:600
+
+007  AX       V     C        00:00:00:00 00:00:06:00 00:00:44:00 00:00:50:00
+* FROM CLIP NAME: clip_04_web_gis_highway_siren.mp4
+ |C:ResolveColorPurple |M:Algo 3: DijkstraRouter |D:600
+
+008  AX       V     C        00:00:00:00 00:00:06:00 00:00:50:00 00:00:56:00
+* FROM CLIP NAME: clip_05_web_doctor_paging.mp4
+ |C:ResolveColorPurple |M:Algo 4: TriageQueue MaxHeap |D:600
+
+009  AX       V     C        00:00:00:00 00:00:06:00 00:00:56:00 00:01:02:00
+* FROM CLIP NAME: clip_09_mobile_paramedic_gps.mp4
+ |C:ResolveColorRed |M:Mobile Paramedic NH-33 GPS |D:600
+
+010  AX       V     C        00:00:00:00 00:00:06:00 00:01:02:00 00:01:08:00
+* FROM CLIP NAME: clip_10_mobile_prealert_voucher.mp4
+ |C:ResolveColorRed |M:Trauma Bay Voucher ETA 19:40 |D:600
+
+011  AX       V     C        00:00:00:00 00:00:06:00 00:01:08:00 00:01:14:00
+* FROM CLIP NAME: clip_11_mobile_green_wave_active.mp4
+ |C:ResolveColorGreen |M:108 Green Wave Active |D:600
+
+012  AX       V     C        00:00:00:00 00:00:06:00 00:01:14:00 00:01:20:00
+* FROM CLIP NAME: clip_12_mobile_triage_nurse_intake.mp4
+ |C:ResolveColorCyan |M:ED Nurse Rapid Intake |D:600
+
+013  AX       V     C        00:00:00:00 00:00:06:00 00:01:20:00 00:01:26:00
+* FROM CLIP NAME: clip_06_web_ai_cds_sigmoid.mp4
+ |C:ResolveColorYellow |M:AI CDS Diagnostic Differentials |D:600
+
+014  AX       V     C        00:00:00:00 00:00:06:00 00:01:26:00 00:01:32:00
+* FROM CLIP NAME: clip_07_web_contingency_grant.mp4
+ |C:ResolveColorYellow |M:Rs 6.40 Cr Contingency Grant |D:600
+
+015  AX       V     C        00:00:00:00 00:00:06:00 00:01:32:00 00:01:38:00
+* FROM CLIP NAME: clip_08_web_staff_verification.mp4
+ |C:ResolveColorYellow |M:Hospital Staff Verification |D:600
+
+016  AX       V     C        00:00:00:00 00:00:08:00 00:01:38:00 00:01:46:00
+* FROM CLIP NAME: motion_05_statewide_impact_outro.mp4
+ |C:ResolveColorCyan |M:Statewide Impact Metrics |D:800
+
+017  AX       V     C        00:00:00:00 00:00:06:36 00:01:46:00 00:01:52:36
+* FROM CLIP NAME: motion_05_statewide_impact_outro.mp4
+ |C:ResolveColorOrange |M:Grand Outro & Branding |D:636

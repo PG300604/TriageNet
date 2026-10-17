@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-best-practices/SKILL.md",
+      "computedHash": "956f37bf94030efa9732788f4de5bc12a8bdfa54bc80bca792192e421c502500"
+    }
+  }
+}

@@ -127,6 +127,48 @@ Without automated state-wide coordination:
   - **3D Device Framing**: Web-based Animockup / Figma Perspective Mockups + DaVinci Resolve 3D DVE camera tilts.
   - **Master Assembly & Sound Design**: DaVinci Resolve Free (up to 4K 60fps, Text+ titles with motion blur, no watermarks) paired with electronic synth soundtrack and UI micro-SFX (clicks, swooshes, chimes).
 
+### Module F14 — Hospital Financial ERP & HMS Gateway Integration
+- **Bidirectional Accounting Gateway**: Connects TriageNet's equipment capitalization and care recovery engine to each hospital's respective financial software (NIC e-Hospital HMS v4.2, ABDM NHCX Gateway, SAP Healthcare IS-H, JPFMS / Tally Cloud).
+- **Automated 24/7 Reconciliation**: Ingests billing vouchers and Ayushman Bharat PM-JAY recovery claims automatically, updating facility operating budgets and state contingency reserve ledgers.
+- **Interactive Configuration Console**: Allows operators to customize REST/FHIR endpoints, authentication secret tokens, sync cadences (real-time webhook vs batch), and execute live API handshake tests.
+
+### Module F15 — Uber-Style 3D GIS Fleet CAD & Dijkstra Shortest Path Telemetry
+- **Uber 3D Vehicle Simulation**: Continuous 1.2s animation ticker driving 3D isometric vehicles with heading rotation (`transform: rotate`), emergency roof strobe lightbars, speed badges (54–68 km/h), and radar pulse rings.
+- **Camera Auto-Framing (`fitBounds`)**: Map automatically centers and frames the entire Dijkstra route corridor between the incident pickup scene and target hospital whenever the selection updates.
+- **Live Dijkstra Shortest-Path Route HUD**: Floating telemetry strip detailing optimal highway corridor (NH-33 / NH-20), green wave signal preemption, distance, real-time ETA, and ICU bed hold status.
+
+### Module F16 — Role-Based Manual Data Entry Infrastructure (Public GitHub Release Ready)
+- **Zero-Mock Production Mode**: Prepares TriageNet for public open-source deployment, ensuring every metric and record can be entered manually by designated leadership roles rather than relying on pre-fetched mock data:
+  - **Super Admin**: Register GeM bulk procurement master contracts and adjust district contingency pool allocations.
+  - **District CMO**: Submit emergency supply requisitions with P1/P2/P3 priorities and clinical justifications.
+  - **Medical Superintendent**: Add and reconfigure hospital department care bays and dedicated ventilator stations.
+  - **Ambulance Dispatcher**: Manual 108 emergency call intake and vehicle dispatch.
+
+### Module F17 — AI Automated Accident Hotspot Detection & Multi-Criteria Doctor Roster Matching
+- **Automated Collision Cluster Identification**: Maps 5 real-world Jharkhand highway blackspots (Ormanjhi NH-33, Jharia Colliery, Barhi GT Road, Bundu Valley, Adityapur Industrial) identifying incident clusters, collision frequencies, and default trauma mechanisms.
+- **Dynamic Doctor Duty Roster Telemetry**: Direct query of surgical specialist rosters across RIMS Ranchi, Sadar Hospital Ranchi, SNMMCH Dhanbad, and MGM Jamshedpur to determine whether the required specialist (Neurosurgeon, Pulmonologist, Trauma Surgeon, Burns/Plastic, Ortho) is `READY_TRAUMA_BAY`, `OCCUPIED_IN_OT`, or `NOT_AVAILABLE`.
+- **3-Tiered Casualty Destination Recommendations**:
+  - **1st Best (Recommended Apex Facility)**: Definitive tertiary care with on-duty specialist present & ready in trauma bay.
+  - **2nd Best (Immediate Airway/Shock Stabilization Fallback)**: Physically closer intermediate facility (e.g. Sadar Hospital Ranchi) for rapid intubation, chest tube, or fluid resuscitation if patient decompensates in transit.
+  - **3rd Best (Alternative Apex Standby)**: Comprehensive secondary tertiary center with dedicated backup surgical roster and open ICU beds.
+- **Highway Traffic Congestion Integration**: Real road distances and traffic delay factors (+6m to +22m) factoring into effective ETA, with one-touch 108 Green Wave Signal Preemption clearing delays to 0m and accelerating transit.
+
+### Module F18 — 108 Ambulance EMT In-Transit Mobile Companion App (`/ambulance`)
+- **Paramedic Field Interface**: Mobile-first application designed for 108 EMT Paramedics and drivers in transit across Jharkhand.
+- **Live Patient Telemetry Entry**: Real-time onboard entry of patient vitals (GCS slider 3-15, SpO2 % hypoxia monitor, Systolic BP shock indicator, Heart Rate) and injury mechanism.
+- **Real-Time Cross-Device Synchronization**: Built on the browser BroadcastChannel API (`directorBridge`), telemetry entered on the paramedic's phone immediately synchronizes with the State Command Dashboard (`/dashboard`) and Director Control Center (`/control`) with zero latency.
+- **Field Navigation & Pre-Alert**: Lock destination routes, activate Green Wave sirens, and broadcast pre-arrival alerts directly to hospital trauma bays.
+
+### Module F19 — 3D Isometric Ambulance Van Model & Swiggy-Style Road-Snapped Dynamic Pathing
+- **3D Isometric Van Marker**: High-fidelity 28x54px emergency vehicle SVG with aerodynamic cab hood, Battenburg yellow/green retroreflective check livery, dual alternating red/blue LED strobe lightbars, forward-projecting headlight cones illuminating the asphalt, medical cross `+`, 108 ALS badging, and realistic asphalt drop shadow.
+- **Swiggy / Domino's Style Road Snapping**: Replaced linear flight with authentic Jharkhand highway road waypoints (NH-33, GT Road, NH-20, Subarnarekha Expressway).
+- **Dynamic Path Splitting**: The traveled corridor behind the moving vehicle dims to slate gray dashed vectors (`#94a3b8`), while the remaining path ahead pulses with emergency traffic-colored glows and directional chevrons.
+
+### Module F20 — Multi-Corridor Bypass Routing, AI Specialist Traffic Diversion & SVG Topology Patient Flow
+- **Multi-Corridor Highway Selection**: Real-time toggle between Route 1 (Primary Highway) and Route 2 (Express Bypass), with live calculation of distance and delay deltas.
+- **Dynamic Specialist Traffic Diversion**: When severe gridlock (+10m delay) blocks the primary apex facility, the AI dynamically evaluates alternative hospitals with verified on-duty specialists, presenting an urgent diversion recommendation banner with a 1-click divert action.
+- **Hardware-Accelerated SVG Topology Patient Flow**: Embeds SVG `<animateMotion>` patient flow wave particles streaming along active transfer edges and Dijkstra shortest-path corridors in the network topology view.
+
 ---
 
 ## 5. Success Metrics
@@ -146,3 +188,10 @@ Without automated state-wide coordination:
 | Queue starvation for moderate patients | Enforce wait-time decay parameter $\lambda = 0.5$ pts/min so long-waiting patients reliably elevate. |
 | Incompatible resource matching | Hard-code high penalty matrix costs ($+10,000$) for resource mismatch in Hungarian matcher. |
 | User interface clutter across 6 roles | Enforce RBAC navigation filtering (`AuthContext`), showing only role-relevant tools and views. |
+
+---
+
+## 9. Launch & Shipping Readiness Status
+
+- **Promotional Artifacts**: Master 4K 60FPS Apple Keynote Explainer Video (ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4, 3840x2160 @ 60 FPS, 113.00s) verified and ready for public showcase.
+- **Production DevOps Target**: Multi-tier Docker Compose containerization across Spring Boot 3.3 (Java 17), Next.js 15, PostgreSQL 16, Redis 7, and Nginx.

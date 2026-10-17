@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 04 - Glassmorphic HUD Telemetry Overlay</title>
+  <link rel="stylesheet" href="glassmorphic.css">
+  <style>
+    body {
+      background-color: #050608;
+    }
+
+    /* Corner HUD Reticles */
+    .hud-reticle {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .reticle-tl { top: 40px; left: 40px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+    .reticle-tr { top: 40px; right: 40px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+    .reticle-bl { bottom: 40px; left: 40px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+    .reticle-br { bottom: 40px; right: 40px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+
+    /* Top Telemetry Glass Bar */
+    .top-telemetry-bar {
+      position: absolute;
+      top: 50px;
+      left: 100px;
+      right: 100px;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 40;
+    }
+
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .telemetry-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .telemetry-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      font-family: monospace;
+    }
+
+    /* Bottom Left Radar Card */
+    .radar-card {
+      position: absolute;
+      bottom: 60px;
+      left: 80px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      z-index: 40;
+    }
+
+    .radar-circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0.8) 80%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-sweep {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(56, 189, 248, 0.4) 0deg, transparent 60deg, transparent 360deg);
+    }
+
+    .radar-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 12px #10b981;
+      position: absolute;
+    }
+
+    /* Bottom Right Traffic Preemption Card */
+    .preemption-card {
+      position: absolute;
+      bottom: 60px;
+      right: 80px;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 40;
+    }
+
+    /* Center Crosshair */
+    .center-crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 240px;
+      height: 240px;
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Atmospheric Background (Subtle for clean blending) -->
+  <div class="ambient-bg">
+    <div class="glow-orb orb-cyan" id="ambient-orb1" style="top: 20%; left: 30%; opacity: 0.25;"></div>
+    <div class="glow-orb orb-emerald" id="ambient-orb2" style="bottom: 20%; right: 20%; opacity: 0.25;"></div>
+  </div>
+
+  <!-- Corner HUD Reticles -->
+  <div class="hud-reticle reticle-tl"></div>
+  <div class="hud-reticle reticle-tr"></div>
+  <div class="hud-reticle reticle-bl"></div>
+  <div class="hud-reticle reticle-br"></div>
+
+  <!-- Center Crosshair Target Area -->
+  <div class="center-crosshair" id="crosshair">
+    <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(56, 189, 248, 0.6);"></div>
+  </div>
+
+  <!-- Top Telemetry Glass Bar -->
+  <div class="glass-panel top-telemetry-bar">
+    <div class="telemetry-item">
+      <span class="telemetry-label">DISPATCH UNIT</span>
+      <span class="telemetry-val" style="color: var(--accent-cyan);">108-ALS-1081</span>
+    </div>
+    <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">TRIAGE CLASS</span>
+      <span class="telemetry-val" style="color: var(--accent-rose);">● CODE RED (TRAUMA)</span>
+    </div>
+    <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">SPO2 / GCS</span>
+      <span class="telemetry-val">88% · GCS 8</span>
+    </div>
+    <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">MAP / SHOCK INDEX</span>
+      <span class="telemetry-val">62 mmHg · SI 1.25</span>
+    </div>
+    <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">PRE-ALERT ETA</span>
+      <span class="telemetry-val" style="color: var(--accent-amber);" id="eta-val">18m 45s</span>
+    </div>
+  </div>
+
+  <!-- Bottom Left Radar Telemetry -->
+  <div class="glass-panel radar-card">
+    <div class="radar-circle">
+      <div class="radar-sweep" id="radar-sweep"></div>
+      <div class="radar-dot" style="top: 38px; left: 58%;"></div>
+    </div>
+    <div>
+      <div class="glass-pill cyan" style="font-size: 11px; padding: 3px 8px;">GPS TELEMETRY</div>
+      <div style="font-size: 18px; font-weight: 800; margin-top: 6px; font-family: monospace;">23.3441° N, 85.3096° E</div>
+      <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">NH-33 Ranchi-Ramgarh Corridor</div>
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <span class="glass-pill emerald" style="font-size: 11px;">Speed: 78 km/h</span>
+        <span class="glass-pill cyan" style="font-size: 11px;">Elevation: 642m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Right Signal Preemption Pill -->
+  <div class="glass-panel preemption-card">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="status-dot emerald" style="width: 12px; height: 12px;"></span>
+      <span style="font-size: 18px; font-weight: 800; color: #fff;">108 GREEN WAVE ACTIVE</span>
+    </div>
+    <p style="font-size: 14px; color: var(--text-muted); max-width: 320px;">
+      Traffic signal controller synchronized: Next 4 intersection corridors preempted to ALL-GREEN.
+    </p>
+    <div class="glass-pill emerald" style="align-self: flex-start; font-size: 11px;">
+      CORRIDOR CLEARED · 0 STOP DELAYS
+    </div>
+  </div>
+
+  <script>
+    window.setTimeline = function(p, t) {
+      const sweep = document.getElementById('radar-sweep');
+      const eta = document.getElementById('eta-val');
+      const crosshair = document.getElementById('crosshair');
+
+      // Radar rotation
+      const deg = (t * 180) % 360;
+      sweep.style.transform = `rotate(${deg}deg)`;
+
+      // Countdown ETA
+      const totalSecs = Math.max(0, 1125 - Math.floor(t * 1.5));
+      const m = Math.floor(totalSecs / 60);
+      const s = totalSecs % 60;
+      eta.innerText = `${m}m ${s.toString().padStart(2, '0')}s`;
+
+      // Crosshair subtle breathing
+      const sScale = 1 + Math.sin(t * 2) * 0.03;
+      crosshair.style.transform = `translate(-50%, -50%) scale(${sScale})`;
+    };
+  </script>
+</body>
+</html>

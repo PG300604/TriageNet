@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 02 - Distributed Reactive Architecture</title>
+  <link rel="stylesheet" href="glassmorphic.css">
+  <style>
+    .arch-container {
+      width: 1600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+    }
+
+    .arch-header {
+      width: 100%;
+      padding: 28px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr 1fr;
+      gap: 36px;
+      width: 100%;
+      position: relative;
+    }
+
+    .node-card {
+      padding: 36px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .node-card.center-hero {
+      background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), rgba(18, 24, 38, 0.8) 75%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(56, 189, 248, 0.25);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tech-icon-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .tech-icon-circle img, .tech-icon-circle svg {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .spec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .spec-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: #cbd5e1;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .spec-item .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+
+    /* Laser Connecting Pipelines */
+    .pipe-svg {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .laser-line {
+      fill: none;
+      stroke: rgba(56, 189, 248, 0.3);
+      stroke-width: 4;
+      stroke-dasharray: 8 8;
+    }
+
+    .packet-circle {
+      fill: #38bdf8;
+      filter: drop-shadow(0 0 10px #38bdf8);
+    }
+
+    /* Bottom Infra Strip */
+    .infra-strip {
+      width: 100%;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: var(--glass-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .infra-badge-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .infra-tag {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Atmospheric Background -->
+  <div class="ambient-bg">
+    <div class="ambient-grid"></div>
+    <div class="glow-orb orb-cyan" id="ambient-orb1" style="top: 5%; left: 35%;"></div>
+    <div class="glow-orb orb-emerald" id="ambient-orb2" style="bottom: 10%; right: 10%;"></div>
+  </div>
+
+  <div class="scene-container">
+    <div class="arch-container">
+      <!-- Top Glass Title Bar -->
+      <div class="glass-panel arch-header" id="header-panel">
+        <div>
+          <div class="glass-pill cyan" style="margin-bottom: 8px;">
+            <span class="status-dot cyan"></span>
+            DUAL-BUS REACTIVE ENGINE · SUB-50MS STATE SYNCHRONIZATION
+          </div>
+          <h1 class="gradient-title" style="font-size: 38px;">
+            Distributed Real-Time Telemetry & Dispatch Pipeline
+          </h1>
+        </div>
+        <div class="glass-pill emerald" style="font-size: 15px; padding: 10px 20px;">
+          <span class="status-dot emerald"></span>
+          ACTIVE PIPELINE · 60 FPS STATE SYNC
+        </div>
+      </div>
+
+      <!-- 3 Node Architecture Grid -->
+      <div class="arch-grid" id="grid-panel">
+        <!-- SVG Connecting Pipes -->
+        <svg class="pipe-svg" viewBox="0 0 1600 60" preserveAspectRatio="none">
+          <line class="laser-line" x1="420" y1="30" x2="520" y2="30" />
+          <line class="laser-line" x1="1080" y1="30" x2="1180" y2="30" />
+          <circle class="packet-circle" id="packet1" cx="420" cy="30" r="7" />
+          <circle class="packet-circle" id="packet2" cx="1080" cy="30" r="7" />
+        </svg>
+
+        <!-- Node 1: Mobile 108 ALS Unit -->
+        <div class="glass-panel node-card" id="card-mobile">
+          <div class="node-header">
+            <div class="tech-icon-circle">
+              <!-- Android SVG -->
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" fill="#3DDC84"/>
+                <path d="M30 40 Q50 20 70 40 Z" fill="#FFFFFF"/>
+                <circle cx="42" cy="32" r="3" fill="#3DDC84"/>
+                <circle cx="58" cy="32" r="3" fill="#3DDC84"/>
+                <line x1="36" y1="24" x2="30" y2="15" stroke="#FFFFFF" stroke-width="3"/>
+                <line x1="64" y1="24" x2="70" y2="15" stroke="#FFFFFF" stroke-width="3"/>
+              </svg>
+            </div>
+            <div>
+              <div class="glass-pill emerald" style="font-size: 11px; padding: 3px 8px;">EDGE CLIENT</div>
+              <h2 style="font-size: 22px; color: #fff; margin-top: 4px;">108 Mobile ALS</h2>
+            </div>
+          </div>
+          <div class="spec-list">
+            <div class="spec-item"><span class="dot"></span>Android 14 · Kotlin Coroutines</div>
+            <div class="spec-item"><span class="dot"></span>Offline-First SQLite / Room Queue</div>
+            <div class="spec-item"><span class="dot"></span>GPS Telemetry & Speed Stream</div>
+            <div class="spec-item"><span class="dot"></span>Digital Trauma Pre-Alert Voucher</div>
+          </div>
+          <div class="glass-pill cyan" style="margin-top: 10px; align-self: flex-start;">
+            ● 76 km/h on NH-33
+          </div>
+        </div>
+
+        <!-- Node 2: Center Core Engine -->
+        <div class="glass-panel node-card center-hero" id="card-engine">
+          <div class="node-header">
+            <div class="tech-icon-circle" style="background: rgba(109, 179, 63, 0.15); border-color: rgba(109, 179, 63, 0.4);">
+              <!-- Spring Boot SVG -->
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="44" fill="#6DB33F"/>
+                <path d="M50 20 A30 30 0 0 1 80 50 A30 30 0 0 1 50 80 A30 30 0 0 1 20 50 A30 30 0 0 1 50 20 Z" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+                <polygon points="40,35 68,50 40,65" fill="#FFFFFF"/>
+              </svg>
+            </div>
+            <div>
+              <div class="glass-pill cyan" style="font-size: 11px; padding: 3px 8px;">REACTIVE CORE</div>
+              <h2 style="font-size: 24px; color: #fff; margin-top: 4px;">TriageNet Engine</h2>
+            </div>
+          </div>
+          <div class="spec-list">
+            <div class="spec-item"><span class="dot" style="background:#10b981; box-shadow:0 0 8px #10b981;"></span>Spring Boot 3.4 · Java 21 Virtual Threads</div>
+            <div class="spec-item"><span class="dot" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span>Redis 7.2 Pub/Sub WebSocket STOMP</div>
+            <div class="spec-item"><span class="dot"></span>4 Hand-Implemented Clinical Algorithms</div>
+            <div class="spec-item"><span class="dot"></span>Sub-50ms State Synchronization Bus</div>
+          </div>
+          <div style="display: flex; gap: 12px; margin-top: 10px;">
+            <div class="glass-pill emerald">⚡ Latency: 23ms</div>
+            <div class="glass-pill cyan">10,000 req/sec</div>
+          </div>
+        </div>
+
+        <!-- Node 3: Command & Control Console -->
+        <div class="glass-panel node-card" id="card-web">
+          <div class="node-header">
+            <div class="tech-icon-circle" style="background: rgba(0, 0, 0, 0.5); border-color: rgba(255, 255, 255, 0.2);">
+              <!-- Next.js SVG -->
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" fill="#000000" stroke="#444444" stroke-width="2"/>
+                <path d="M35 30 L35 70 M35 30 L68 70 M65 30 L65 52" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="glass-pill amber" style="font-size: 11px; padding: 3px 8px;">COMMAND PORTAL</div>
+              <h2 style="font-size: 22px; color: #fff; margin-top: 4px;">Web Console</h2>
+            </div>
+          </div>
+          <div class="spec-list">
+            <div class="spec-item"><span class="dot"></span>Next.js 15 App Router · React 19</div>
+            <div class="spec-item"><span class="dot"></span>TypeScript 5.7 · Tailwind CSS 4</div>
+            <div class="spec-item"><span class="dot"></span>6 Role-Based Portals (RBAC)</div>
+            <div class="spec-item"><span class="dot"></span>Statewide Bed Matrix & GIS Corridors</div>
+          </div>
+          <div class="glass-pill emerald" style="margin-top: 10px; align-self: flex-start;">
+            ● 2,027 Beds Monitored Live
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Infrastructure Strip -->
+      <div class="infra-strip" id="infra-panel">
+        <span style="font-size: 14px; color: var(--text-muted); font-weight: 500;">
+          STATE INFRASTRUCTURE FOUNDATION:
+        </span>
+        <div class="infra-badge-row">
+          <div class="infra-tag">
+            <!-- Postgres SVG icon -->
+            <svg width="24" height="24" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="#336791"/>
+              <text x="50" y="60" font-family="Arial" font-size="28" font-weight="bold" fill="#FFF" text-anchor="middle">PG</text>
+            </svg>
+            PostgreSQL 16 + PostGIS
+          </div>
+          <div class="infra-tag">
+            <!-- Docker SVG icon -->
+            <svg width="24" height="24" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="#2496ED"/>
+              <text x="50" y="60" font-family="Arial" font-size="28" font-weight="bold" fill="#FFF" text-anchor="middle">DOC</text>
+            </svg>
+            Docker Compose Microservices
+          </div>
+          <div class="infra-tag">
+            <!-- Redis SVG icon -->
+            <svg width="24" height="24" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="#D82C20"/>
+              <text x="50" y="60" font-family="Arial" font-size="22" font-weight="bold" fill="#FFF" text-anchor="middle">REDIS</text>
+            </svg>
+            Redis In-Memory State Cache
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+
+    window.setTimeline = function(p, t) {
+      const orb1 = document.getElementById('ambient-orb1');
+      const orb2 = document.getElementById('ambient-orb2');
+      const header = document.getElementById('header-panel');
+      const cardMobile = document.getElementById('card-mobile');
+      const cardEngine = document.getElementById('card-engine');
+      const cardWeb = document.getElementById('card-web');
+      const infra = document.getElementById('infra-panel');
+      const packet1 = document.getElementById('packet1');
+      const packet2 = document.getElementById('packet2');
+
+      // Floating Orbs
+      orb1.style.transform = `translate(${Math.cos(p * Math.PI * 2) * 90}px, ${Math.sin(p * Math.PI * 2) * 60}px)`;
+      orb2.style.transform = `translate(${Math.sin(p * Math.PI * 2) * 90}px, ${Math.cos(p * Math.PI * 2) * 60}px)`;
+
+      // Staggered Entrance (first 1.5s)
+      const eHeader = easeOutCubic(Math.min(1, t / 0.8));
+      header.style.opacity = String(eHeader);
+      header.style.transform = `translateY(${(1 - eHeader) * -30}px)`;
+
+      const eMobile = easeOutCubic(Math.min(1, Math.max(0, (t - 0.2) / 0.8)));
+      cardMobile.style.opacity = String(eMobile);
+      cardMobile.style.transform = `translateY(${(1 - eMobile) * 30}px)`;
+
+      const eEngine = easeOutCubic(Math.min(1, Math.max(0, (t - 0.4) / 0.8)));
+      cardEngine.style.opacity = String(eEngine);
+      cardEngine.style.transform = `translateY(${(1 - eEngine) * 40}px) scale(${0.96 + eEngine * 0.04})`;
+
+      const eWeb = easeOutCubic(Math.min(1, Math.max(0, (t - 0.6) / 0.8)));
+      cardWeb.style.opacity = String(eWeb);
+      cardWeb.style.transform = `translateY(${(1 - eWeb) * 30}px)`;
+
+      const eInfra = easeOutCubic(Math.min(1, Math.max(0, (t - 0.8) / 0.8)));
+      infra.style.opacity = String(eInfra);
+      infra.style.transform = `translateY(${(1 - eInfra) * 20}px)`;
+
+      // Continuous animated data packets streaming
+      const loop1 = (t * 1.5) % 1.0;
+      const loop2 = ((t * 1.5) + 0.5) % 1.0;
+      packet1.setAttribute('cx', String(420 + loop1 * (520 - 420)));
+      packet2.setAttribute('cx', String(1080 + loop2 * (1180 - 1080)));
+    };
+  </script>
+</body>
+</html>

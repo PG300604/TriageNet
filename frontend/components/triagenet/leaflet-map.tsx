@@ -21,6 +21,7 @@ import {
   X,
   RefreshCw,
   Layers,
+  Zap,
 } from 'lucide-react'
 
 export interface MapHospitalNode {
@@ -79,6 +80,24 @@ interface LeafletMapProps {
   ambulanceLocation?: { lat: number; lng: number }
   routePolyline?: [number, number][]
   showCoverageZones?: boolean
+  accidentHotspot?: {
+    id: string
+    name: string
+    highway: string
+    district: string
+    lat: number
+    lng: number
+    monthlyAccidents: number
+    blackspotRanking: string
+    riskCategory: 'CRITICAL_BLACKSPOT' | 'HIGH_HAZARD' | 'SEVERE_CORRIDOR'
+  }
+  trafficCondition?: {
+    level: 'CLEAR' | 'MODERATE' | 'HEAVY'
+    delayMin: number
+    greenWaveActive: boolean
+    speedKmH?: number
+  }
+  onToggleGreenWave?: () => void
   onRerouteAmbulance?: (ambId: string, newHospitalId: string) => void
   onMarkArrived?: (ambId: string) => void
 }
@@ -93,6 +112,9 @@ export function LeafletMap({
   ambulanceLocation = { lat: 23.3441, lng: 85.3096 }, // Ranchi City Center fallback
   routePolyline,
   showCoverageZones = true,
+  accidentHotspot,
+  trafficCondition,
+  onToggleGreenWave,
   onRerouteAmbulance,
   onMarkArrived,
 }: LeafletMapProps) {
@@ -105,6 +127,15 @@ export function LeafletMap({
   const [activeHospital, setActiveHospital] = useState<MapHospitalNode | null>(null)
   const [activeAmbulance, setActiveAmbulance] = useState<MapAmbulanceUnit | null>(null)
   const [localShowZones, setLocalShowZones] = useState<boolean>(showCoverageZones)
+  const [simTick, setSimTick] = useState<number>(0)
+
+  // Uber-style continuous vehicle progression ticker (1.2s intervals)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSimTick((prev) => (prev + 1) % 100)
+    }, 1200)
+    return () => clearInterval(timer)
+  }, [])
 
   // Initialize Leaflet map with standard OpenStreetMap tiles (eliminates Carto watermark)
   useEffect(() => {
@@ -158,6 +189,22 @@ export function LeafletMap({
       }
     }
   }, [selectedHospitalId, hospitals])
+
+  // Camera auto-framing whenever Dijkstra routePolyline updates
+  const lastFittedRouteKey = useRef<string>('')
+  useEffect(() => {
+    if (!mapInstanceRef.current || !routePolyline || routePolyline.length < 2) return
+    const routeKey = `${routePolyline[0][0]},${routePolyline[0][1]}->${routePolyline[routePolyline.length - 1][0]},${routePolyline[routePolyline.length - 1][1]}`
+    if (lastFittedRouteKey.current !== routeKey) {
+      lastFittedRouteKey.current = routeKey
+      try {
+        const bounds = L.latLngBounds(routePolyline)
+        mapInstanceRef.current.fitBounds(bounds, { padding: [65, 65], maxZoom: 12, animate: true })
+      } catch (err) {
+        console.warn('fitBounds error', err)
+      }
+    }
+  }, [routePolyline])
 
   // Render Hospital Markers, Ambulance Markers, Coverage Radii, and Routing Lines
   useEffect(() => {
@@ -252,9 +299,74 @@ export function LeafletMap({
       },
     ]
 
-    fleetToRender.forEach((amb) => {
+    let primaryAmbulanceLat: number | null = null
+    let primaryAmbulanceLng: number | null = null
+    let primarySegmentIdx = 0
+
+    fleetToRender.forEach((amb, ambIndex) => {
       const isDispatched = amb.status === 'DISPATCHED'
       const isOnScene = amb.status === 'ON_SCENE'
+
+      // Calculate dynamic simulated position and heading along active route (Uber 3D Vehicle Telemetry)
+      let currentLat = amb.lat
+      let currentLng = amb.lng
+      let heading = (ambIndex * 65 + 35) % 360
+      let speedKmH = 0
+
+      // Determine if this specific ambulance is the primary responding unit for the active route
+      const isPrimaryRouteUnit =
+        ambIndex === 0 ||
+        amb.number === 'JH-01-ALS-1081' ||
+        (selectedAmbulanceId && amb.id === selectedAmbulanceId)
+
+      if (isDispatched) {
+        if (trafficCondition?.greenWaveActive) {
+          speedKmH = 72 + ((simTick + ambIndex * 2) % 4) * 2 // 72 - 78 km/h Green Wave Clear
+        } else if (trafficCondition?.level === 'HEAVY') {
+          speedKmH = 22 + ((simTick + ambIndex * 2) % 4) * 2 // 22 - 28 km/h Heavy Congestion
+        } else if (trafficCondition?.level === 'MODERATE') {
+          speedKmH = 38 + ((simTick + ambIndex * 2) % 4) * 2 // 38 - 44 km/h Moderate Toll Queue
+        } else {
+          speedKmH = 56 + ((simTick + ambIndex * 3) % 6) * 2 // 56 - 66 km/h Free Flow Corridor
+        }
+        if (isPrimaryRouteUnit && routePolyline && routePolyline.length >= 2) {
+          // Progress primary responding unit smoothly along routePolyline waypoints
+          const totalPts = routePolyline.length
+          const phase = ((simTick * 1.5) % 36) / 36
+          const indexFloat = phase * (totalPts - 1)
+          const currIdx = Math.floor(indexFloat)
+          const nextIdx = Math.min(totalPts - 1, currIdx + 1)
+          const fract = indexFloat - currIdx
+
+          const p1 = routePolyline[currIdx]
+          const p2 = routePolyline[nextIdx]
+          currentLat = p1[0] + (p2[0] - p1[0]) * fract
+          currentLng = p1[1] + (p2[1] - p1[1]) * fract
+
+          const dLat = p2[0] - p1[0]
+          const dLng = p2[1] - p1[1]
+          heading = Math.round((Math.atan2(dLng, dLat) * 180) / Math.PI)
+
+          primaryAmbulanceLat = currentLat
+          primaryAmbulanceLng = currentLng
+          primarySegmentIdx = currIdx
+        } else if (amb.destinationHospitalId) {
+          const destHospital = hospitals.find((h) => h.id === amb.destinationHospitalId)
+          if (destHospital) {
+            const progress = ((simTick + ambIndex * 5) % 25) / 25
+            currentLat = amb.lat + (destHospital.lat - amb.lat) * progress
+            currentLng = amb.lng + (destHospital.lng - amb.lng) * progress
+            const dLat = destHospital.lat - amb.lat
+            const dLng = destHospital.lng - amb.lng
+            heading = Math.round((Math.atan2(dLng, dLat) * 180) / Math.PI)
+          }
+        }
+      } else if (isOnScene) {
+        speedKmH = 0
+      } else {
+        // Standby at base station
+        speedKmH = 0
+      }
 
       // Render Coverage Service Zone Circle (if toggled on)
       if (localShowZones && amb.coverageRadiusKm > 0) {
@@ -286,47 +398,98 @@ export function LeafletMap({
         coverageGroup.addLayer(coverageCircle)
       }
 
-      // Ambulance Marker Icon based on status
-      let ambBg = 'bg-emerald-700 border-emerald-300 text-white'
-      let pulsePing = ''
-      let statusBadge = 'STANDBY'
-
-      if (isDispatched) {
-        ambBg = 'bg-[#382416] border-[#ea580c] text-[#ffedd7]'
-        pulsePing = '<div class="absolute -inset-2 rounded-full bg-orange-500/35 animate-ping"></div>'
-        statusBadge = 'DISPATCHED'
-      } else if (isOnScene) {
-        ambBg = 'bg-rose-700 border-rose-300 text-white'
-        pulsePing = '<div class="absolute -inset-2 rounded-full bg-rose-500/35 animate-ping"></div>'
-        statusBadge = 'ON-SCENE'
-      }
-
-      const ambIcon = L.divIcon({
-        className: 'custom-ambulance-marker',
+      // High-Fidelity 3D Isometric Ambulance Van Marker with roof strobe, Battenburg livery & headlights
+      const amb3dIcon = L.divIcon({
+        className: 'uber-ambulance-marker',
         html: `
-          <div class="relative flex flex-col items-center justify-center cursor-pointer group">
-            ${pulsePing}
-            <div class="relative flex items-center justify-center size-9 rounded-xl ${ambBg} font-bold shadow-xl border-2 transition-transform group-hover:scale-115">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${isDispatched ? '#ea580c' : '#ffffff'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v9c0 .6.4 1 1 1h2"/>
-                <circle cx="7" cy="17" r="2"/>
-                <path d="M9 17h6"/>
-                <circle cx="17" cy="17" r="2"/>
+          <div class="relative flex flex-col items-center justify-center cursor-pointer group" style="filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));">
+            <!-- Pulsing Radar Wave Rings for Dispatched or On-Scene Units -->
+            ${isDispatched ? '<div class="absolute -inset-4 rounded-full bg-orange-500/35 animate-ping pointer-events-none"></div>' : ''}
+            ${isOnScene ? '<div class="absolute -inset-4 rounded-full bg-rose-500/35 animate-ping pointer-events-none"></div>' : ''}
+
+            <!-- 3D Ambulance Vehicle Body with Directional Heading -->
+            <div class="relative transition-transform duration-500 ease-linear" style="transform: rotate(${heading}deg);">
+              <!-- Forward Headlight Cones (projecting onto asphalt road) -->
+              ${isDispatched ? `
+              <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-14 h-12 pointer-events-none z-0">
+                <div style="width: 100%; height: 100%; background: radial-gradient(ellipse at 50% 100%, rgba(254, 240, 138, 0.55) 0%, rgba(254, 240, 138, 0.08) 55%, transparent 75%); clip-path: polygon(30% 100%, 70% 100%, 98% 0%, 2% 0%);"></div>
+              </div>
+              ` : ''}
+
+              <!-- Asphalt Road Ground Shadow -->
+              <div class="absolute -bottom-1 -left-1 w-7 h-14 bg-black/60 blur-[3px] rounded-xl pointer-events-none"></div>
+
+              <!-- Authentic 3D Emergency Ambulance Van (28px wide, 54px long) -->
+              <svg width="28" height="54" viewBox="0 0 28 54" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10">
+                <!-- White Emergency Chassis with beveled corner curves -->
+                <rect x="2" y="1" width="24" height="52" rx="6" fill="#f8fafc" stroke="#334155" stroke-width="1.2"/>
+                
+                <!-- Front Cab Hood & Bumper -->
+                <rect x="3.5" y="1.5" width="21" height="9" rx="4" fill="#e2e8f0"/>
+                <!-- Dual Headlights -->
+                <rect x="4" y="2" width="3.5" height="2" rx="1" fill="#fef08a" stroke="#ca8a04" stroke-width="0.4"/>
+                <rect x="20.5" y="2" width="3.5" height="2" rx="1" fill="#fef08a" stroke="#ca8a04" stroke-width="0.4"/>
+
+                <!-- Dark Tinted Curved Windshield -->
+                <path d="M 4 11 C 4 8.5 24 8.5 24 11 L 22.5 16.5 L 5.5 16.5 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="0.6"/>
+
+                <!-- Cab Roof Emergency Lightbar Housing -->
+                <rect x="4.5" y="17.5" width="19" height="4.5" rx="1.5" fill="#1e293b" stroke="#0f172a" stroke-width="0.5"/>
+                <!-- Strobe LEDs (Red on driver side, Cyan/Blue on passenger side) -->
+                <circle cx="8" cy="19.7" r="2.2" fill="${isDispatched ? '#ef4444' : '#22c55e'}" class="${isDispatched ? 'animate-pulse' : ''}"/>
+                <circle cx="20" cy="19.7" r="2.2" fill="${isDispatched ? '#06b6d4' : '#ffffff'}" class="${isDispatched ? 'animate-pulse' : ''}"/>
+
+                <!-- High-Vis Retroreflective Battenburg Side Markings (Alternating Yellow & Green) -->
+                <rect x="2" y="23" width="2.5" height="4.5" fill="#facc15"/>
+                <rect x="2" y="27.5" width="2.5" height="4.5" fill="#15803d"/>
+                <rect x="2" y="32" width="2.5" height="4.5" fill="#facc15"/>
+                <rect x="2" y="36.5" width="2.5" height="4.5" fill="#15803d"/>
+                <rect x="2" y="41" width="2.5" height="4.5" fill="#facc15"/>
+
+                <rect x="23.5" y="23" width="2.5" height="4.5" fill="#facc15"/>
+                <rect x="23.5" y="27.5" width="2.5" height="4.5" fill="#15803d"/>
+                <rect x="23.5" y="32" width="2.5" height="4.5" fill="#facc15"/>
+                <rect x="23.5" y="36.5" width="2.5" height="4.5" fill="#15803d"/>
+                <rect x="23.5" y="41" width="2.5" height="4.5" fill="#facc15"/>
+
+                <!-- Patient Care Compartment Roof -->
+                <rect x="4.5" y="23" width="19" height="24" rx="2" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>
+                <!-- Red Emergency Medical Cross -->
+                <rect x="12.5" y="30.5" width="3" height="10" rx="0.5" fill="#dc2626"/>
+                <rect x="9" y="34" width="10" height="3" rx="0.5" fill="#dc2626"/>
+                <!-- "108 ALS" Text -->
+                <text x="14" y="27.5" text-anchor="middle" font-size="4.2" font-family="monospace" font-weight="900" fill="#0f172a" letter-spacing="0.2">108 ALS</text>
+
+                <!-- Rear Emergency Doors & Dual Red Taillights -->
+                <rect x="3.5" y="48.5" width="21" height="3" rx="1" fill="#cbd5e1"/>
+                <line x1="14" y1="48.5" x2="14" y2="51.5" stroke="#64748b" stroke-width="0.8"/>
+                <rect x="4" y="50" width="3.5" height="1.5" rx="0.5" fill="#ef4444"/>
+                <rect x="20.5" y="50" width="3.5" height="1.5" rx="0.5" fill="#ef4444"/>
               </svg>
             </div>
-            <span class="mt-1 bg-[#382416] text-[#ffedd7] border ${isDispatched ? 'border-[#ea580c]' : 'border-stone-400'} text-[9px] font-mono font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
-              ${amb.callSign} [${statusBadge}]
-            </span>
+
+            <!-- Floating Callsign & Live Speed Badge (Uber Style) -->
+            <div class="mt-2 bg-stone-950/95 text-stone-100 border ${
+              isDispatched
+                ? 'border-orange-500/80 shadow-[0_0_12px_rgba(234,88,12,0.4)]'
+                : 'border-stone-700'
+            } text-[9px] font-mono font-bold px-2 py-0.5 rounded-full shadow-xl whitespace-nowrap flex items-center gap-1.5">
+              <span class="size-1.5 rounded-full ${isDispatched ? 'bg-orange-500 animate-ping' : 'bg-emerald-400'}"></span>
+              <span>${amb.callSign}</span>
+              ${isDispatched ? `<span class="text-orange-400 font-black">${speedKmH} km/h</span>` : `<span class="text-emerald-400">STANDBY</span>`}
+            </div>
           </div>
         `,
-        iconSize: [40, 48],
-        iconAnchor: [20, 24],
+        iconSize: [48, 62],
+        iconAnchor: [24, 31],
       })
 
-      const ambMarker = L.marker([amb.lat, amb.lng], { icon: ambIcon })
+      const ambMarker = L.marker([currentLat, currentLng], { icon: amb3dIcon })
 
       ambMarker.bindTooltip(
-        `<b>${amb.callSign} (${amb.type})</b><br/>Base: ${amb.baseStationName}<br/>Status: <b>${amb.status}</b>${amb.patientName ? `<br/>Patient: ${amb.patientName} (${amb.etaMinutes ?? 10}m ETA)` : ''}`,
+        `<b>${amb.callSign} (${amb.type})</b><br/>Base: ${amb.baseStationName}<br/>Status: <b>${amb.status}</b>${
+          isDispatched ? `<br/>Speed: <b>${speedKmH} km/h</b>` : ''
+        }${amb.patientName ? `<br/>Patient: ${amb.patientName} (${amb.etaMinutes ?? 10}m ETA)` : ''}`,
         { permanent: false, direction: 'top', offset: [0, -22] }
       )
 
@@ -344,14 +507,14 @@ export function LeafletMap({
         if (destHospital) {
           const polyline = L.polyline(
             [
-              [amb.lat, amb.lng],
+              [currentLat, currentLng],
               [destHospital.lat, destHospital.lng],
             ],
             {
               color: '#ea580c',
-              weight: 4,
-              opacity: 0.8,
-              dashArray: '8, 6',
+              weight: 3.5,
+              opacity: 0.75,
+              dashArray: '6, 6',
             }
           )
           routeGroup.addLayer(polyline)
@@ -359,17 +522,144 @@ export function LeafletMap({
       }
     })
 
-    // Custom routePolyline if passed explicitly
+    // 3. Render High-Resolution Dijkstra Shortest Path Corridors (Swiggy / Domino's Style Traveled vs Remaining Path)
     if (routePolyline && routePolyline.length > 0) {
-      const polyline = L.polyline(routePolyline, {
-        color: '#dc5000',
-        weight: 5,
-        opacity: 0.85,
-        dashArray: '8, 8',
+      const isGreenWave = trafficCondition?.greenWaveActive ?? false
+      const isHeavy = trafficCondition?.level === 'HEAVY' && !isGreenWave
+      const isModerate = trafficCondition?.level === 'MODERATE' && !isGreenWave
+
+      const glowColor = isGreenWave ? '#10b981' : isHeavy ? '#dc2626' : isModerate ? '#ea580c' : '#16a34a'
+      const coreColor = isGreenWave ? '#34d399' : isHeavy ? '#ef4444' : isModerate ? '#ff6b00' : '#22c55e'
+      const glowOpacity = isGreenWave ? 0.45 : isHeavy ? 0.38 : 0.28
+      const glowWeight = isGreenWave ? 11 : 9
+
+      if (primaryAmbulanceLat !== null && primaryAmbulanceLng !== null && routePolyline.length >= 2) {
+        // A. Traveled Path Segment (Swiggy / Domino's Style: Dimmed consumed trail behind the ambulance)
+        const traveledPts: [number, number][] = []
+        for (let i = 0; i <= primarySegmentIdx; i++) {
+          traveledPts.push(routePolyline[i])
+        }
+        traveledPts.push([primaryAmbulanceLat, primaryAmbulanceLng])
+
+        if (traveledPts.length >= 2) {
+          const traveledLine = L.polyline(traveledPts, {
+            color: '#64748b',
+            weight: 3.5,
+            opacity: 0.45,
+            dashArray: '6, 6',
+            lineCap: 'round',
+            lineJoin: 'round',
+          })
+          routeGroup.addLayer(traveledLine)
+        }
+
+        // B. Remaining Path Ahead (Vibrant emergency corridor with pulsing live traffic styling)
+        const remainingPts: [number, number][] = [[primaryAmbulanceLat, primaryAmbulanceLng]]
+        for (let i = primarySegmentIdx + 1; i < routePolyline.length; i++) {
+          remainingPts.push(routePolyline[i])
+        }
+
+        if (remainingPts.length >= 2) {
+          const glowLine = L.polyline(remainingPts, {
+            color: glowColor,
+            weight: glowWeight,
+            opacity: glowOpacity,
+            lineCap: 'round',
+            lineJoin: 'round',
+          })
+          routeGroup.addLayer(glowLine)
+
+          const coreLine = L.polyline(remainingPts, {
+            color: coreColor,
+            weight: 5,
+            opacity: 0.98,
+            dashArray: isGreenWave ? '14, 6' : '10, 8',
+            lineCap: 'round',
+            lineJoin: 'round',
+          })
+          routeGroup.addLayer(coreLine)
+        }
+      } else {
+        // Fallback: Full polyline if vehicle hasn't dispatched yet
+        const glowLine = L.polyline(routePolyline, {
+          color: glowColor,
+          weight: glowWeight,
+          opacity: glowOpacity,
+          lineCap: 'round',
+          lineJoin: 'round',
+        })
+        routeGroup.addLayer(glowLine)
+
+        const coreLine = L.polyline(routePolyline, {
+          color: coreColor,
+          weight: 4.5,
+          opacity: 0.95,
+          dashArray: isGreenWave ? '14, 6' : '10, 8',
+          lineCap: 'round',
+          lineJoin: 'round',
+        })
+        routeGroup.addLayer(coreLine)
+      }
+
+      // Start Marker (Incident Pick-up Scene / Blackspot Hazard Beacon)
+      const startPt = routePolyline[0]
+      const isBlackspot = !!accidentHotspot
+      const incidentIcon = L.divIcon({
+        className: 'incident-scene-marker',
+        html: `
+          <div class="relative flex items-center justify-center cursor-pointer">
+            <div class="absolute -inset-4 rounded-full bg-rose-600/40 animate-ping"></div>
+            <div class="absolute -inset-2 rounded-full bg-red-500/30 animate-pulse"></div>
+            <div class="size-8 rounded-xl bg-gradient-to-br from-red-600 to-rose-900 border-2 border-white text-white flex items-center justify-center shadow-2xl">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+            </div>
+            <div class="absolute -bottom-8 flex flex-col items-center pointer-events-none">
+              <span class="bg-black/95 text-rose-300 font-mono text-[9px] font-black px-2 py-0.5 rounded-full border border-rose-500 whitespace-nowrap shadow-xl">
+                ${isBlackspot ? `🔴 BLACKSPOT: ${accidentHotspot.monthlyAccidents} CRASHES/MO` : 'INCIDENT PICKUP'}
+              </span>
+              ${isBlackspot ? `<span class="text-[8px] font-bold text-white bg-red-950/90 px-1.5 py-0.2 rounded mt-0.5 border border-red-800 whitespace-nowrap">${accidentHotspot.name}</span>` : ''}
+            </div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       })
-      routeGroup.addLayer(polyline)
+      const startMarker = L.marker([startPt[0], startPt[1]], { icon: incidentIcon })
+      startMarker.bindTooltip(
+        isBlackspot
+          ? `<b>🚨 HIGH-RISK ACCIDENT BLACKSPOT</b><br/><b>${accidentHotspot.name}</b><br/>Corridor: ${accidentHotspot.highway}<br/>Monthly Collisions: <b>${accidentHotspot.monthlyAccidents}</b><br/>Classification: <b>${accidentHotspot.riskCategory.replace('_', ' ')}</b>`
+          : '<b>Incident Hotspot Location</b><br/>108 Rapid Extraction Target',
+        { permanent: false, direction: 'top' }
+      )
+      markersGroup.addLayer(startMarker)
+
+      // End Marker (Destination Hospital)
+      const endPt = routePolyline[routePolyline.length - 1]
+      const destIcon = L.divIcon({
+        className: 'destination-hospital-marker',
+        html: `
+          <div class="relative flex items-center justify-center cursor-pointer">
+            <div class="absolute -inset-3 rounded-full bg-emerald-500/40 animate-pulse"></div>
+            <div class="size-7 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 border-2 border-white text-white flex items-center justify-center shadow-2xl">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 6v12M6 12h12"/>
+              </svg>
+            </div>
+            <span class="absolute -bottom-6 bg-stone-950/95 text-emerald-400 font-mono text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500 whitespace-nowrap shadow-lg">
+              ICU HELD (DIJKSTRA TARGET)
+            </span>
+          </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      })
+      const destMarker = L.marker([endPt[0], endPt[1]], { icon: destIcon })
+      destMarker.bindTooltip('<b>Target Facility Hospital</b><br/>Emergency Bed Hold Authorized', { permanent: false, direction: 'top' })
+      markersGroup.addLayer(destMarker)
     }
-  }, [hospitals, selectedHospitalId, ambulances, ambulanceLocation, routePolyline, localShowZones, onSelectHospital, onSelectAmbulance])
+  }, [hospitals, selectedHospitalId, ambulances, ambulanceLocation, routePolyline, localShowZones, simTick, onSelectHospital, onSelectAmbulance, accidentHotspot, trafficCondition])
 
   return (
     <div className="relative w-full h-[550px] rounded-2xl overflow-hidden border border-[#382416]/15 shadow-md font-sans">
@@ -624,17 +914,24 @@ export function LeafletMap({
           {/* Interactive Actions */}
           <div className="flex items-center gap-2">
             {activeAmbulance.status === 'DISPATCHED' ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (onMarkArrived) onMarkArrived(activeAmbulance.id)
-                  setActiveAmbulance(null)
-                }}
-                className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <CheckCircle2 className="size-3.5 text-emerald-200" />
-                Confirm Trauma Bay Arrival
-              </button>
+              onMarkArrived ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMarkArrived(activeAmbulance.id)
+                    setActiveAmbulance(null)
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 className="size-3.5 text-emerald-200" />
+                  Confirm Trauma Bay Arrival
+                </button>
+              ) : (
+                <div className="flex-1 py-2 px-3 rounded-xl bg-stone-100 text-stone-600 font-semibold text-xs flex items-center justify-center gap-1.5 border border-stone-200">
+                  <ShieldCheck className="size-3.5 text-stone-500" />
+                  <span>Observer Mode (Handover by 108 Dispatcher)</span>
+                </div>
+              )
             ) : (
               <button
                 type="button"
@@ -648,6 +945,68 @@ export function LeafletMap({
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Floating AI Highway Traffic & Green Wave Preemption Strip */}
+      {trafficCondition && (
+        <div className="absolute bottom-3 left-3 right-3 z-[400] bg-black/90 backdrop-blur-md border border-stone-700/80 rounded-2xl px-4 py-2.5 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-xl flex items-center justify-center shrink-0 ${
+                trafficCondition.greenWaveActive
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                  : trafficCondition.level === 'HEAVY'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse'
+                  : 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+              }`}
+            >
+              <Activity className="size-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-[11px] font-bold text-[#ffedd7]">
+                  {accidentHotspot ? `${accidentHotspot.name}` : 'Jharkhand Highway Emergency Corridor'}
+                </span>
+                {trafficCondition.greenWaveActive ? (
+                  <span className="bg-emerald-500/30 text-emerald-300 border border-emerald-500/60 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    ⚡ GREEN WAVE CORRIDOR ACTIVE
+                  </span>
+                ) : (
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      trafficCondition.level === 'HEAVY'
+                        ? 'bg-red-500/30 text-red-300 border border-red-500/60'
+                        : 'bg-amber-500/30 text-amber-300 border border-amber-500/60'
+                    }`}
+                  >
+                    TRAFFIC: {trafficCondition.level} (+{trafficCondition.delayMin}m DELAY)
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-stone-300 mt-0.5">
+                {trafficCondition.greenWaveActive
+                  ? 'All corridor signals synchronized to Green · 0 congestion delay · Ambulance transit speed ~74 km/h'
+                  : `Highway delay factor: +${trafficCondition.delayMin} mins · Ambulance speed restricted to ~${trafficCondition.level === 'HEAVY' ? '24' : '40'} km/h`}
+              </p>
+            </div>
+          </div>
+
+          {onToggleGreenWave && (
+            <button
+              type="button"
+              onClick={onToggleGreenWave}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center gap-1.5 shadow-lg ${
+                trafficCondition.greenWaveActive
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300'
+                  : 'bg-[#ea580c] hover:bg-[#d94e08] text-white border border-orange-400 animate-pulse'
+              }`}
+            >
+              <Zap className="size-3.5 fill-current" />
+              <span>{trafficCondition.greenWaveActive ? '✓ Green Wave Engaged' : '🚨 Activate Green Wave Corridor'}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

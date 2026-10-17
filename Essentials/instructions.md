@@ -95,11 +95,20 @@ These are the operational working rules for the AI coding agent (**Google Antigr
   - Windows handles core backend, web frontend, and Flutter mobile apps.
   - Linux handles Docker containers, CI/CD, and deployment automation.
   - Commit status updates to [`.agents/sync/WINDOWS_STATUS.md`](../.agents/sync/WINDOWS_STATUS.md) upon completing tasks.
-- **Mobile Development Convention (Phase 3)**:
-  - All mobile applications are developed in a unified **Flutter (Dart)** monorepo inside `mobile/`.
+- **Mobile Development & Companion App Convention**:
+  - The in-transit paramedic companion app is accessible at `/ambulance` (`frontend/app/ambulance/page.tsx`), enabling immediate testing and video filming on mobile viewports and mobile devices over local LAN via the `BroadcastChannel` protocol (`directorBridge`).
+  - Master Implementation Roadmap for the unified Flutter monorepo (`mobile/`), role-based redirection, dual-mode test/production release, and OTA update engine is specified in `master_roadmap_and_system_architecture.md`.
+  - All native mobile applications for production Phase 3 continue to be organized under a unified **Flutter (Dart)** monorepo inside `mobile/`.
   - Shared domain models, API client, and authentication logic live in `mobile/packages/triagenet_core/`.
   - Native Android capabilities (background GPS beaconing for 108 ambulance, SQLite/Drift offline queue) must adhere to the low-bandwidth payload budget ($< 2\text{ KB}$).
 - **Deployment & Cloud Staging (OCI + Redis)**:
   - Target container staging environment is Oracle Cloud Infrastructure (OCI Always Free: 4 ARM OCPU, 24GB RAM).
   - Multi-arch Docker builds (`linux/amd64`, `linux/arm64`) must be supported.
   - Redis 7-alpine is designated for real-time ambulance GPS streaming and queue telemetry cache.
+
+
+
+- **Final DevOps & Shipping Sprint (Immediate Next Step)**:
+  - Multi-tier container build: ackend/Dockerfile (Java 17 Spring Boot 3.3), rontend/Dockerfile (Next.js 15 standalone).
+  - Production orchestration: docker-compose.yml with automated database migrations, Redis in-memory cache, and Nginx reverse proxy.
+  - Video showcase assets: ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4 linked for public showcase.

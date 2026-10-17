@@ -1,0 +1,19 @@
+Timecode,Duration,Color,Marker Name,Description
+00:00:00:00,00:00:12:00,Blue,ACT 1: Hook,Golden hour trauma crisis & 79 siloed hospitals
+00:00:07:00,00:00:05:00,Orange,Title Reveal,TRIAGENET Autonomous Golden-Hour Clinical OS
+00:00:12:30,00:00:06:00,Cyan,BEAT DROP,Main drum drop hits! Architecture pipeline reveal
+00:00:18:00,00:00:06:00,Yellow,Tech Stack,Redis Pub/Sub · PostgreSQL · Spring Boot · Next.js
+00:00:24:00,00:00:08:00,Green,Web Analytics,Statewide single pane of glass · 2027 beds monitored
+00:00:32:00,00:00:06:00,Purple,Algo 1 Severity,Sigmoid logistic regression acuity scorer
+00:00:38:00,00:00:06:00,Purple,Algo 2 Hungarian,Optimal bipartite matching in O(V^3)
+00:00:44:00,00:00:06:00,Purple,Algo 3 Dijkstra,Highway congestion penalty routing & Green Wave
+00:00:50:00,00:00:06:00,Purple,Algo 4 MaxHeap,Binary max-heap triage queue rebalancing
+00:00:56:00,00:00:06:00,Red,Mobile GPS,Android Companion 108 ALS Unit 1081 on NH-33
+00:01:02:00,00:00:06:00,Red,Trauma Voucher,Digital pre-alert voucher ETA 19:40
+00:01:08:00,00:00:06:00,Green,108 Siren Active,Green wave preemption engaged on highway
+00:01:14:00,00:00:06:00,Cyan,ED Nurse Intake,Rapid intake modal & NIC e-Hospital 100% sync
+00:01:20:00,00:00:06:00,Yellow,AI CDS,Clinical Decision Support diagnostic differential
+00:01:26:00,00:00:06:00,Yellow,State Directorate,Rs 6.40 Cr contingency grant requisition
+00:01:32:00,00:00:06:00,Yellow,Staff Verification,Dual-control doctor verification queue
+00:01:38:00,00:00:08:00,Cyan,Statewide Impact,18.4 min reduced · 99.4% match · 79 facilities
+00:01:46:00,00:00:06:36,Orange,Grand Outro,TRIAGENET — The Future of Emergency Care

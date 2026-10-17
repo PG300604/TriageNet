@@ -55,7 +55,7 @@ interface TriageQueueViewProps {
   onSimulate: () => void
   onFastForward5x?: () => void
   onInjectArrival?: (severity: number, name: string, complaint: string) => void
-  onTriggerBedRelease?: (reason: 'recovery' | 'family_ama') => void
+  onTriggerBedRelease?: (reason: 'recovery' | 'family_ama', targetPatientId?: string) => void
   referralRecommendation?: ReferralRecommendation | null
   onExecuteReferral?: (referral: ReferralRecommendation) => void
   lastEventMessage?: string | null
@@ -447,6 +447,7 @@ export function TriageQueueView({
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+          {/* Real ED Action Trigger */}
           <button
             type="button"
             onClick={() => {
@@ -458,45 +459,6 @@ export function TriageQueueView({
             <UserPlus className="size-3.5" />
             <span>{intakeOpen ? 'Close Intake Form' : '+ Rapid ED Intake'}</span>
           </button>
-
-          {onTriggerBedRelease && (
-            <>
-              <button
-                type="button"
-                onClick={() => onTriggerBedRelease('recovery')}
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800 hover:bg-emerald-100 cursor-pointer transition-colors"
-              >
-                Step-Down Discharge
-              </button>
-              <button
-                type="button"
-                onClick={() => onTriggerBedRelease('family_ama')}
-                className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700 hover:bg-stone-50 cursor-pointer transition-colors"
-              >
-                Transfer / AMA
-              </button>
-            </>
-          )}
-
-          <button
-            type="button"
-            onClick={onSimulate}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#382416] px-3.5 py-2 font-bold text-[#ffedd7] hover:bg-[#28180d] cursor-pointer shadow-xs transition-colors"
-          >
-            <Play className="size-3 fill-[#ffedd7]" />
-            <span>+7m Step</span>
-          </button>
-
-          {onFastForward5x && (
-            <button
-              type="button"
-              onClick={onFastForward5x}
-              className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700 hover:bg-stone-50 cursor-pointer transition-colors"
-            >
-              <FastForward className="size-3.5 text-[#ea580c]" />
-              <span>+35m</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -673,7 +635,7 @@ export function TriageQueueView({
               const isPreempted = patient.status === 'Preempted'
 
               return (
-                <li key={patient.id} className="transition-colors">
+                <li key={`${patient.id}-${patient.hospitalId}-${index}`} className="transition-colors">
                   {/* Row Header (Clickable) */}
                   <div
                     onClick={() => toggleRow(patient.id)}
@@ -802,7 +764,7 @@ export function TriageQueueView({
                               {patient.status === 'Waiting' && (
                                 <button
                                   type="button"
-                                  onClick={() => onTriggerBedRelease?.('recovery')}
+                                  onClick={() => onTriggerBedRelease?.('recovery', patient.id)}
                                   className="w-full rounded-xl bg-[#ea580c] py-2 px-3 text-xs font-bold text-white shadow-2xs hover:bg-[#c2410c] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
                                   <BedDouble className="size-3.5" />
@@ -811,7 +773,7 @@ export function TriageQueueView({
                               )}
                               <button
                                 type="button"
-                                onClick={() => onTriggerBedRelease?.('recovery')}
+                                onClick={() => onTriggerBedRelease?.('recovery', patient.id)}
                                 className="w-full rounded-xl border border-emerald-200 bg-emerald-50 py-2 px-3 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                               >
                                 <CheckCircle2 className="size-3.5" />
@@ -819,7 +781,7 @@ export function TriageQueueView({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => onTriggerBedRelease?.('family_ama')}
+                                onClick={() => onTriggerBedRelease?.('family_ama', patient.id)}
                                 className="w-full rounded-xl border border-stone-200 bg-white py-2 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                               >
                                 <LogOut className="size-3.5 text-stone-400" />

@@ -33,13 +33,29 @@ import {
   Building2,
   Flame,
   Check,
+  PlusCircle,
+  X,
+  FileText,
+  User,
+  Smartphone,
+  ExternalLink,
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import type { MapHospitalNode, MapAmbulanceUnit } from './leaflet-map'
 import { useAuth } from '@/lib/auth-context'
 import { JHARKHAND_24_DISTRICTS, JHARKHAND_79_HOSPITALS } from '@/lib/jharkhand-data'
 import { apiClient } from '@/lib/api-client'
+import {
+  ACCIDENT_HOTSPOTS,
+  type AccidentHotspot,
+  type SpecialistRole,
+  evaluateCandidateOptions,
+  type DoctorDutyInfo,
+  type CandidateHospitalEvaluation,
+} from '@/lib/accident-hotspots'
+import { directorBridge } from '@/lib/director-bridge'
 
 // Dynamically import Leaflet map component to prevent SSR window reference issues
 const LeafletMap = dynamic(
@@ -131,7 +147,8 @@ export function RegionalNetworkView({
   onInjectArrival,
 }: RegionalNetworkViewProps) {
   const { hospitals, transfers } = state
-  const { user } = useAuth()
+  const { user, loginAsDemoRole } = useAuth()
+  const canDispatch = user?.role === 'AMBULANCE_DISPATCH'
 
   const [hovered, setHovered] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'graph'>('map')
@@ -152,10 +169,15 @@ export function RegionalNetworkView({
   const [gcs, setGcs] = useState(10)
 
   // GPS Location & Hotspot Presets
-  const [originLat, setOriginLat] = useState<number>(23.4832)
-  const [originLng, setOriginLng] = useState<number>(85.4611)
-  const [originName, setOriginName] = useState<string>('NH-33 Toll Crash (Ormanjhi)')
-  const [activeHotspot, setActiveHotspot] = useState<string>('ormanjhi')
+  const [selectedHotspot, setSelectedHotspot] = useState<AccidentHotspot>(() => ACCIDENT_HOTSPOTS[0])
+  const [originLat, setOriginLat] = useState<number>(ACCIDENT_HOTSPOTS[0].lat)
+  const [originLng, setOriginLng] = useState<number>(ACCIDENT_HOTSPOTS[0].lng)
+  const [originName, setOriginName] = useState<string>(ACCIDENT_HOTSPOTS[0].name)
+  const [activeHotspot, setActiveHotspot] = useState<string>(ACCIDENT_HOTSPOTS[0].id)
+  const [requiredSpecialistRole, setRequiredSpecialistRole] = useState<SpecialistRole>(ACCIDENT_HOTSPOTS[0].requiredSpecialistRole)
+  const [corridorTrafficLevel, setCorridorTrafficLevel] = useState<'CLEAR' | 'MODERATE' | 'HEAVY'>(ACCIDENT_HOTSPOTS[0].defaultTrafficLevel)
+  const [corridorTrafficDelay, setCorridorTrafficDelay] = useState<number>(ACCIDENT_HOTSPOTS[0].defaultTrafficDelayMin)
+  const [greenWaveActive, setGreenWaveActive] = useState<boolean>(false)
 
   // Multi-Ambulance Fleet State across Jharkhand
   const [fleetAmbulances, setFleetAmbulances] = useState<MapAmbulanceUnit[]>([
@@ -296,81 +318,72 @@ export function RegionalNetworkView({
 
   const [lastDispatchAlert, setLastDispatchAlert] = useState<string | null>(null)
 
-  // Real Multi-Criteria Hospital Match Evaluator - Natural Coordinates (Zero Circle Formula)
-  const rankedCandidateHospitals = useMemo(() => {
-    return hospitals.map((h) => {
-      const f = JHARKHAND_79_HOSPITALS.find(
-        (item) =>
-          item.id === h.id ||
-          item.shortCode.toLowerCase() === h.short.toLowerCase() ||
-          item.name.toLowerCase() === h.name.toLowerCase() ||
-          item.name.toLowerCase().includes(h.name.toLowerCase()) ||
-          h.name.toLowerCase().includes(item.name.toLowerCase())
-      )
+  // Dynamic Multi-Criteria Dijkstra & Doctor Availability Hospital Match Evaluator
+  const candidateResults = useMemo(() => {
+    return evaluateCandidateOptions(
+      hospitals,
+      originLat,
+      originLng,
+      requiredSpecialistRole,
+      corridorTrafficDelay,
+      corridorTrafficLevel,
+      greenWaveActive,
+    )
+  }, [hospitals, originLat, originLng, requiredSpecialistRole, corridorTrafficDelay, corridorTrafficLevel, greenWaveActive])
 
-      const districtObj = JHARKHAND_24_DISTRICTS.find(
-        (d) =>
-          (h.district && d.name.toLowerCase().includes(h.district.toLowerCase())) ||
-          (f?.districtName && d.name.toLowerCase().includes(f.districtName.toLowerCase()))
-      )
+  const option1 = candidateResults.option1
+  const option2 = candidateResults.option2
+  const option3 = candidateResults.option3
+  const rankedCandidateHospitals = candidateResults.allCandidates
+  const topMatch = candidateResults.option1
+  const targetHospital = rankedCandidateHospitals.find((c) => c.hospital.id === selectedHospitalId || c.hospitalId === selectedHospitalId) || topMatch
 
-      // Deterministic spatial offset if facility lat/lng is missing, spreading hospitals naturally
-      const idHash = (h.id || h.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      const jitterLat = ((idHash % 17) - 8) * 0.012
-      const jitterLng = (((idHash * 3) % 19) - 9) * 0.014
+  const [activeCorridorType, setActiveCorridorType] = useState<'PRIMARY' | 'BYPASS'>('PRIMARY')
 
-      const hLat = h.lat ?? f?.latitude ?? (districtObj ? districtObj.lat + jitterLat : 23.3441 + jitterLat)
-      const hLng = h.lng ?? f?.longitude ?? (districtObj ? districtObj.lng + jitterLng : 85.3096 + jitterLng)
+  // Dynamic Dijkstra Shortest Path Polyline using real highway waypoints or bypass
+  const dijkstraRoutePolyline = useMemo<[number, number][]>(() => {
+    if (!targetHospital) return []
 
-      const dLat = ((hLat - originLat) * Math.PI) / 180
-      const dLng = ((hLng - originLng) * Math.PI) / 180
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((originLat * Math.PI) / 180) *
-          Math.cos((hLat * Math.PI) / 180) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      const distanceKm = Math.max(1.5, Math.round(6371 * c * 10) / 10)
-      const etaMinutes = Math.max(4, Math.round(distanceKm * 1.35))
-
-      const totalIcu = h.icuBeds?.total ?? (f?.totalIcuBeds ?? 10)
-      const usedIcu = h.icuBeds?.used ?? (f ? Math.max(0, f.totalIcuBeds - f.availableIcuBeds) : 8)
-      const availIcu = Math.max(0, totalIcu - usedIcu)
-
-      const totalGen = h.beds?.total ?? (f ? f.totalGeneralBeds + f.totalIcuBeds : 100)
-      const usedGen = h.beds?.used ?? (f ? Math.max(0, (f.totalGeneralBeds - f.availableGeneralBeds) + (f.totalIcuBeds - f.availableIcuBeds)) : 75)
-      const availGen = Math.max(0, totalGen - usedGen)
-
-      const hasTraumaSurgeon = (h.specialistRoster?.traumaSurgeons?.available ?? 0) > 0 || (f?.hasTraumaSurgery ?? false) || totalIcu >= 30
-      const hasVentilators = (h.ventilators?.total ?? 0) > 0 || (f?.hasVentilator ?? false)
-
-      const timeScore = Math.max(0, 40 - etaMinutes * 0.8)
-      const icuScore = availIcu >= 3 ? 30 : availIcu === 2 ? 22 : availIcu === 1 ? 14 : 0
-      const capabilityScore = (hasTraumaSurgeon ? 12 : 4) + (hasVentilators ? 8 : 2)
-      const loadRatio = usedGen / Math.max(1, totalGen)
-      const loadScore = Math.max(0, Math.round((1 - loadRatio) * 10))
-
-      const totalScore = Math.min(99, Math.max(25, Math.round(timeScore + icuScore + capabilityScore + loadScore)))
-
-      return {
-        hospital: h,
-        distanceKm,
-        etaMinutes,
-        availIcu,
-        availGen,
-        hasTraumaSurgeon,
-        hasVentilators,
-        totalScore,
-        tier: f?.facilityTier || 'DISTRICT',
-        lat: hLat,
-        lng: hLng,
+    // If targeted at Apex and real accident hotspot is active, use authentic road coordinates
+    const targetId = targetHospital?.hospital?.id || targetHospital?.hospitalId
+    const topId = topMatch?.hospital?.id || topMatch?.hospitalId
+    const isTargetApex = Boolean(targetId && topId && targetId === topId)
+    if (selectedHotspot && isTargetApex) {
+      if (activeCorridorType === 'BYPASS' && selectedHotspot.bypassRouteWaypoints && selectedHotspot.bypassRouteWaypoints.length > 0) {
+        return selectedHotspot.bypassRouteWaypoints
       }
-    }).sort((a, b) => b.totalScore - a.totalScore)
-  }, [hospitals, originLat, originLng])
+      if (selectedHotspot.primaryRouteWaypoints && selectedHotspot.primaryRouteWaypoints.length > 0) {
+        return selectedHotspot.primaryRouteWaypoints
+      }
+    }
 
-  const topMatch = rankedCandidateHospitals[0]
-  const targetHospital = rankedCandidateHospitals.find((c) => c.hospital.id === selectedHospitalId) || topMatch
+    const startLat = originLat
+    const startLng = originLng
+    const endLat = targetHospital.lat
+    const endLng = targetHospital.lng
+
+    const points: [number, number][] = []
+    const numSegments = 16
+    for (let i = 0; i <= numSegments; i++) {
+      const t = i / numSegments
+      const baseLat = startLat + (endLat - startLat) * t
+      const baseLng = startLng + (endLng - startLng) * t
+      // Add natural highway curvature resembling NH-33 / NH-20 corridor
+      const curvature = Math.sin(t * Math.PI) * 0.015
+      const bendLat = baseLat + curvature * 0.6
+      const bendLng = baseLng - curvature * 0.8
+      points.push([Number(bendLat.toFixed(5)), Number(bendLng.toFixed(5))])
+    }
+    return points
+  }, [originLat, originLng, targetHospital, selectedHotspot, activeCorridorType, topMatch])
+
+  const [manualDispatchModalOpen, setManualDispatchModalOpen] = useState<boolean>(false)
+  const [manualCallerName, setManualCallerName] = useState<string>('Subhash Murmu (NH-33 Toll Staff)')
+  const [manualIncidentLocation, setManualIncidentLocation] = useState<string>('NH-33 Toll Plaza, Ormanjhi')
+  const [manualComplaint, setManualComplaint] = useState<string>('Head Trauma, Multiple Rib Fractures & Tension Pneumothorax')
+  const [manualPriority, setManualPriority] = useState<'P1_IMMEDIATE' | 'P2_URGENT' | 'P3_DELAYED'>('P1_IMMEDIATE')
+  const [manualAmbulance, setManualAmbulance] = useState<string>('JH-01-ALS-1081')
+  const [manualHospitalId, setManualHospitalId] = useState<string>(targetHospital?.hospital.id || hospitals[0]?.id || '')
 
   const liveAcuityScore = useMemo(() => {
     let score = 50
@@ -388,6 +401,13 @@ export function RegionalNetworkView({
   }, [rankedCandidateHospitals])
 
   const handleExecute108Dispatch = () => {
+    if (!canDispatch) {
+      setLastDispatchAlert(
+        '🔒 Access Denied: 108 Emergency Dispatch & Bed Pre-Booking is restricted to 108 Central Fleet Command (JH-DSP-5001). Super Admin is in State Command Observer Mode.'
+      )
+      setTimeout(() => setLastDispatchAlert(null), 7000)
+      return
+    }
     if (!targetHospital) return
 
     const dispatchToken = `JH-108-DISPATCH-${Math.floor(1000 + Math.random() * 9000)}`
@@ -479,6 +499,13 @@ export function RegionalNetworkView({
   }
 
   const handleMarkArrived = (dispId: string) => {
+    if (!canDispatch) {
+      setLastDispatchAlert(
+        '🔒 Access Denied: Handover confirmation is restricted to 108 Central Dispatch Command (JH-DSP-5001).'
+      )
+      setTimeout(() => setLastDispatchAlert(null), 6000)
+      return
+    }
     const disp = activeDispatches.find((d) => d.id === dispId)
     setActiveDispatches((prev) =>
       prev.map((d) => (d.id === dispId ? { ...d, status: 'ARRIVED_TRAUMA_BAY', remainingMinutes: 0 } : d)),
@@ -505,51 +532,268 @@ export function RegionalNetworkView({
     setTimeout(() => setLastDispatchAlert(null), 6000)
   }
 
-  const triggerEmergencyHotspot = (key: string, name: string, lat: number, lng: number) => {
-    setActiveHotspot(key)
-    setOriginLat(lat)
-    setOriginLng(lng)
-    setOriginName(name)
+  const triggerEmergencyHotspot = (hotspot: AccidentHotspot) => {
+    setSelectedHotspot(hotspot)
+    setActiveHotspot(hotspot.id)
+    setOriginLat(hotspot.lat)
+    setOriginLng(hotspot.lng)
+    setOriginName(hotspot.name)
+    setPatientName(hotspot.defaultPatient)
+    setIncidentNature(hotspot.defaultIncident)
+    setRequiredSpecialistRole(hotspot.requiredSpecialistRole)
+    setCorridorTrafficLevel(hotspot.defaultTrafficLevel)
+    setCorridorTrafficDelay(hotspot.defaultTrafficDelayMin)
+    setSpo2(hotspot.defaultVitals.spo2)
+    setHeartRate(hotspot.defaultVitals.heartRate)
+    setSystolicBp(hotspot.defaultVitals.systolicBp)
+    setGcs(hotspot.defaultVitals.gcs)
+    setGreenWaveActive(false)
+    setLastDispatchAlert(
+      `🚨 [ACCIDENT CLUSTER ACTIVATED] ${hotspot.name} (${hotspot.blackspotRanking}). Required Doctor: ${hotspot.requiredSpecialistRole}. Computing Apex vs Fallback options...`
+    )
+    setTimeout(() => setLastDispatchAlert(null), 8000)
   }
 
+  // Cross-Tab Remote Bridge (Director's View /control integration)
+  useEffect(() => {
+    const unsub = directorBridge.subscribe((ev) => {
+      if (ev.type === 'TRIGGER_ACCIDENT_HOTSPOT') {
+        const hotspot = ACCIDENT_HOTSPOTS.find((h) => h.id === ev.hotspotId) || {
+          id: ev.hotspotId,
+          name: ev.name,
+          highway: 'Jharkhand State Highway Corridor',
+          district: 'Statewide',
+          lat: ev.lat,
+          lng: ev.lng,
+          monthlyAccidents: 12,
+          blackspotRanking: 'State Hazard Blackspot',
+          riskCategory: 'CRITICAL_BLACKSPOT' as const,
+          defaultIncident: ev.incidentNature,
+          defaultPatient: ev.patientName,
+          requiredSpecialist: `${ev.requiredSpecialistRole} Team`,
+          requiredSpecialistRole: ev.requiredSpecialistRole,
+          baseCorridorKm: 18.5,
+          defaultTrafficDelayMin: ev.trafficDelayMin,
+          defaultTrafficLevel: ev.trafficLevel,
+          defaultVitals: ev.vitals,
+          primaryRouteWaypoints: [
+            [ev.lat, ev.lng],
+            [23.375, 85.34],
+            [23.3667, 85.325],
+          ] as [number, number][],
+          bypassRouteWaypoints: [
+            [ev.lat, ev.lng],
+            [23.35, 85.37],
+            [23.3667, 85.325],
+          ] as [number, number][],
+          bypassName: 'State Highway Ring Road Bypass',
+          bypassDistanceKm: 22.4,
+          bypassTrafficDelayMin: 2,
+        }
+        setSelectedHotspot(hotspot)
+        setActiveHotspot(ev.hotspotId)
+        setOriginLat(ev.lat)
+        setOriginLng(ev.lng)
+        setOriginName(ev.name)
+        setPatientName(ev.patientName)
+        setIncidentNature(ev.incidentNature)
+        setRequiredSpecialistRole(ev.requiredSpecialistRole)
+        setCorridorTrafficLevel(ev.trafficLevel)
+        setCorridorTrafficDelay(ev.trafficDelayMin)
+        setSpo2(ev.vitals.spo2)
+        setHeartRate(ev.vitals.heartRate)
+        setSystolicBp(ev.vitals.systolicBp)
+        setGcs(ev.vitals.gcs)
+        setGreenWaveActive(false)
+
+        // Mobilize primary response ambulance
+        setFleetAmbulances((prev) =>
+          prev.map((a, idx) =>
+            idx === 0 || a.number === 'JH-01-ALS-1081'
+              ? {
+                  ...a,
+                  status: 'DISPATCHED',
+                  patientName: ev.patientName,
+                  incidentNature: ev.incidentNature,
+                  priority: 'P1',
+                  severityScore: 92,
+                  vitals: ev.vitals,
+                }
+              : a
+          )
+        )
+
+        setLastDispatchAlert(
+          `🚨 [DIRECTOR BLACKSPOT SIMULATION] ${ev.name} triggered! Specialist: ${ev.requiredSpecialistRole}. 108 ALS Dispatched.`
+        )
+        setTimeout(() => setLastDispatchAlert(null), 8000)
+      } else if (ev.type === 'TOGGLE_GREEN_WAVE') {
+        setGreenWaveActive(ev.active)
+        setLastDispatchAlert(
+          ev.active
+            ? '⚡ 108 GREEN WAVE PREEMPTION ACTIVE: Highway traffic signals preempted to green! Delay cleared to 0m (72 km/h).'
+            : 'Green Wave preemption released. Standard highway delay factors active.'
+        )
+        setTimeout(() => setLastDispatchAlert(null), 6000)
+      } else if (ev.type === 'UPDATE_PATIENT_VITALS') {
+        setSpo2(ev.vitals.spo2)
+        setHeartRate(ev.vitals.heartRate)
+        setSystolicBp(ev.vitals.systolicBp)
+        setGcs(ev.vitals.gcs)
+        if (ev.patientName) setPatientName(ev.patientName)
+        if (ev.incidentNature) setIncidentNature(ev.incidentNature)
+        if (ev.requiredSpecialistRole) setRequiredSpecialistRole(ev.requiredSpecialistRole)
+
+        setFleetAmbulances((prev) =>
+          prev.map((a, idx) =>
+            idx === 0 || a.number === 'JH-01-ALS-1081'
+              ? {
+                  ...a,
+                  patientName: ev.patientName || a.patientName,
+                  incidentNature: ev.incidentNature || a.incidentNature,
+                  vitals: ev.vitals,
+                }
+              : a
+          )
+        )
+
+        setLastDispatchAlert(
+          `📱 [108 AMBULANCE TELEMETRY SYNC] Live in-transit vitals received: SpO₂ ${ev.vitals.spo2}%, GCS ${ev.vitals.gcs}, HR ${ev.vitals.heartRate} bpm, BP ${ev.vitals.systolicBp} mmHg.`
+        )
+        setTimeout(() => setLastDispatchAlert(null), 7000)
+      } else if (ev.type === 'SELECT_DESTINATION_HOSPITAL') {
+        setSelectedHospitalId(ev.hospitalId)
+        setLastDispatchAlert(
+          `🎯 [108 EMT ROUTE SELECTED] Ambulance locked destination: ${ev.hospitalName}. Recalculating Dijkstra corridor.`
+        )
+        setTimeout(() => setLastDispatchAlert(null), 7000)
+      } else if (ev.type === 'DISPATCH_AMBULANCE_FROM_MOBILE') {
+        const dispatchToken = `JH-108-MOBILE-${Math.floor(1000 + Math.random() * 9000)}`
+        const newDispatch: ActiveAmbulanceDispatch = {
+          id: `disp-mob-${Date.now()}`,
+          token: dispatchToken,
+          ambulanceNumber: ev.ambulanceNumber,
+          ambulanceType: 'ALS (Advanced Life Support)',
+          patientName: ev.patientName,
+          incidentNature: ev.incidentNature,
+          priority: 'P1_IMMEDIATE',
+          severityScore: 94,
+          originName,
+          destinationHospitalId: ev.hospitalId,
+          destinationHospitalName: ev.hospitalName,
+          distanceKm: 18.4,
+          initialEtaMinutes: ev.etaMinutes,
+          remainingMinutes: ev.etaMinutes,
+          status: 'EN_ROUTE_TO_HOSPITAL',
+          vitals: ev.vitals,
+        }
+        setActiveDispatches((prev) => [newDispatch, ...prev])
+        setSelectedHospitalId(ev.hospitalId)
+
+        if (onInjectArrival) {
+          onInjectArrival(94, `[108 ALS] ${ev.patientName}`, `${ev.incidentNature} · SpO₂ ${ev.vitals.spo2}%`)
+        }
+
+        setFleetAmbulances((prev) =>
+          prev.map((a, idx) =>
+            idx === 0 || a.number === ev.ambulanceNumber
+              ? {
+                  ...a,
+                  status: 'DISPATCHED',
+                  patientName: ev.patientName,
+                  incidentNature: ev.incidentNature,
+                  priority: 'P1',
+                  severityScore: 94,
+                  destinationHospitalId: ev.hospitalId,
+                  destinationHospitalName: ev.hospitalName,
+                  etaMinutes: ev.etaMinutes,
+                  vitals: ev.vitals,
+                }
+              : a
+          )
+        )
+
+        setLastDispatchAlert(
+          `🚨 [MOBILE EMT DISPATCH ACTIVATED] ${ev.ambulanceNumber} en route to ${ev.hospitalName} (ETA: ${ev.etaMinutes} mins). Token: ${dispatchToken}`
+        )
+        setTimeout(() => setLastDispatchAlert(null), 9000)
+      }
+    })
+    return () => unsub()
+  }, [])
+
   const mapNodes: MapHospitalNode[] = rankedCandidateHospitals.map((c) => {
+    const cId = c.hospital?.id || c.hospitalId
+    const cName = c.hospital?.name || c.hospitalName || ''
+    const cShort = (c.hospital?.short || '').toLowerCase()
+
     const f = JHARKHAND_79_HOSPITALS.find(
       (item) =>
-        item.id === c.hospital.id ||
-        item.shortCode.toLowerCase() === c.hospital.short.toLowerCase() ||
-        item.name.toLowerCase() === c.hospital.name.toLowerCase() ||
-        item.name.toLowerCase().includes(c.hospital.name.toLowerCase()) ||
-        c.hospital.name.toLowerCase().includes(item.name.toLowerCase())
+        (item.id && cId && item.id === cId) ||
+        (item.shortCode && cShort && item.shortCode.toLowerCase() === cShort) ||
+        (item.name && cName && item.name.toLowerCase() === cName.toLowerCase()) ||
+        (item.name && cName && item.name.toLowerCase().includes(cName.toLowerCase())) ||
+        (cName && item.name && cName.toLowerCase().includes(item.name.toLowerCase()))
     )
 
-    const totBeds = (c.hospital.beds && c.hospital.beds.total > 0)
+    const totBeds = (c.hospital?.beds && c.hospital.beds.total > 0)
       ? c.hospital.beds.total
       : (f ? f.totalGeneralBeds + f.totalIcuBeds : 100)
 
-    const usedB = (c.hospital.beds && c.hospital.beds.used !== undefined)
+    const usedB = (c.hospital?.beds && c.hospital.beds.used !== undefined)
       ? c.hospital.beds.used
       : (f ? Math.max(0, (f.totalGeneralBeds - f.availableGeneralBeds) + (f.totalIcuBeds - f.availableIcuBeds)) : 68)
 
     return {
-      id: c.hospital.id,
-      name: c.hospital.name,
-      districtName: c.hospital.district || f?.districtName || selectedDistrict,
-      facilityTier: c.tier,
+      id: cId,
+      name: cName,
+      districtName: c.hospital?.district || f?.districtName || selectedDistrict,
+      facilityTier: c.tier || 'TERTIARY APEX',
       lat: c.lat,
       lng: c.lng,
       totalBeds: totBeds,
       usedBeds: usedB,
-      availableGeneralBeds: c.availGen,
-      availableIcuBeds: c.availIcu,
-      hasVentilator: c.hasVentilators,
-      hasTraumaSurgery: c.hasTraumaSurgeon,
+      availableGeneralBeds: c.availGen ?? 50,
+      availableIcuBeds: c.availIcu ?? 5,
+      hasVentilator: c.hasVentilators ?? true,
+      hasTraumaSurgery: c.hasTraumaSurgeon ?? true,
       hasBloodBank: true,
     }
   })
 
   const layoutMap = getLayoutPositions(hospitals)
-  const activeTransfers = transfers.filter((t) => t.active)
+  // Active emergency transfer edges from state transfers and live ambulance dispatches
+  const activeTransfers = useMemo(() => {
+    const list = [...transfers.filter((t) => t.active)]
+    activeDispatches.forEach((disp) => {
+      if (disp.status === 'EN_ROUTE_TO_HOSPITAL' && disp.destinationHospitalId) {
+        const rootId = hospitals[0]?.id || 'hosp-1'
+        if (disp.destinationHospitalId !== rootId && !list.some((t) => t.toId === disp.destinationHospitalId)) {
+          list.push({
+            id: `disp-trans-${disp.id}`,
+            patientId: disp.token,
+            patientLabel: `${disp.patientName} (${disp.ambulanceNumber})`,
+            fromId: rootId,
+            toId: disp.destinationHospitalId,
+            minutes: disp.remainingMinutes,
+            algorithm: '108 Multi-Criteria Dijkstra Dispatch',
+            active: true,
+          })
+        }
+      }
+    })
+    return list
+  }, [transfers, activeDispatches, hospitals])
+
   const inFlightCount = activeDispatches.filter((d) => d.status !== 'ARRIVED_TRAUMA_BAY').length
+
+  const currentCorridorDistance = activeCorridorType === 'BYPASS' && selectedHotspot?.bypassDistanceKm
+    ? selectedHotspot.bypassDistanceKm
+    : targetHospital.distanceKm
+
+  const currentCorridorEta = activeCorridorType === 'BYPASS' && candidateResults.bypassSavingsMin > 0
+    ? Math.max(4, targetHospital.etaMinutes - candidateResults.bypassSavingsMin)
+    : targetHospital.etaMinutes
 
   return (
     <div className="flex flex-col gap-6 font-sans text-stone-900">
@@ -570,6 +814,198 @@ export function RegionalNetworkView({
         </div>
       )}
 
+      {/* MANUAL 108 EMERGENCY DISPATCH MODAL (USER ENTRY FOR 108 DISPATCHER ROLE) */}
+      <AnimatePresence>
+        {manualDispatchModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl text-stone-900 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#ea580c]">
+                    <Truck className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#382416] flex items-center gap-2">
+                      Manual 108 Emergency Call &amp; Dispatch
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Emergency Medical Dispatcher Console · Formulate &amp; Authorize Ambulance Dispatch
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setManualDispatchModalOpen(false)}
+                  className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const targetH = hospitals.find((h) => h.id === manualHospitalId) || hospitals[0]
+                  const dispatchToken = `JH-108-DISPATCH-${Math.floor(1000 + Math.random() * 9000)}`
+                  const newDisp: ActiveAmbulanceDispatch = {
+                    id: `disp-${Date.now()}`,
+                    token: dispatchToken,
+                    ambulanceNumber: manualAmbulance,
+                    ambulanceType: manualAmbulance.includes('ALS') ? 'ALS (Advanced Life Support)' : 'BLS (Basic Life Support)',
+                    patientName: manualCallerName,
+                    incidentNature: manualComplaint,
+                    priority: manualPriority,
+                    severityScore: manualPriority === 'P1_IMMEDIATE' ? 88 : manualPriority === 'P2_URGENT' ? 68 : 42,
+                    originName: manualIncidentLocation,
+                    destinationHospitalId: targetH.id,
+                    destinationHospitalName: targetH.name,
+                    distanceKm: 16.4,
+                    initialEtaMinutes: 18,
+                    remainingMinutes: 18,
+                    status: 'EN_ROUTE_TO_HOSPITAL',
+                    vitals: { spo2, heartRate, systolicBp, gcs },
+                  }
+
+                  setActiveDispatches((prev) => [newDisp, ...prev])
+                  setFleetAmbulances((prev) =>
+                    prev.map((a) =>
+                      a.number === manualAmbulance || a.callSign.includes(manualAmbulance)
+                        ? {
+                            ...a,
+                            status: 'DISPATCHED',
+                            patientName: manualCallerName,
+                            incidentNature: manualComplaint,
+                            destinationHospitalId: targetH.id,
+                            destinationHospitalName: targetH.name,
+                            etaMinutes: 18,
+                          }
+                        : a
+                    )
+                  )
+
+                  setManualDispatchModalOpen(false)
+                  setLastDispatchAlert(`🚨 [MANUAL DISPATCH EXECUTED] ${manualAmbulance} mobilized to ${manualIncidentLocation} for ${manualCallerName}. Target: ${targetH.name}.`)
+                }}
+                className="space-y-3.5 text-xs"
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Patient / Caller Name:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={manualCallerName}
+                      onChange={(e) => setManualCallerName(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Incident Location / Landmark:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={manualIncidentLocation}
+                      onChange={(e) => setManualIncidentLocation(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Emergency Nature &amp; Complaint:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={manualComplaint}
+                    onChange={(e) => setManualComplaint(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Triage Priority:
+                    </label>
+                    <select
+                      value={manualPriority}
+                      onChange={(e) => setManualPriority(e.target.value as any)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-2.5 py-2 font-bold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    >
+                      <option value="P1_IMMEDIATE">P1 (Immediate Critical)</option>
+                      <option value="P2_URGENT">P2 (Urgent Trauma)</option>
+                      <option value="P3_DELAYED">P3 (Delayed / Stable)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Assign 108 Ambulance:
+                    </label>
+                    <select
+                      value={manualAmbulance}
+                      onChange={(e) => setManualAmbulance(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-2.5 py-2 font-bold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    >
+                      {fleetAmbulances.map((a) => (
+                        <option key={a.id} value={a.number || a.callSign}>
+                          {a.callSign} ({a.type}) · {a.status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Pre-Booked Hospital:
+                    </label>
+                    <select
+                      value={manualHospitalId}
+                      onChange={(e) => setManualHospitalId(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-2.5 py-2 font-bold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    >
+                      {hospitals.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.short} — {h.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setManualDispatchModalOpen(false)}
+                    className="rounded-xl border border-stone-300 px-4 py-2 font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-[#ea580c] hover:bg-[#d94e08] text-white px-5 py-2 font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <Truck className="size-4" />
+                    <span>Authorize &amp; Dispatch Unit</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
         <div>
@@ -578,7 +1014,7 @@ export function RegionalNetworkView({
               <Truck className="size-5" />
             </div>
             <h2 className="text-xl font-bold tracking-tight text-[#382416]">
-              108 Ambulance Dispatch & Regional Spatial Routing
+              108 Ambulance Dispatch &amp; Regional Spatial Routing
             </h2>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -590,8 +1026,29 @@ export function RegionalNetworkView({
           </p>
         </div>
 
-        {/* Spatial Map / Topology Tab Switcher */}
-        <div className="inline-flex p-1 bg-stone-100 border border-stone-200 rounded-xl shadow-2xs self-start sm:self-auto">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setManualDispatchModalOpen(true)}
+            className="rounded-xl bg-[#ea580c] hover:bg-[#d94e08] text-white px-3.5 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+          >
+            <PlusCircle className="size-3.5" />
+            <span>Manual 108 Dispatch</span>
+          </button>
+
+          <a
+            href="/ambulance"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3.5 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+          >
+            <Smartphone className="size-3.5 text-amber-700" />
+            <span>108 EMT Mobile App</span>
+            <ExternalLink className="size-3 text-amber-600" />
+          </a>
+
+          {/* Spatial Map / Topology Tab Switcher */}
+          <div className="inline-flex p-1 bg-stone-100 border border-stone-200 rounded-xl shadow-2xs self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab('map')}
@@ -619,6 +1076,7 @@ export function RegionalNetworkView({
             Dijkstra Topology
           </button>
         </div>
+      </div>
       </div>
 
       {/* 4-Card Boltshift/Starline Metric Summary Grid */}
@@ -740,30 +1198,38 @@ export function RegionalNetworkView({
         </div>
 
         {/* Hotspot Presets */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-stone-100">
-          {[
-            { key: 'ormanjhi', label: 'NH-33 Toll Crash (Ormanjhi)', lat: 23.4832, lng: 85.4611 },
-            { key: 'bundu', label: 'Bundu NH-33 Rural Polytrauma', lat: 23.1678, lng: 85.5891 },
-            { key: 'jharia', label: 'Dhanbad Jharia Colliery Surge', lat: 23.7501, lng: 86.4162 },
-            { key: 'jamshedpur', label: 'Adityapur Industrial Blast', lat: 22.7801, lng: 86.1950 },
-            { key: 'deoghar', label: 'Jasidih Railway Line Trauma', lat: 24.5120, lng: 86.6450 },
-            { key: 'barhi', label: 'Barhi GT Road Highway Pileup', lat: 24.2980, lng: 85.4230 },
-          ].map((spot) => (
-            <button
-              key={spot.key}
-              type="button"
-              onClick={() => triggerEmergencyHotspot(spot.key, spot.label, spot.lat, spot.lng)}
-              className={cn(
-                'px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
-                activeHotspot === spot.key
-                  ? 'bg-[#382416] text-[#ffedd7] border-[#382416] shadow-xs'
-                  : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100',
-              )}
-            >
-              <Flame className={cn('size-3.5', activeHotspot === spot.key ? 'text-[#ea580c]' : 'text-stone-400')} />
-              <span>{spot.label}</span>
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100">
+          <span className="text-[11px] font-mono font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+            <span className="size-2 rounded-full bg-rose-600 animate-ping"></span>
+            AI Incident Blackspots:
+          </span>
+          {ACCIDENT_HOTSPOTS.map((spot) => {
+            const isCurrent = activeHotspot === spot.id
+            return (
+              <button
+                key={spot.id}
+                type="button"
+                onClick={() => triggerEmergencyHotspot(spot)}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 shadow-2xs',
+                  isCurrent
+                    ? 'bg-[#382416] text-[#ffedd7] border-[#382416] shadow-xs ring-2 ring-orange-500/30'
+                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100',
+                )}
+              >
+                <Flame className={cn('size-3.5 shrink-0', isCurrent ? 'text-[#ea580c]' : 'text-stone-400')} />
+                <span className="font-bold">{spot.name}</span>
+                <span
+                  className={cn(
+                    'text-[10px] font-mono px-1.5 py-0.2 rounded font-semibold',
+                    isCurrent ? 'bg-orange-950/60 text-orange-300' : 'bg-stone-200 text-stone-600',
+                  )}
+                >
+                  {spot.monthlyAccidents} crashes/mo · {spot.requiredSpecialistRole}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -836,13 +1302,182 @@ export function RegionalNetworkView({
                 </div>
               </div>
 
+              {/* Live Dijkstra Route & Green Corridor Telemetry Strip (Uber Style) */}
+              <div className="rounded-xl border border-orange-500/30 bg-gradient-to-r from-[#2c1b0e] via-[#382416] to-[#25170d] p-3 text-white shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-orange-500/20 text-[#ea580c] border border-orange-500/40 flex items-center justify-center shrink-0">
+                    <Route className="size-4 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold tracking-wider text-orange-400 uppercase">
+                        DIJKSTRA OPTIMAL CORRIDOR
+                      </span>
+                      <span className="size-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      <span className="text-[10px] font-mono font-bold text-emerald-400">GREEN WAVE ACTIVE</span>
+                    </div>
+                    <div className="text-xs font-bold text-stone-100 flex items-center gap-1.5 mt-0.5">
+                      <span>{originName}</span>
+                      <ArrowRight className="size-3 text-orange-400" />
+                      <span className="text-orange-200">{targetHospital.hospital.name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs font-mono">
+                  <div className="text-right">
+                    <span className="text-[10px] text-stone-400 block uppercase">
+                      {activeCorridorType === 'BYPASS' ? 'BYPASS DISTANCE' : 'HIGHWAY DISTANCE'}
+                    </span>
+                    <strong className="text-orange-400 font-bold">{currentCorridorDistance} km · ~{currentCorridorEta}m ETA</strong>
+                  </div>
+                  <div className="h-6 w-px bg-stone-700 hidden sm:block"></div>
+                  <div className="text-right hidden sm:block">
+                    <span className="text-[10px] text-stone-400 block uppercase">TARGET ICU BEDS</span>
+                    <strong className={targetHospital.availIcu > 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                      {targetHospital.availIcu > 0 ? `${targetHospital.availIcu} ICU Open` : 'Emergency Surge'}
+                    </strong>
+                  </div>
+                  <div className="h-6 w-px bg-stone-700 hidden sm:block"></div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-stone-400 block uppercase">UNIT DISPATCHED</span>
+                    <strong className="text-cyan-400 font-bold">{assignedAmbulance}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Multi-Corridor Bypass Selector & Corridor Details */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-xl border border-stone-200/90 bg-stone-50/90 px-3.5 py-2 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold text-stone-600">Corridor Route:</span>
+                  <div className="inline-flex rounded-lg border border-stone-200 bg-white p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCorridorType('PRIMARY')}
+                      className={cn(
+                        'px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5',
+                        activeCorridorType === 'PRIMARY'
+                          ? 'bg-[#382416] text-[#ffedd7] shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100',
+                      )}
+                    >
+                      <span>🛣️ Route 1: Primary Highway</span>
+                      {corridorTrafficDelay > 0 && !greenWaveActive && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 font-mono">
+                          +{corridorTrafficDelay}m
+                        </span>
+                      )}
+                    </button>
+                    {selectedHotspot?.bypassName && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveCorridorType('BYPASS')}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5',
+                          activeCorridorType === 'BYPASS'
+                            ? 'bg-emerald-700 text-white shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100',
+                        )}
+                      >
+                        <span>⚡ Route 2: {selectedHotspot.bypassName}</span>
+                        {candidateResults.bypassSavingsMin > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold">
+                            Saves ~{candidateResults.bypassSavingsMin}m
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-[11px] font-medium text-stone-500 flex items-center gap-2">
+                  <span>
+                    {activeCorridorType === 'BYPASS' && selectedHotspot?.bypassDistanceKm
+                      ? `Bypass Corridor: ${selectedHotspot.bypassDistanceKm} km · Fast-Flow Ring Road`
+                      : `Primary Highway: ${targetHospital.distanceKm} km · ${corridorTrafficLevel} Congestion`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Dynamic Traffic Gridlock Diversion Recommendation Alert */}
+              {candidateResults.trafficDiversionRecommendation && (
+                <div className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70 p-3.5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1">
+                  <div className="flex items-start sm:items-center gap-2.5 text-amber-950">
+                    <div className="p-1.5 rounded-lg bg-amber-500 text-white shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
+                      <AlertTriangle className="size-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-amber-900 flex items-center gap-2">
+                        <span>AI Traffic & Specialist Diversion Re-Routing</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
+                          Gridlock Bypass Active
+                        </span>
+                      </div>
+                      <p className="text-stone-700 mt-0.5 leading-snug">
+                        {candidateResults.trafficDiversionRecommendation}
+                      </p>
+                    </div>
+                  </div>
+
+                  {candidateResults.diversionHospitalId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (candidateResults.diversionHospitalId) {
+                          setSelectedHospitalId(candidateResults.diversionHospitalId)
+                          setLastDispatchAlert(
+                            `🔄 [AI TRAFFIC DIVERSION EXECUTED] Route rerouted to ${candidateResults.diversionHospitalName}! Verified on-duty ${candidateResults.diversionSpecialistName} notified.`
+                          )
+                          setTimeout(() => setLastDispatchAlert(null), 8000)
+                        }
+                      }}
+                      className="shrink-0 px-3.5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs cursor-pointer transition-all shadow-sm flex items-center gap-1.5 hover:scale-[1.02]"
+                    >
+                      <Route className="size-3.5" />
+                      Divert to {candidateResults.diversionHospitalName} (-{candidateResults.diversionTimeSavingsMin}m)
+                    </button>
+                  )}
+                </div>
+              )}
+
               <LeafletMap
                 hospitals={mapNodes}
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={setSelectedHospitalId}
                 ambulances={filteredAmbulances}
+                selectedAmbulanceId={assignedAmbulance}
+                onSelectAmbulance={(amb) => {
+                  if (amb) {
+                    setAssignedAmbulance(amb.number)
+                    if (amb.destinationHospitalId) setSelectedHospitalId(amb.destinationHospitalId)
+                  }
+                }}
                 ambulanceLocation={{ lat: originLat, lng: originLng }}
-                onMarkArrived={(ambId) => {
+                routePolyline={dijkstraRoutePolyline}
+                showCoverageZones={true}
+                accidentHotspot={{
+                  id: selectedHotspot.id,
+                  name: selectedHotspot.name,
+                  highway: selectedHotspot.highway,
+                  district: selectedHotspot.district,
+                  lat: originLat,
+                  lng: originLng,
+                  monthlyAccidents: selectedHotspot.monthlyAccidents,
+                  blackspotRanking: selectedHotspot.blackspotRanking,
+                  riskCategory: selectedHotspot.riskCategory,
+                }}
+                trafficCondition={{
+                  level: greenWaveActive ? 'CLEAR' : corridorTrafficLevel,
+                  delayMin: greenWaveActive ? 0 : corridorTrafficDelay,
+                  greenWaveActive,
+                  speedKmH: greenWaveActive ? 74 : corridorTrafficLevel === 'HEAVY' ? 24 : 40,
+                }}
+                onToggleGreenWave={() => {
+                  const next = !greenWaveActive
+                  setGreenWaveActive(next)
+                  directorBridge.send({ type: 'TOGGLE_GREEN_WAVE', active: next })
+                }}
+                onMarkArrived={canDispatch ? (ambId) => {
                   setFleetAmbulances((prev) =>
                     prev.map((a) =>
                       a.id === ambId
@@ -859,7 +1494,7 @@ export function RegionalNetworkView({
                   )
                   setLastDispatchAlert(`✅ Patient safely handed over to Trauma Bay. Unit returned to standby!`)
                   setTimeout(() => setLastDispatchAlert(null), 6000)
-                }}
+                } : undefined}
               />
             </div>
           ) : (
@@ -946,27 +1581,120 @@ export function RegionalNetworkView({
                   )
                 })}
 
-                {/* Active emergency transfer edges */}
+                {/* Active emergency transfer edges with animated patient flow */}
                 {activeTransfers.map((t) => {
                   const pa = layoutMap.get(t.fromId)
                   const pb = layoutMap.get(t.toId)
                   if (!pa || !pb) return null
                   const isHovered = hovered === t.id
                   return (
-                    <line
-                      key={t.id}
-                      x1={pa.x}
-                      y1={pa.y}
-                      x2={pb.x}
-                      y2={pb.y}
-                      stroke="#dc2626"
-                      strokeWidth={isHovered ? 4.5 : 3}
-                      markerEnd="url(#arrow)"
-                      className="edge-active animate-pulse"
-                      opacity={hovered && !isHovered ? 0.35 : 1}
-                    />
+                    <g key={t.id}>
+                      <line
+                        x1={pa.x}
+                        y1={pa.y}
+                        x2={pb.x}
+                        y2={pb.y}
+                        stroke="#dc2626"
+                        strokeWidth={isHovered ? 4.5 : 3}
+                        markerEnd="url(#arrow)"
+                        className="edge-active animate-pulse"
+                        opacity={hovered && !isHovered ? 0.35 : 1}
+                      />
+                      {/* Animated Primary Patient Flow Particle */}
+                      <circle cx="0" cy="0" r="5" fill="#dc2626" opacity="0.95">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.8s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                      <circle cx="0" cy="0" r="2.5" fill="#ffffff" opacity="0.95">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.8s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+
+                      {/* Staggered Follower Particle */}
+                      <circle cx="0" cy="0" r="3.5" fill="#f97316" opacity="0.85">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.8s"
+                          begin="1.4s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                      <circle cx="0" cy="0" r="1.8" fill="#ffffff" opacity="0.9">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.8s"
+                          begin="1.4s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    </g>
                   )
                 })}
+
+                {/* Highlighted Dijkstra Shortest-Path Route Corridors with Continuous Flow Stream */}
+                {(() => {
+                  const rootId = hospitals[0]?.id || 'hosp-1'
+                  const destId = targetHospital.hospital.id
+                  const pa = layoutMap.get(rootId)
+                  const pb = layoutMap.get(destId)
+                  if (!pa || !pb || rootId === destId) return null
+                  return (
+                    <g key="dijkstra-active-path">
+                      <line
+                        x1={pa.x}
+                        y1={pa.y}
+                        x2={pb.x}
+                        y2={pb.y}
+                        stroke="#ea580c"
+                        strokeWidth={8}
+                        opacity={0.3}
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1={pa.x}
+                        y1={pa.y}
+                        x2={pb.x}
+                        y2={pb.y}
+                        stroke="#ff6b00"
+                        strokeWidth={3.5}
+                        strokeDasharray="6 4"
+                        markerEnd="url(#arrow)"
+                        className="animate-pulse"
+                      />
+                      {/* Dijkstra Active Flow Pulse 1 */}
+                      <circle cx="0" cy="0" r="6" fill="#ea580c" opacity="0.4">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.2s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                      <circle cx="0" cy="0" r="4.5" fill="#ea580c" stroke="#ffffff" strokeWidth="1.5">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.2s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+
+                      {/* Dijkstra Active Flow Pulse 2 */}
+                      <circle cx="0" cy="0" r="4" fill="#fbbf24" stroke="#ffffff" strokeWidth="1">
+                        <animateMotion
+                          path={`M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`}
+                          dur="2.2s"
+                          begin="1.1s"
+                          repeatCount="indefinite"
+                        />
+                      </circle>
+                    </g>
+                  )
+                })()}
 
                 {/* Hospital Nodes */}
                 {hospitals.map((h) => {
@@ -1097,6 +1825,31 @@ export function RegionalNetworkView({
               </div>
             </div>
 
+            {/* Observer Mode / RBAC Notice */}
+            {!canDispatch && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-in fade-in">
+                <div className="flex items-center gap-2.5 text-amber-900">
+                  <div className="p-1.5 rounded-lg bg-amber-200/80 text-amber-900 shrink-0">
+                    <ShieldCheck className="size-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold">State Command Telemetry Observer Mode:</span>
+                    <span className="text-amber-800 ml-1">
+                      108 Emergency vehicle dispatching and trauma bed locks are restricted to <strong>108 Central Fleet Command (JH-DSP-5001)</strong>. {user?.roleTitle || 'Super Admin'} operates in telemetry observation mode.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loginAsDemoRole('AMBULANCE_DISPATCH')}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-[#382416] hover:bg-black text-[#ffedd7] text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <Truck className="size-3.5 text-[#ea580c]" />
+                  Switch to 108 Dispatcher (JH-DSP-5001)
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 block mb-1">
@@ -1215,93 +1968,290 @@ export function RegionalNetworkView({
 
         {/* Right Column: Dijkstra Multi-Criteria Hospital Matches & Active Dispatches */}
         <div className="space-y-4">
-          {/* Dijkstra Multi-Criteria Ranked Facilities */}
+          {/* Dijkstra Multi-Criteria Ranked Facilities & AI Doctor Roster Match */}
           <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#ea580c]">
-                  Dijkstra Multi-Criteria Engine
-                </span>
-                <h3 className="text-sm font-bold text-[#382416]">
-                  Ranked Candidate Hospitals
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#ea580c]">
+                    AI CASUALTY ROUTER &amp; DOCTOR MATCH
+                  </span>
+                  <span className="bg-orange-100 text-[#ea580c] font-mono text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-300">
+                    REQ: {requiredSpecialistRole.toUpperCase()}
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-[#382416] mt-0.5">
+                  1st, 2nd &amp; 3rd Best Hospital Recommendations
                 </h3>
               </div>
-              <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                Top Match: {topMatch?.totalScore ?? 96}/100 pts
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !greenWaveActive
+                    setGreenWaveActive(next)
+                    directorBridge.send({ type: 'TOGGLE_GREEN_WAVE', active: next })
+                  }}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1 border',
+                    greenWaveActive
+                      ? 'bg-emerald-600 text-white border-emerald-400 shadow-2xs'
+                      : 'bg-stone-100 text-stone-700 border-stone-300 hover:bg-stone-200',
+                  )}
+                >
+                  <Zap className="size-3 fill-current" />
+                  <span>{greenWaveActive ? 'GREEN WAVE ON' : 'PREEMPTION'}</span>
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-              {rankedCandidateHospitals.slice(0, 4).map((cand, idx) => {
-                const isSelected = cand.hospital.id === selectedHospitalId
-                return (
-                  <div
-                    key={cand.hospital.id}
-                    onClick={() => setSelectedHospitalId(cand.hospital.id)}
-                    className={cn(
-                      'p-3.5 rounded-xl border transition-all cursor-pointer space-y-2',
-                      isSelected
-                        ? 'bg-orange-50/50 border-[#ea580c] ring-2 ring-[#ea580c]/20 shadow-2xs'
-                        : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/50',
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className={cn(
-                            'size-6 rounded-full flex items-center justify-center text-xs font-bold text-white',
-                            idx === 0 ? 'bg-[#ea580c]' : 'bg-stone-400',
-                          )}
-                        >
-                          #{idx + 1}
-                        </span>
-                        <div>
-                          <h4 className="text-xs font-bold text-[#382416] leading-snug">{cand.hospital.name}</h4>
-                          <span className="text-[11px] text-stone-500 font-medium">{cand.tier} · {selectedDistrict === 'ALL' ? 'Jharkhand' : selectedDistrict}</span>
+            {/* The 3 Calculated Best Options */}
+            <div className="space-y-3">
+              {/* OPTION 1: 1ST BEST (RECOMMENDED APEX MATCH) */}
+              {option1 && (
+                <div
+                  onClick={() => setSelectedHospitalId(option1.hospitalId)}
+                  className={cn(
+                    'p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2.5 relative overflow-hidden',
+                    selectedHospitalId === option1.hospitalId
+                      ? 'bg-gradient-to-br from-emerald-50/90 to-green-50/40 border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
+                      : 'bg-white border-stone-200 hover:border-emerald-300 hover:bg-stone-50/50',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="size-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
+                        #1
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300 uppercase">
+                            🏆 1ST BEST · APEX DEFINITIVE SURGERY
+                          </span>
                         </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-bold text-emerald-700 block">{cand.totalScore} pts</span>
-                        <span className="text-[11px] text-stone-500 font-medium">
-                          ⏱ {cand.etaMinutes}m ({cand.distanceKm}km)
-                        </span>
+                        <h4 className="text-sm font-bold text-[#382416] mt-0.5">{option1.hospitalName}</h4>
+                        <span className="text-[11px] text-stone-500 font-medium">{option1.tier} · {option1.district}</span>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-stone-100 text-[11px]">
-                      <div>
-                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">ICU Beds:</span>
-                        <strong className={cand.availIcu > 0 ? 'text-emerald-700' : 'text-red-600'}>
-                          {cand.availIcu} Open
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">Trauma:</span>
-                        <strong className={cand.hasTraumaSurgeon ? 'text-blue-700' : 'text-stone-500'}>
-                          {cand.hasTraumaSurgeon ? 'Ready' : 'None'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-stone-400 block text-[10px] uppercase font-semibold">Ventilators:</span>
-                        <strong className={cand.hasVentilators ? 'text-emerald-700' : 'text-stone-500'}>
-                          {cand.hasVentilators ? 'Active' : 'None'}
-                        </strong>
-                      </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-black text-emerald-700 block">{option1.compositeScore} pts</span>
+                      <span className="text-xs font-bold text-stone-700">
+                        ⏱ {option1.effectiveEtaMin}m ETA ({option1.distanceKm} km)
+                      </span>
                     </div>
                   </div>
-                )
-              })}
+
+                  {/* Specialist Doctor Roster Badge */}
+                  <div className="p-2.5 rounded-xl bg-emerald-950/5 border border-emerald-500/30 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                        <User className="size-3.5 text-emerald-700" />
+                        <span>{option1.doctorInfo.doctorName}</span>
+                        <span className="text-[10px] font-normal text-emerald-700">({option1.doctorInfo.specialty})</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-600 text-white uppercase">
+                        ON DUTY · TRAUMA BAY READY
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 font-medium">
+                      {option1.doctorInfo.statusNote}
+                    </p>
+                  </div>
+
+                  {/* Traffic & Capacity Telemetry */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-emerald-100 text-[11px]">
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">ICU Beds:</span>
+                      <strong className="text-emerald-700 font-bold">{option1.availIcu} Open ICU</strong>
+                    </div>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">Corridor Traffic:</span>
+                      <strong className={greenWaveActive ? 'text-emerald-600 font-bold' : option1.trafficDelayMin > 10 ? 'text-rose-600 font-bold' : 'text-amber-700 font-bold'}>
+                        {greenWaveActive ? '⚡ 0m (Green Wave)' : `+${option1.trafficDelayMin}m Delay`}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">Match Status:</span>
+                      <strong className="text-emerald-700 font-bold">Recommended</strong>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-stone-500 italic bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+                    {option1.clinicalRationale}
+                  </p>
+                </div>
+              )}
+
+              {/* OPTION 2: 2ND BEST (AIRWAY & SHOCK STABILIZATION FALLBACK) */}
+              {option2 && (
+                <div
+                  onClick={() => setSelectedHospitalId(option2.hospitalId)}
+                  className={cn(
+                    'p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2.5 relative overflow-hidden',
+                    selectedHospitalId === option2.hospitalId
+                      ? 'bg-gradient-to-br from-amber-50/90 to-yellow-50/40 border-amber-500 shadow-md ring-2 ring-amber-500/20'
+                      : 'bg-white border-stone-200 hover:border-amber-300 hover:bg-stone-50/50',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="size-7 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
+                        #2
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 uppercase">
+                            ⚡ 2ND BEST · RAPID AIRWAY / SHOCK RESUSCITATION
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-[#382416] mt-0.5">{option2.hospitalName}</h4>
+                        <span className="text-[11px] text-stone-500 font-medium">{option2.tier} · {option2.district}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-black text-amber-700 block">{option2.compositeScore} pts</span>
+                      <span className="text-xs font-bold text-stone-700">
+                        ⏱ {option2.effectiveEtaMin}m ETA ({option2.distanceKm} km)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Doctor Status / Warning */}
+                  <div className="p-2.5 rounded-xl bg-amber-950/5 border border-amber-500/30 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                        <User className="size-3.5 text-amber-700" />
+                        <span>{option2.doctorInfo.doctorName}</span>
+                      </div>
+                      <span className={cn(
+                        'px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase',
+                        option2.doctorInfo.status === 'NOT_AVAILABLE'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-amber-600 text-white'
+                      )}>
+                        {option2.doctorInfo.status === 'NOT_AVAILABLE' ? `NO ${requiredSpecialistRole.toUpperCase()}` : 'STABILIZATION ONLY'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 font-medium">
+                      {option2.doctorInfo.statusNote}
+                    </p>
+                  </div>
+
+                  {/* Traffic & Distance Advantage */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-amber-100 text-[11px]">
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">ICU Beds:</span>
+                      <strong className={option2.availIcu > 0 ? 'text-amber-800 font-bold' : 'text-stone-500'}>
+                        {option2.availIcu} Open ICU
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">Transit Distance:</span>
+                      <strong className="text-amber-800 font-bold">
+                        {option1.distanceKm > option2.distanceKm ? `Saves ${(option1.distanceKm - option2.distanceKm).toFixed(1)} km` : `${option2.distanceKm} km`}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase font-semibold">Clinical Role:</span>
+                      <strong className="text-amber-700 font-bold">Transit Resus</strong>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-stone-500 italic bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+                    {option2.clinicalRationale}
+                  </p>
+                </div>
+              )}
+
+              {/* OPTION 3: 3RD BEST (CONTINGENCY TERTIARY APEX) */}
+              {option3 && (
+                <div
+                  onClick={() => setSelectedHospitalId(option3.hospitalId)}
+                  className={cn(
+                    'p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2.5 relative overflow-hidden',
+                    selectedHospitalId === option3.hospitalId
+                      ? 'bg-gradient-to-br from-blue-50/90 to-sky-50/40 border-blue-500 shadow-md ring-2 ring-blue-500/20'
+                      : 'bg-white border-stone-200 hover:border-blue-300 hover:bg-stone-50/50',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="size-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black shadow-xs">
+                        #3
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-black text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-300 uppercase">
+                            🛡️ 3RD BEST · CONTINGENCY TERTIARY BACKUP
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-[#382416] mt-0.5">{option3.hospitalName}</h4>
+                        <span className="text-[11px] text-stone-500 font-medium">{option3.tier} · {option3.district}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-black text-blue-700 block">{option3.compositeScore} pts</span>
+                      <span className="text-xs font-bold text-stone-700">
+                        ⏱ {option3.effectiveEtaMin}m ETA ({option3.distanceKm} km)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-blue-950/5 border border-blue-500/30 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                        <User className="size-3.5 text-blue-700" />
+                        <span>{option3.doctorInfo.doctorName}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-blue-600 text-white uppercase">
+                        SURGICAL BACKUP
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-800 font-medium">
+                      {option3.doctorInfo.statusNote}
+                    </p>
+                  </div>
+
+                  <p className="text-[10px] text-stone-500 italic bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+                    {option3.clinicalRationale}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Primary Dispatch CTA Button */}
-            <button
-              type="button"
-              onClick={handleExecute108Dispatch}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-transform active:scale-98"
-            >
-              <Send className="size-4" />
-              <span>Dispatch 108 Ambulance (Pre-Book Bed at {targetHospital?.hospital.short ?? 'Target Facility'})</span>
-            </button>
+            {/* Primary Dispatch CTA Button / RBAC Restricted */}
+            {canDispatch ? (
+              <button
+                type="button"
+                onClick={handleExecute108Dispatch}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-transform active:scale-98"
+              >
+                <Send className="size-4" />
+                <span>Dispatch 108 Ambulance (Pre-Book Bed at {targetHospital?.hospital.short ?? 'Target Facility'})</span>
+              </button>
+            ) : (
+              <div className="w-full p-4 rounded-xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 text-stone-600">
+                  <div className="p-1.5 rounded-lg bg-stone-200 text-stone-700 shrink-0">
+                    <ShieldCheck className="size-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-stone-800">108 Dispatch Authority Locked (Observer Mode)</div>
+                    <div className="text-[11px] text-stone-500">
+                      Super Admin can observe spatial routing, but emergency vehicle dispatches & bed reservations are restricted to Operator Vikram Singh (JH-DSP-5001).
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loginAsDemoRole('AMBULANCE_DISPATCH')}
+                  className="shrink-0 w-full sm:w-auto px-3.5 py-2 rounded-lg bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-2xs"
+                >
+                  <Truck className="size-3.5" />
+                  Switch to Dispatcher
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Active In-Flight Dispatches Fleet Panel */}
@@ -1340,13 +2290,20 @@ export function RegionalNetworkView({
                       SpO₂: {disp.vitals.spo2}% · HR: {disp.vitals.heartRate} · BP: {disp.vitals.systolicBp}
                     </span>
                     {disp.status !== 'ARRIVED_TRAUMA_BAY' ? (
-                      <button
-                        type="button"
-                        onClick={() => handleMarkArrived(disp.id)}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold cursor-pointer"
-                      >
-                        Mark Arrived (Handover)
-                      </button>
+                      canDispatch ? (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkArrived(disp.id)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold cursor-pointer"
+                        >
+                          Mark Arrived (Handover)
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-medium text-stone-500 italic flex items-center gap-1">
+                          <Truck className="size-3 text-stone-400" />
+                          Handover by 108 Unit
+                        </span>
+                      )
                     ) : (
                       <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                         <CheckCircle2 className="size-3.5" /> Admitted

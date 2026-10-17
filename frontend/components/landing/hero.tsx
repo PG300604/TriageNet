@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import anime from 'animejs'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, AlertTriangle, FastForward, RotateCcw } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { TextReveal } from './motion-primitives/text-reveal'
 import { AnimatedECGWaveform } from './motion-primitives/animated-ecg-waveform'
 
@@ -63,34 +63,6 @@ export function Hero() {
       duration: 600,
     }, '-=300')
   }, [])
-
-  const simulateCriticalArrival = () => {
-    const newPt: InteractivePatient = {
-      id: 'P-999',
-      name: 'DEEPAK MUNDA (CARDIAC ARREST)',
-      vitals: 'VFIB · SpO₂ 72% · HR 165',
-      acuity: 98,
-      waitMin: 0,
-      status: 'Assigned',
-      match: 'ICU BED #01 (CARDIOLOGIST)',
-    }
-    setPreemptionNotice('PREEMPTION LOGGED: DEEPAK MUNDA PREEMPTED BED #01 TO STEP-DOWN')
-    setPatients((prev) => [newPt, ...prev])
-  }
-
-  const fastForwardTime = () => {
-    setPatients((prev) =>
-      prev.map((p) => ({
-        ...p,
-        waitMin: p.waitMin + 15,
-      }))
-    )
-  }
-
-  const resetSimulation = () => {
-    setPatients(BASE_PATIENTS)
-    setPreemptionNotice(null)
-  }
 
   return (
     <section
@@ -151,39 +123,12 @@ export function Hero() {
                 </p>
               </div>
 
-              {/* Simulation Controls */}
-              <div className="flex flex-wrap items-center gap-2">
-                <motion.button
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  type="button"
-                  onClick={simulateCriticalArrival}
-                  className="oryzo-ghost-button !py-1.5 !px-3 text-[11px] flex items-center gap-1.5 cursor-pointer"
-                >
-                  <AlertTriangle className="size-3 text-[#dc5000]" />
-                  <span>PREEMPTION</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  type="button"
-                  onClick={fastForwardTime}
-                  className="oryzo-pill-button !py-1.5 !px-3 text-[11px] flex items-center gap-1.5 cursor-pointer"
-                >
-                  <FastForward className="size-3" />
-                  <span>+15M FAST FORWARD</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.96 }}
-                  type="button"
-                  onClick={resetSimulation}
-                  className="oryzo-ghost-button !py-1.5 !px-3 text-[11px] cursor-pointer"
-                >
-                  <RotateCcw className="size-3" />
-                </motion.button>
+              {/* Live Status Telemetry Badge */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1.5 text-xs font-mono font-semibold text-emerald-400">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+                  LIVE NETWORK TELEMETRY
+                </span>
               </div>
             </div>
 

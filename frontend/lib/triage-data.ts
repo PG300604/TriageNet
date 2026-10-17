@@ -619,16 +619,33 @@ export const STATUS_LABEL: Record<CapacityStatus, string> = {
   red: 'Critical',
 }
 
+export interface DischargeResult {
+  state: TriageState
+  message: string
+  dischargedName: string
+  dischargedId: string
+  reassignedName?: string
+  reassignedWaitMinutes?: number
+  reason: 'recovery' | 'family_ama'
+  hospitalName: string
+}
+
 export function processNewArrival(
   state: TriageState,
   newPt: Patient
-): { state: TriageState; preemptedPatientName?: string } {
+): { state: TriageState; preemptedPatientName?: string; arrivalStatus: 'assigned_preempt' | 'assigned_overflow' | 'waiting' } {
   let updatedPatients = [...state.patients]
   let preemptedName: string | undefined = undefined
+  let arrivalStatus: 'assigned_preempt' | 'assigned_overflow' | 'waiting' = 'waiting'
+
+  // Realistic initial triage wait elapsed at ED triage desk (4-6 minutes)
+  const initialIntakeWait = newPt.waitMinutes > 0 ? newPt.waitMinutes : Math.floor(4 + Math.random() * 3)
+  newPt.waitMinutes = initialIntakeWait
 
   if (newPt.severity >= 88) {
+    // Attempt emergency preemption of stable patient (severity <= 55)
     const candidates = updatedPatients.filter(
-      (p) => p.hospitalId === newPt.hospitalId && p.status === 'Assigned' && p.severity <= 60
+      (p) => p.hospitalId === newPt.hospitalId && p.status === 'Assigned' && p.severity <= 55
     )
 
     if (candidates.length > 0) {
@@ -637,10 +654,13 @@ export function processNewArrival(
       preemptedName = toPreempt.name
 
       updatedPatients = updatedPatients.map((p) =>
-        p.id === toPreempt.id ? { ...p, status: 'Preempted' as PatientStatus } : p
+        p.id === toPreempt.id ? { ...p, status: 'Preempted' as PatientStatus, stepDownCountdown: 15 } : p
       )
       newPt.status = 'Assigned'
-      newPt.assignedWaitMinutes = newPt.waitMinutes
+      newPt.bedType = newPt.severity >= 80 ? 'ICU' : 'General'
+      // Realistic assignment wait duration: initial intake wait + 2-3 mins bed preparation (never 0!)
+      newPt.assignedWaitMinutes = initialIntakeWait + Math.floor(2 + Math.random() * 3)
+      arrivalStatus = 'assigned_preempt'
     } else {
       const candidateOverflow = state.hospitals.find(
         (h) => h.id !== newPt.hospitalId && getHospitalOpenBeds(h) >= 2
@@ -648,14 +668,21 @@ export function processNewArrival(
       if (candidateOverflow) {
         newPt.hospitalId = candidateOverflow.id
         newPt.status = 'Assigned'
-        newPt.assignedWaitMinutes = newPt.waitMinutes
-        newPt.topFactor += ` (Temp Holding at ${candidateOverflow.short})`
+        newPt.bedType = newPt.severity >= 80 ? 'ICU' : 'General'
+        newPt.assignedWaitMinutes = initialIntakeWait + Math.floor(3 + Math.random() * 4)
+        newPt.topFactor += ` (Transferred to ${candidateOverflow.short})`
+        arrivalStatus = 'assigned_overflow'
       } else {
+        // Enters triage queue heap at #1 priority rank awaiting bed release
         newPt.status = 'Waiting'
+        newPt.assignedWaitMinutes = undefined
+        arrivalStatus = 'waiting'
       }
     }
   } else {
     newPt.status = 'Waiting'
+    newPt.assignedWaitMinutes = undefined
+    arrivalStatus = 'waiting'
   }
 
   updatedPatients.unshift(newPt)
@@ -666,6 +693,7 @@ export function processNewArrival(
       patients: updatedPatients,
     },
     preemptedPatientName: preemptedName,
+    arrivalStatus,
   }
 }
 
@@ -684,60 +712,83 @@ export function triggerBedRelease(
   hospitalId: string,
   reason: 'recovery' | 'family_ama',
   targetPatientId?: string
-): { state: TriageState; message: string } {
-  const hospital = state.hospitals.find((h) => h.id === hospitalId)
-  if (!hospital) return { state, message: 'Hospital not found' }
+): DischargeResult {
+  const hospital = state.hospitals.find((h) => h.id === hospitalId) || state.hospitals[0]
+  if (!hospital) {
+    return {
+      state,
+      message: 'Hospital facility not found',
+      dischargedName: '',
+      dischargedId: '',
+      reason,
+      hospitalName: 'Hospital',
+    }
+  }
 
   let updatedPatients = [...state.patients]
   let dischargedName = 'Patient'
+  let dischargedId = ''
 
   if (targetPatientId) {
     const pt = updatedPatients.find((p) => p.id === targetPatientId)
     if (pt) {
       dischargedName = pt.name
-      updatedPatients = updatedPatients.map((p) => (p.id === targetPatientId ? { ...p, status: 'Discharged' as const, bedType: 'None' as const } : p))
-    }
-  } else {
-    const assigned = updatedPatients.filter((p) => p.hospitalId === hospitalId && p.status === 'Assigned' && p.severity <= 50)
-    if (assigned.length > 0) {
-      dischargedName = assigned[0].name
-      updatedPatients = updatedPatients.map((p) => (p.id === assigned[0].id ? { ...p, status: 'Discharged' as const, bedType: 'None' as const } : p))
-    } else {
-      const anyAssigned = updatedPatients.filter((p) => p.hospitalId === hospitalId && p.status === 'Assigned')
-      if (anyAssigned.length > 0) {
-        const lowest = anyAssigned.sort((a, b) => a.severity - b.severity)[0]
-        dischargedName = lowest.name
-        updatedPatients = updatedPatients.map((p) => (p.id === lowest.id ? { ...p, status: 'Discharged' as const, bedType: 'None' as const } : p))
-      }
-    }
-  }
-
-  const updatedHospitals = state.hospitals.map((h) =>
-    h.id === hospitalId ? { ...h, beds: { ...h.beds, used: Math.max(0, h.beds.used - 1) } } : h
-  )
-
-  let reassignedName: string | null = null
-  const preemptedList = updatedPatients.filter((p) => p.hospitalId === hospitalId && p.status === 'Preempted')
-  if (preemptedList.length > 0) {
-    const topPreempted = preemptedList.sort((a, b) => b.severity - a.severity)[0]
-    reassignedName = topPreempted.name
-    updatedPatients = updatedPatients.map((p) =>
-      p.id === topPreempted.id ? { ...p, status: 'Assigned' as const, assignedWaitMinutes: p.assignedWaitMinutes ?? p.waitMinutes } : p
-    )
-  } else {
-    const waitingList = updatedPatients.filter((p) => p.hospitalId === hospitalId && p.status === 'Waiting')
-    if (waitingList.length > 0) {
-      const topWaiting = sortByPriority(waitingList)[0]
-      reassignedName = topWaiting.name
+      dischargedId = pt.id
       updatedPatients = updatedPatients.map((p) =>
-        p.id === topWaiting.id ? { ...p, status: 'Assigned' as const, assignedWaitMinutes: topWaiting.waitMinutes } : p
+        p.id === targetPatientId ? { ...p, status: 'Discharged' as const, bedType: 'None' as const, estRecoveryMinutes: 0 } : p
+      )
+    }
+  } else {
+    // Pick the most stable assigned patient for recovery discharge (lowest severity)
+    const assigned = updatedPatients.filter((p) => p.hospitalId === hospital.id && p.status === 'Assigned')
+    if (assigned.length > 0) {
+      const candidate = assigned.sort((a, b) => a.severity - b.severity)[0]
+      dischargedName = candidate.name
+      dischargedId = candidate.id
+      updatedPatients = updatedPatients.map((p) =>
+        p.id === candidate.id ? { ...p, status: 'Discharged' as const, bedType: 'None' as const, estRecoveryMinutes: 0 } : p
       )
     }
   }
 
-  const reasonLabel = reason === 'recovery' ? 'Early Recovery Discharge' : 'Family AMA Relocation'
-  const message = `${reasonLabel}: ${dischargedName} discharged from ${hospital.name}. Bed freed up! ${
-    reassignedName ? `Auto-assigned freed bed to ${reassignedName}.` : 'No waiting patients in queue.'
+  // Update hospital bed metrics (free 1 bed)
+  const updatedHospitals = state.hospitals.map((h) =>
+    h.id === hospital.id ? { ...h, beds: { ...h.beds, used: Math.max(0, h.beds.used - 1) } } : h
+  )
+
+  // Reallocate freed bed to highest priority waiting or preempted patient
+  let reassignedName: string | undefined = undefined
+  let reassignedWaitMinutes: number | undefined = undefined
+
+  const preemptedList = updatedPatients.filter((p) => p.hospitalId === hospital.id && p.status === 'Preempted')
+  if (preemptedList.length > 0) {
+    const topPreempted = preemptedList.sort((a, b) => b.severity - a.severity)[0]
+    reassignedName = topPreempted.name
+    reassignedWaitMinutes = topPreempted.assignedWaitMinutes ?? Math.max(topPreempted.waitMinutes, 8)
+    updatedPatients = updatedPatients.map((p) =>
+      p.id === topPreempted.id ? { ...p, status: 'Assigned' as const, assignedWaitMinutes: reassignedWaitMinutes } : p
+    )
+  } else {
+    const waitingList = updatedPatients.filter((p) => p.hospitalId === hospital.id && p.status === 'Waiting')
+    if (waitingList.length > 0) {
+      const topWaiting = sortByPriority(waitingList)[0]
+      reassignedName = topWaiting.name
+      // Realistic assignment wait minutes reflecting their queue wait + handover
+      reassignedWaitMinutes = Math.max(topWaiting.waitMinutes, Math.floor(6 + Math.random() * 8))
+      updatedPatients = updatedPatients.map((p) =>
+        p.id === topWaiting.id ? {
+          ...p,
+          status: 'Assigned' as const,
+          assignedWaitMinutes: reassignedWaitMinutes,
+          bedType: topWaiting.severity >= 80 ? 'ICU' : 'General'
+        } : p
+      )
+    }
+  }
+
+  const reasonLabel = reason === 'recovery' ? 'Clinical Recovery Discharge' : 'Transfer / AMA Discharge'
+  const message = `${reasonLabel}: ${dischargedName} discharged from ${hospital.name}. Bed freed! ${
+    reassignedName ? `Auto-assigned freed bed to ${reassignedName} (Wait: ${reassignedWaitMinutes}m).` : 'Bed restored to available capacity.'
   }`
 
   return {
@@ -747,6 +798,12 @@ export function triggerBedRelease(
       patients: updatedPatients,
     },
     message,
+    dischargedName,
+    dischargedId,
+    reassignedName,
+    reassignedWaitMinutes,
+    reason,
+    hospitalName: hospital.name,
   }
 }
 

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 01 - Golden Hour Crisis</title>
+  <link rel="stylesheet" href="glassmorphic.css">
+  <style>
+    /* Scene Specific Styles */
+    .phase-container {
+      position: absolute;
+      width: 1500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Phase 1 */
+    .ecg-box {
+      width: 100%;
+      height: 180px;
+      margin: 32px 0 24px 0;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--glass-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ecg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(239, 68, 68, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(239, 68, 68, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .ecg-svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+    }
+
+    .ecg-path {
+      fill: none;
+      stroke: #f43f5e;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 16px rgba(244, 63, 94, 1)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 8px 24px;
+      border-radius: 9999px;
+      margin-top: 16px;
+      letter-spacing: 2px;
+    }
+
+    /* Phase 2: 3 Cards Grid */
+    .bottleneck-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      width: 100%;
+      margin-top: 40px;
+    }
+
+    .bottleneck-card {
+      padding: 36px 30px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--glass-radius-md);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    .bottleneck-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #f87171;
+    }
+
+    /* Phase 3: Grand Reveal */
+    .grand-logo-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 60px 80px;
+      border-radius: 32px;
+      background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.15), rgba(15, 23, 42, 0.8) 80%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 60px rgba(56, 189, 248, 0.2);
+    }
+
+    .grand-title {
+      font-size: 88px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin: 20px 0 12px 0;
+      background: linear-gradient(135deg, #ffffff 0%, #bae6fd 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 10px 30px rgba(56, 189, 248, 0.4));
+    }
+
+    .pills-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 36px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Atmospheric Background -->
+  <div class="ambient-bg">
+    <div class="ambient-grid"></div>
+    <div class="glow-orb orb-amber" id="ambient-orb1" style="top: 10%; left: 20%;"></div>
+    <div class="glow-orb orb-cyan" id="ambient-orb2" style="bottom: 10%; right: 15%;"></div>
+  </div>
+
+  <div class="scene-container">
+    <!-- PHASE 1: The Golden Hour Dilemma (0 - 4.2s) -->
+    <div class="phase-container glass-panel" id="phase1" style="padding: 50px 70px; text-align: center;">
+      <div class="glass-pill rose">
+        <span class="status-dot rose"></span>
+        ACUTE TRAUMA EMERGENCY · 60-MINUTE PROTOCOL
+      </div>
+      <h1 class="gradient-title" style="font-size: 52px; margin-top: 24px; line-height: 1.2;">
+        IN ACUTE TRAUMA, 60 MINUTES<br>DECIDES LIFE OR DEATH.
+      </h1>
+      <p style="color: var(--text-muted); font-size: 22px; margin-top: 12px; max-width: 900px;">
+        Every second lost in transit, bed search, or surgeon notification compounds patient mortality.
+      </p>
+
+      <!-- Animated ECG Oscilloscope -->
+      <div class="ecg-box">
+        <div class="ecg-grid"></div>
+        <svg class="ecg-svg" viewBox="0 0 1000 120" preserveAspectRatio="none">
+          <path class="ecg-path" id="ecg-line" d="M 0,60 L 200,60 L 220,60 L 230,20 L 245,100 L 260,10 L 275,85 L 285,60 L 450,60 L 470,60 L 480,20 L 495,100 L 510,10 L 525,85 L 535,60 L 700,60 L 720,60 L 730,20 L 745,100 L 760,10 L 775,85 L 785,60 L 1000,60" />
+        </svg>
+      </div>
+
+      <div class="timer-badge">
+        <span>⏱ GOLDEN HOUR REMAINING:</span>
+        <span id="countdown">59:48.20</span>
+      </div>
+    </div>
+
+    <!-- PHASE 2: Statewide Fragmented Healthcare (4.2 - 8.2s) -->
+    <div class="phase-container glass-panel" id="phase2" style="padding: 50px 70px; opacity: 0; pointer-events: none;">
+      <div class="glass-pill amber">
+        <span class="status-dot amber"></span>
+        STATEWIDE SYSTEMIC BOTTLENECK · JHARKHAND
+      </div>
+      <h1 class="gradient-title" style="font-size: 48px; margin-top: 20px; text-align: center;">
+        79 HOSPITALS ACROSS 24 DISTRICTS<br>OPERATING IN SILOED ISOLATION
+      </h1>
+      <p style="color: var(--text-muted); font-size: 20px; margin-top: 8px; text-align: center;">
+        Critical systemic failures leading to preventable Golden-Hour deaths:
+      </p>
+
+      <div class="bottleneck-grid">
+        <div class="bottleneck-card">
+          <div class="bottleneck-icon">🚨</div>
+          <h3 style="font-size: 22px; color: #fff;">Ambulance Diversion</h3>
+          <p style="color: var(--text-muted); font-size: 16px; line-height: 1.5;">
+            Zero real-time visibility into ICU bed availability causes ambulances to bounce between overwhelmed facilities.
+          </p>
+          <div class="glass-pill rose" style="align-self: flex-start; font-size: 11px;">Avg 42m Transit Delay</div>
+        </div>
+
+        <div class="bottleneck-card">
+          <div class="bottleneck-icon">📞</div>
+          <h3 style="font-size: 22px; color: #fff;">Phone & Paper Pre-Alerts</h3>
+          <p style="color: var(--text-muted); font-size: 16px; line-height: 1.5;">
+            Trauma teams are notified after patient arrival, losing the critical preparation window for surgical resuscitation.
+          </p>
+          <div class="glass-pill amber" style="align-self: flex-start; font-size: 11px;">15m Lost Handover</div>
+        </div>
+
+        <div class="bottleneck-card">
+          <div class="bottleneck-icon">🏥</div>
+          <h3 style="font-size: 22px; color: #fff;">Apex Center Overload</h3>
+          <p style="color: var(--text-muted); font-size: 16px; line-height: 1.5;">
+            Regional apex centers like RIMS Ranchi are flooded with non-triaged cases while sub-divisional hospitals sit idle.
+          </p>
+          <div class="glass-pill rose" style="align-self: flex-start; font-size: 11px;">310% ED Capacity</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3: Grand TriageNet Reveal (8.2 - 12.0s) -->
+    <div class="phase-container" id="phase3" style="opacity: 0; pointer-events: none;">
+      <div class="grand-logo-box">
+        <div class="glass-pill cyan">
+          <span class="status-dot cyan"></span>
+          STATEWIDE CLINICAL OPERATING SYSTEM
+        </div>
+        <h1 class="grand-title">TRIAGENET</h1>
+        <p style="color: #e2e8f0; font-size: 26px; font-weight: 500; max-width: 800px; line-height: 1.4;">
+          Autonomous Golden-Hour Clinical Operating System
+        </p>
+        <p style="color: var(--text-muted); font-size: 18px; margin-top: 10px;">
+          Engineered for Jharkhand State · 24 Districts · 79 Hospitals Connected
+        </p>
+
+        <div class="pills-row">
+          <div class="glass-pill cyan">
+            <span class="status-dot cyan"></span>
+            SUB-50MS DUAL-BUS STATE ENGINE
+          </div>
+          <div class="glass-pill emerald">
+            <span class="status-dot emerald"></span>
+            ZERO BLACK-BOX DEPENDENCIES
+          </div>
+          <div class="glass-pill amber">
+            <span class="status-dot amber"></span>
+            108 ALS FLEET TELEMETRY
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Smooth deterministic cubic-bezier ease out
+    function easeOutCubic(x) {
+      return 1 - Math.pow(1 - x, 3);
+    }
+    function easeInOutQuad(x) {
+      return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    }
+
+    const ecgLine = document.getElementById('ecg-line');
+    const pathLength = ecgLine.getTotalLength ? ecgLine.getTotalLength() : 1500;
+    ecgLine.style.strokeDasharray = pathLength;
+    ecgLine.style.strokeDashoffset = pathLength;
+
+    window.setTimeline = function(p, t) {
+      const orb1 = document.getElementById('ambient-orb1');
+      const orb2 = document.getElementById('ambient-orb2');
+      const phase1 = document.getElementById('phase1');
+      const phase2 = document.getElementById('phase2');
+      const phase3 = document.getElementById('phase3');
+      const countdown = document.getElementById('countdown');
+
+      // Ambient Orbs motion
+      orb1.style.transform = `translate(${Math.sin(p * Math.PI * 2) * 80}px, ${Math.cos(p * Math.PI * 2) * 50}px)`;
+      orb2.style.transform = `translate(${Math.cos(p * Math.PI * 2) * 80}px, ${Math.sin(p * Math.PI * 2) * 60}px)`;
+
+      // Countdown ticking
+      const msRemaining = Math.max(0, 3600000 - Math.floor(t * 12345));
+      const mins = Math.floor(msRemaining / 60000);
+      const secs = Math.floor((msRemaining % 60000) / 1000);
+      const centis = Math.floor((msRemaining % 1000) / 10);
+      countdown.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centis.toString().padStart(2, '0')}`;
+
+      // ECG dash animation
+      const ecgProgress = (t % 2.0) / 2.0;
+      ecgLine.style.strokeDashoffset = pathLength * (1 - ecgProgress);
+
+      // Phase sequencing
+      // Phase 1: 0 to 4.2s
+      if (t < 4.2) {
+        phase1.style.opacity = '1';
+        phase1.style.transform = 'translateY(0) scale(1)';
+        phase2.style.opacity = '0';
+        phase2.style.transform = 'translateY(40px) scale(0.96)';
+        phase3.style.opacity = '0';
+        phase3.style.transform = 'translateY(40px) scale(0.96)';
+      } 
+      // Transition 1 -> 2: 3.8s to 4.4s
+      else if (t >= 4.2 && t < 8.2) {
+        const localP = (t - 4.2) / 4.0;
+        phase1.style.opacity = '0';
+        phase1.style.transform = 'translateY(-30px) scale(0.96)';
+        
+        const enterP = Math.min(1, (t - 4.2) / 0.6);
+        const eased = easeOutCubic(enterP);
+        phase2.style.opacity = String(eased);
+        phase2.style.transform = `translateY(${(1 - eased) * 40}px) scale(${0.96 + eased * 0.04})`;
+        
+        phase3.style.opacity = '0';
+        phase3.style.transform = 'translateY(40px) scale(0.96)';
+      } 
+      // Phase 3: 8.2s to 12.0s
+      else {
+        phase1.style.opacity = '0';
+        phase2.style.opacity = '0';
+        phase2.style.transform = 'translateY(-30px) scale(0.96)';
+
+        const enterP = Math.min(1, (t - 8.2) / 0.8);
+        const eased = easeOutCubic(enterP);
+        // Tension builds towards 12.0s (slight pulse scale)
+        const pulse = 1.0 + Math.sin((t - 8.2) * 5) * 0.015;
+        phase3.style.opacity = String(eased);
+        phase3.style.transform = `translateY(${(1 - eased) * 40}px) scale(${(0.95 + eased * 0.05) * pulse})`;
+      }
+    };
+  </script>
+</body>
+</html>

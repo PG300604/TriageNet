@@ -43,7 +43,7 @@
 
 | Technology / Library | Purpose in TriageNet | Version / Spec |
 |---|---|---|
-| **Java 17/21 & Spring Boot** | Core REST backend & algorithmic execution services | Spring Boot 3.3.13 |
+| **Java 17 LTS & Spring Boot 3.3** | Core REST backend & algorithmic execution services | Spring Boot 3.3.13 |
 | **Spring Security + JJWT**| Role-Based Access Control, CSP, Cookie Auth | JJWT 0.12.5 (256-bit CSPRNG entropy) |
 | **Spring Data JPA & Hibernate**| Object-Relational Mapping & PostgreSQL persistence | JPA 3.x / Hibernate 6.x |
 | **PostgreSQL 16** | Relational data storage for state infrastructure & triage entities | PostgreSQL 16-alpine |
@@ -190,3 +190,78 @@
   - Web App Manifest (`manifest.ts`) with shortcuts, medical categories, icons, and display modes.
   - Preconnect & DNS-prefetching for CartoCDN map tiles (`basemaps.cartocdn.com`) and Leaflet CDNs.
   - Modern image optimization formats (`image/avif`, `image/webp`).
+
+---
+
+## 7. Hospital Financial ERP & HMS Gateway Integration
+
+- **Accounting Interfaces**:
+  - **NIC e-Hospital HMS Finance v4.2**: REST/FHIR R4 financial settlement for apex medical colleges (`/api/v2/finance/claims`).
+  - **ABDM National Health Claims Exchange (NHCX)**: Automated PM-JAY claim settlement gateway (`/gateway/snmmch/claims`).
+  - **SAP Healthcare IS-H**: OData v4 / HL7 FHIR financial protocol for corporate/subsidized facilities (`/odata/v4/BillingService`).
+  - **Jharkhand Health Cloud / JPFMS**: State treasury public financial management XML bridge (`/gateway/v1`).
+- **Telemetry & Controls**: Live status pills (`[LIVE 24/7 AUTO-SYNC]`), latency ping tracker (19ms–38ms), real-time sync trigger (`handleTriggerErpSync`), and ERP configuration modal with live handshake testing.
+
+---
+
+## 8. Uber-Style 3D GIS Fleet CAD & Dijkstra Shortest Path Engine
+
+- **3D Isometric Vehicle Animation**: Continuous 1.2s ticker calculating vehicle waypoint coordinates, directional heading (`Math.atan2(dLng, dLat)`), speed badges (54–68 km/h), roof emergency strobe lightbars, and radar halos.
+- **Camera Auto-Framing**: `L.latLngBounds(routePolyline)` automatically fits map bounds with 65px padding whenever the active route updates.
+- **Dijkstra Highway Corridor HUD**: Live telemetry strip displaying route coordinates, green wave signal preemption, distance, ETA, and ICU bed reservation status.
+
+---
+
+## 9. Role-Based Manual Data Entry Architecture (GitHub Release Ready)
+
+- Equips TriageNet for public open-source distribution without pre-fetched mocks:
+  - **Super Admin**: Register GeM bulk procurement rate contracts and adjust district budget allocations.
+  - **District CMO**: Submit district emergency requisitions with P1/P2/P3 urgency and clinical justifications.
+  - **Medical Superintendent**: Add and reconfigure hospital care ward bays and dedicated ventilator stations.
+  - **Ambulance Dispatcher**: Manual 108 emergency call logger and vehicle dispatch console.
+
+---
+
+## 10. AI Automated Accident Hotspot Telemetry & Doctor Roster Matching Engine
+
+- **Module**: `frontend/lib/accident-hotspots.ts`
+- **Data Model**:
+  - `AccidentHotspot`: Represents real-world high-collision zones (`lat, lng, monthlyAccidents, blackspotRanking, defaultIncident, defaultVitals, baseCorridorKm, defaultTrafficDelayMin, defaultTrafficLevel`).
+  - `DoctorDutyInfo`: Details live surgeon roster state (`doctorName, specialty, department, status: 'READY_TRAUMA_BAY' | 'OCCUPIED_IN_OT' | 'NOT_AVAILABLE', experienceYears, pagerExtension, statusNote`).
+  - `CandidateHospitalEvaluation`: Full multi-criteria evaluation object (`compositeScore, rankTier: 'FIRST_BEST' | 'SECOND_BEST' | 'THIRD_BEST' | 'ALTERNATIVE', effectiveEtaMin, doctorInfo, clinicalRationale`).
+- **Scoring Weights Formula**:
+  $$\text{CompositeScore} = \text{DoctorScore} (40\text{ pts}) + \text{ICUScore} (25\text{ pts}) + \text{ETAScore} (25\text{ pts}) + \text{LoadScore} (10\text{ pts})$$
+  - Doctor Score: Ready = 40, Occupied in OT = 18, Unavailable = 5.
+  - ICU Score: $\ge 3$ open = 25, 2 open = 18, 1 open = 10, 0 open = 0.
+  - ETA Score: $\max(0, 25 - \text{effectiveEtaMin} \times 0.45)$.
+  - Load Score: $\max(0, (\text{availGen} / \text{totalGen}) \times 10)$.
+
+---
+
+## 11. 108 Ambulance EMT In-Transit Mobile Architecture & Telemetry Bridge
+
+- **Mobile Web App Route**: `frontend/app/ambulance/page.tsx` (`/ambulance`).
+- **State Telemetry Bridge**: `frontend/lib/director-bridge.ts` using native browser `BroadcastChannel` (`triagenet_director_bridge`).
+- **Supported Event Protocol**:
+  - `TRIGGER_ACCIDENT_HOTSPOT`: Coordinates, incident nature, required specialist, traffic conditions, default vitals.
+  - `UPDATE_PATIENT_VITALS`: In-transit telemetry stream (`spo2, heartRate, systolicBp, gcs, patientName, incidentNature`).
+  - `SELECT_DESTINATION_HOSPITAL`: Locks selected route to target facility (`hospitalId, hospitalName, ambulanceNumber`).
+  - `DISPATCH_AMBULANCE_FROM_MOBILE`: Authorizes ambulance mobilization and creates emergency token (`JH-108-MOBILE-XXXX`).
+  - `TOGGLE_GREEN_WAVE`: Preempts traffic corridor signals to green, zeroing traffic delay factor and accelerating 3D vehicle progression.
+
+## 12. Spatial Road-Snapped Vehicle Interpolation, Multi-Corridor Bypass & SVG Flow Waves
+
+- **3D Isometric Van Geometry**: Rendered as a 28x54px isometric vector SVG in `leaflet-map.tsx`:
+  - Aerodynamic cab hood, chassis shadow offset (`filter: drop-shadow(0 14px 10px rgba(0,0,0,0.45))`).
+  - Roof lightbar with dual alternating red/blue high-intensity LED beacons and radial light halos.
+  - Forward-facing parabolic headlight beams with amber/white gradient fill projected directly onto road geometry.
+- **Swiggy / Domino's Road Path Splitting**:
+  - Waypoints sourced from `primaryRouteWaypoints` and `bypassRouteWaypoints` in `accident-hotspots.ts`.
+  - Polyline dynamically sliced at current vehicle position into `traveledPts` (rendered as dimmed `#94a3b8` 3px dashed line with 0.45 opacity) and `remainingPts` (rendered as 5px solid traffic-colored line with pulsing radiant glow).
+- **Multi-Corridor Highway Bypass & Specialist Diversion Algorithms**:
+  - `evaluateCandidateOptions` computes dual routes (Primary Highway vs Express Bypass), calculating distance and ETA delta.
+  - When primary route delay exceeds 10 minutes, the algorithm evaluates secondary facilities with active ready specialist rosters, returning `diversionHospitalId`, `diversionHospitalName`, and `diversionTimeSavingsMin`.
+- **Hardware-Accelerated SVG Dijkstra Topology Patient Flow**:
+  - Active transfers and shortest paths utilize SVG `<animateMotion>` with staggered start times (`begin="0s"`, `begin="1.4s"`) to animate patient wave particles along transfer vectors without JavaScript main-thread re-render overhead.
+
+

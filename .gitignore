@@ -100,3 +100,11 @@ build/
 # ──── Security Audit Reports & Local Overrides ────
 SECURITY_AUDIT_REPORT.md
 backend/src/main/resources/application-local.yml
+
+# Android Companion App Build Artifacts
+android-app/bin/
+android-app/gen/
+
+# Video Production Caches & Large Reference Media
+video_production/*.mp4
+video_production/audio/*.wav

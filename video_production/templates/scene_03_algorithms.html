@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 03 - 4 Hand-Implemented Algorithms</title>
+  <link rel="stylesheet" href="glassmorphic.css">
+  <style>
+    .algo-container {
+      width: 1550px;
+      height: 850px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .algo-card {
+      position: absolute;
+      inset: 0;
+      padding: 44px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Algorithm 1: Sigmoid S-Curve Chart */
+    .chart-box {
+      width: 100%;
+      height: 420px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: var(--glass-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .chart-grid-bg {
+      position: absolute;
+      inset: 20px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+
+    .sigmoid-svg {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 5;
+    }
+
+    /* Algorithm 2: Hungarian Bipartite Layout */
+    .bipartite-grid {
+      display: grid;
+      grid-template-columns: 1fr 140px 1fr;
+      gap: 20px;
+      width: 100%;
+      align-items: center;
+      height: 440px;
+      position: relative;
+    }
+
+    .match-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .match-item {
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--glass-radius-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Algorithm 3: Highway Road Corridor */
+    .highway-corridor {
+      width: 100%;
+      height: 420px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: var(--glass-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 40px;
+    }
+
+    .city-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .city-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid var(--accent-emerald);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    /* Algorithm 4: Heap Tree */
+    .heap-tree-box {
+      width: 100%;
+      height: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: var(--glass-radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 30px;
+    }
+
+    .heap-row {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .heap-node {
+      padding: 16px 24px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .heap-node.root {
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.25), rgba(15, 23, 42, 0.9));
+      border-color: rgba(239, 68, 68, 0.6);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Atmospheric Background -->
+  <div class="ambient-bg">
+    <div class="ambient-grid"></div>
+    <div class="glow-orb orb-amber" id="ambient-orb1" style="top: 10%; right: 25%;"></div>
+    <div class="glow-orb orb-cyan" id="ambient-orb2" style="bottom: 10%; left: 20%;"></div>
+  </div>
+
+  <div class="scene-container">
+    <div class="algo-container">
+      <!-- ALGO 1: SeverityScorer (0 - 4s) -->
+      <div class="glass-panel algo-card" id="algo1">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="glass-pill cyan">
+              <span class="status-dot cyan"></span>
+              HAND-IMPLEMENTED ALGORITHM 1 · CLINICAL LOGISTIC REGRESSION
+            </div>
+            <h1 class="gradient-title" style="font-size: 38px; margin-top: 8px;">
+              SeverityScorer · Sigmoid Acuity Logistic Regression
+            </h1>
+          </div>
+          <div class="glass-pill rose" style="font-size: 16px; padding: 10px 20px;">
+            P(Critical) = 1 / (1 + e<sup>-z</sup>)
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-grid-bg"></div>
+          <svg class="sigmoid-svg" viewBox="0 0 1000 360">
+            <defs>
+              <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+            <!-- Sigmoid curve path -->
+            <path id="sigmoid-path" fill="none" stroke="#38bdf8" stroke-width="4" filter="drop-shadow(0 0 10px #38bdf8)"
+                  d="M 50,330 C 350,330 450,330 500,180 C 550,30 650,30 950,30" />
+            <!-- Area under curve -->
+            <path fill="url(#area-grad)" d="M 50,330 C 350,330 450,330 500,180 C 550,30 650,30 950,30 L 950,340 L 50,340 Z" />
+            <!-- Threshold Line (P = 0.65) -->
+            <line x1="50" y1="120" x2="950" y2="120" stroke="#ef4444" stroke-dasharray="6 6" stroke-width="2" />
+            <text x="60" y="112" fill="#ef4444" font-size="14" font-weight="bold">THRESHOLD: CODE RED TRAUMA (P ≥ 0.65)</text>
+            <!-- Dynamic Tracker Point -->
+            <circle id="tracker-dot" cx="500" cy="180" r="10" fill="#ef4444" filter="drop-shadow(0 0 12px #ef4444)" />
+          </svg>
+        </div>
+
+        <div style="display: flex; gap: 16px; justify-content: center;">
+          <div class="glass-pill cyan">SpO2 &lt; 90% (Weight: +2.4)</div>
+          <div class="glass-pill rose">GCS ≤ 8 Coma (Weight: +3.8)</div>
+          <div class="glass-pill amber">Shock Index &gt; 0.9 (Weight: +2.1)</div>
+          <div class="glass-pill emerald">MAP &lt; 65 mmHg (Weight: +2.6)</div>
+        </div>
+      </div>
+
+      <!-- ALGO 2: HungarianMatcher (4 - 8s) -->
+      <div class="glass-panel algo-card" id="algo2" style="opacity: 0; pointer-events: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="glass-pill amber">
+              <span class="status-dot amber"></span>
+              HAND-IMPLEMENTED ALGORITHM 2 · O(V³) OPTIMAL BIPARTITE MATCHING
+            </div>
+            <h1 class="gradient-title" style="font-size: 38px; margin-top: 8px;">
+              HungarianMatcher · Optimal Patient-Surgeon Bipartite Assignment
+            </h1>
+          </div>
+          <div class="glass-pill emerald" style="font-size: 16px; padding: 10px 20px;">
+            100% Optimal Assignment
+          </div>
+        </div>
+
+        <div class="bipartite-grid">
+          <!-- Patients -->
+          <div class="match-column">
+            <div class="match-item">
+              <div>
+                <div class="glass-pill rose" style="font-size: 10px; padding: 2px 8px;">PATIENT 1 · CRITICAL</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Poly-Trauma + Pelvic Bleed</div>
+              </div>
+              <span style="font-size: 14px; color: #ef4444; font-weight: 700;">Score: 98.2</span>
+            </div>
+            <div class="match-item">
+              <div>
+                <div class="glass-pill rose" style="font-size: 10px; padding: 2px 8px;">PATIENT 2 · CRITICAL</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Acute Subdural Hematoma</div>
+              </div>
+              <span style="font-size: 14px; color: #ef4444; font-weight: 700;">Score: 94.6</span>
+            </div>
+            <div class="match-item">
+              <div>
+                <div class="glass-pill amber" style="font-size: 10px; padding: 2px 8px;">PATIENT 3 · URGENT</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Open Femur Fracture</div>
+              </div>
+              <span style="font-size: 14px; color: #f59e0b; font-weight: 700;">Score: 78.4</span>
+            </div>
+          </div>
+
+          <!-- Matching Connectors -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;">
+            <svg width="120" height="240" viewBox="0 0 120 240">
+              <line x1="10" y1="40" x2="110" y2="40" stroke="#10b981" stroke-width="4" filter="drop-shadow(0 0 8px #10b981)" />
+              <line x1="10" y1="120" x2="110" y2="120" stroke="#10b981" stroke-width="4" filter="drop-shadow(0 0 8px #10b981)" />
+              <line x1="10" y1="200" x2="110" y2="200" stroke="#10b981" stroke-width="4" filter="drop-shadow(0 0 8px #10b981)" />
+            </svg>
+            <div class="glass-pill emerald" style="font-size: 11px;">O(V³) Kuhn-Munkres</div>
+          </div>
+
+          <!-- Specialists -->
+          <div class="match-column">
+            <div class="match-item" style="border-color: rgba(16, 185, 129, 0.4);">
+              <div>
+                <div class="glass-pill emerald" style="font-size: 10px; padding: 2px 8px;">SURGEON · ON-DUTY</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Dr. Rajesh Kumar · Trauma Lead</div>
+              </div>
+              <span style="font-size: 14px; color: #10b981; font-weight: 700;">RIMS Ranchi</span>
+            </div>
+            <div class="match-item" style="border-color: rgba(16, 185, 129, 0.4);">
+              <div>
+                <div class="glass-pill emerald" style="font-size: 10px; padding: 2px 8px;">NEURO · ON-DUTY</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Dr. S. K. Sinha · Neurosurgeon</div>
+              </div>
+              <span style="font-size: 14px; color: #10b981; font-weight: 700;">RIMS Ranchi</span>
+            </div>
+            <div class="match-item" style="border-color: rgba(16, 185, 129, 0.4);">
+              <div>
+                <div class="glass-pill emerald" style="font-size: 10px; padding: 2px 8px;">ORTHO · ON-DUTY</div>
+                <div style="font-size: 17px; font-weight: 700; margin-top: 4px;">Dr. A. Verma · Ortho Lead</div>
+              </div>
+              <span style="font-size: 14px; color: #10b981; font-weight: 700;">Sadar Hospital</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALGO 3: DijkstraRouter & Green Wave (8 - 12s) -->
+      <div class="glass-panel algo-card" id="algo3" style="opacity: 0; pointer-events: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="glass-pill emerald">
+              <span class="status-dot emerald"></span>
+              HAND-IMPLEMENTED ALGORITHM 3 · DYNAMIC HIGHWAY GRAPH
+            </div>
+            <h1 class="gradient-title" style="font-size: 38px; margin-top: 8px;">
+              DijkstraRouter · Highway Congestion Penalty &amp; Green Wave
+            </h1>
+          </div>
+          <div class="glass-pill cyan" style="font-size: 16px; padding: 10px 20px;">
+            O((V+E) log V) Dynamic Cost
+          </div>
+        </div>
+
+        <div class="highway-corridor">
+          <svg style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+            <!-- Glowing Highway Corridor Path -->
+            <path d="M 180,210 L 520,210 L 880,210 L 1240,210" stroke="#10b981" stroke-width="8" filter="drop-shadow(0 0 14px #10b981)" />
+          </svg>
+
+          <div class="city-node">
+            <div class="city-circle" style="border-color: #38bdf8; color: #38bdf8;">108</div>
+            <span style="font-weight: 700; font-size: 16px;">Ambulance 1081</span>
+            <div class="glass-pill cyan" style="font-size: 11px;">Speed: 78 km/h</div>
+          </div>
+
+          <div class="city-node">
+            <div class="city-circle">OR</div>
+            <span style="font-weight: 700; font-size: 16px;">Ormanjhi Toll</span>
+            <div class="glass-pill emerald" style="font-size: 11px;">Signal: PREEMPTED</div>
+          </div>
+
+          <div class="city-node">
+            <div class="city-circle">RM</div>
+            <span style="font-weight: 700; font-size: 16px;">Ramgarh Bypass</span>
+            <div class="glass-pill emerald" style="font-size: 11px;">Signal: ALL-GREEN</div>
+          </div>
+
+          <div class="city-node">
+            <div class="city-circle" style="border-color: #ef4444; color: #ef4444;">RIMS</div>
+            <span style="font-weight: 700; font-size: 16px;">Apex Trauma Center</span>
+            <div class="glass-pill rose" style="font-size: 11px;">Bay 01 Cleared</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; justify-content: center;">
+          <div class="glass-pill emerald" style="font-size: 14px;">⚡ 108 GREEN WAVE ACTIVE ON NH-33</div>
+          <div class="glass-pill cyan" style="font-size: 14px;">34% Transit Latency Reduced</div>
+          <div class="glass-pill amber" style="font-size: 14px;">Real-Time Congestion Factor = 1.0 (Zero Delay)</div>
+        </div>
+      </div>
+
+      <!-- ALGO 4: TriagePriorityQueue (12 - 16s) -->
+      <div class="glass-panel algo-card" id="algo4" style="opacity: 0; pointer-events: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="glass-pill rose">
+              <span class="status-dot rose"></span>
+              HAND-IMPLEMENTED ALGORITHM 4 · MAX-HEAP CLINICAL ALLOCATION
+            </div>
+            <h1 class="gradient-title" style="font-size: 38px; margin-top: 8px;">
+              TriagePriorityQueue · Sub-Millisecond Bed Allocation
+            </h1>
+          </div>
+          <div class="glass-pill rose" style="font-size: 16px; padding: 10px 20px;">
+            Immediate Code Red Preemption
+          </div>
+        </div>
+
+        <div class="heap-tree-box">
+          <!-- Root Node -->
+          <div class="heap-row">
+            <div class="heap-node root">
+              <div class="glass-pill rose" style="font-size: 10px;">ROOT [TOP PRIORITY]</div>
+              <span style="font-size: 20px; font-weight: 800; color: #fff;">PATIENT #1081 · SCORE 99.4</span>
+              <span style="font-size: 13px; color: #f87171;">Preemptive Immediate ICU Bed Grant</span>
+            </div>
+          </div>
+
+          <!-- Child Level 1 -->
+          <div class="heap-row">
+            <div class="heap-node">
+              <div class="glass-pill amber" style="font-size: 10px;">NODE L1-A</div>
+              <span style="font-size: 17px; font-weight: 700; color: #fff;">Patient #1042 · Score 88.2</span>
+              <span style="font-size: 12px; color: #cbd5e1;">Step-down Ward Assignment</span>
+            </div>
+            <div class="heap-node">
+              <div class="glass-pill amber" style="font-size: 10px;">NODE L1-B</div>
+              <span style="font-size: 17px; font-weight: 700; color: #fff;">Patient #1039 · Score 82.5</span>
+              <span style="font-size: 12px; color: #cbd5e1;">Emergency Observation</span>
+            </div>
+          </div>
+
+          <!-- Child Level 2 -->
+          <div class="heap-row">
+            <div class="heap-node" style="padding: 10px 18px;">
+              <span style="font-size: 14px; color: #94a3b8;">Patient #1021 (64.0)</span>
+            </div>
+            <div class="heap-node" style="padding: 10px 18px;">
+              <span style="font-size: 14px; color: #94a3b8;">Patient #1018 (58.3)</span>
+            </div>
+            <div class="heap-node" style="padding: 10px 18px;">
+              <span style="font-size: 14px; color: #94a3b8;">Patient #1015 (51.0)</span>
+            </div>
+            <div class="heap-node" style="padding: 10px 18px;">
+              <span style="font-size: 14px; color: #94a3b8;">Patient #1004 (42.1)</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; justify-content: center;">
+          <div class="glass-pill rose" style="font-size: 14px;">⚡ Sub-Millisecond Binary Heap Preemption</div>
+          <div class="glass-pill emerald" style="font-size: 14px;">Zero Starvation Guarantee</div>
+          <div class="glass-pill cyan" style="font-size: 14px;">Concurrent Thread-Safe Lock-Free Allocation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+
+    window.setTimeline = function(p, t) {
+      const orb1 = document.getElementById('ambient-orb1');
+      const orb2 = document.getElementById('ambient-orb2');
+      const a1 = document.getElementById('algo1');
+      const a2 = document.getElementById('algo2');
+      const a3 = document.getElementById('algo3');
+      const a4 = document.getElementById('algo4');
+      const trackerDot = document.getElementById('tracker-dot');
+
+      // Floating Orbs
+      orb1.style.transform = `translate(${Math.sin(p * Math.PI * 2) * 80}px, ${Math.cos(p * Math.PI * 2) * 50}px)`;
+      orb2.style.transform = `translate(${Math.cos(p * Math.PI * 2) * 80}px, ${Math.sin(p * Math.PI * 2) * 60}px)`;
+
+      // Dynamic Tracker Dot for Algo 1
+      if (t < 4.0) {
+        const subT = t / 4.0;
+        // Moves from left (x=100, y=330) up the S-curve to (x=800, y=35)
+        const dotX = 100 + subT * 750;
+        // sigmoid calculation for dotY: y = 330 - (300 / (1 + exp(-(subT - 0.5) * 8)))
+        const sig = 1 / (1 + Math.exp(-(subT - 0.5) * 8));
+        const dotY = 330 - sig * 300;
+        trackerDot.setAttribute('cx', String(dotX));
+        trackerDot.setAttribute('cy', String(dotY));
+      }
+
+      // 4 Algo Transitions (each 4 seconds)
+      const algos = [a1, a2, a3, a4];
+      const activeIdx = Math.min(3, Math.floor(t / 4.0));
+      const phaseTime = t % 4.0;
+
+      for (let i = 0; i < 4; i++) {
+        if (i === activeIdx) {
+          const enterP = Math.min(1, phaseTime / 0.6);
+          const eased = easeOutCubic(enterP);
+          algos[i].style.opacity = String(eased);
+          algos[i].style.transform = `translateY(${(1 - eased) * 30}px) scale(${0.96 + eased * 0.04})`;
+          algos[i].style.pointerEvents = 'auto';
+        } else if (i < activeIdx) {
+          algos[i].style.opacity = '0';
+          algos[i].style.transform = 'translateY(-30px) scale(0.96)';
+          algos[i].style.pointerEvents = 'none';
+        } else {
+          algos[i].style.opacity = '0';
+          algos[i].style.transform = 'translateY(30px) scale(0.96)';
+          algos[i].style.pointerEvents = 'none';
+        }
+      }
+    };
+  </script>
+</body>
+</html>

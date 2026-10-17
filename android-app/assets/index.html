@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TriageNet Companion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #100904; color: #f5ede6; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+    
+    /* Top Bar */
+    header { background: #181512; border-bottom: 1px solid #2a241e; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .brand-icon { width: 30px; height: 30px; border-radius: 7px; background: #ea580c; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 18px; box-shadow: 0 0 10px rgba(234, 88, 12, 0.4); }
+    .brand-text h1 { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+    .brand-text p { font-size: 10px; color: #ea580c; font-weight: 700; text-transform: uppercase; }
+    
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .ota-pill { font-size: 10px; padding: 4px 8px; border-radius: 9999px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; cursor: pointer; }
+    .btn-logout { background: #261f19; color: #f87171; border: 1px solid #3b2820; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+    /* Onboarding Modal */
+    #onboardingModal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(6px); }
+    .onboarding-card { background: #181512; border: 1px solid #ea580c; border-radius: 14px; width: 100%; max-width: 440px; padding: 22px; box-shadow: 0 0 30px rgba(234, 88, 12, 0.25); text-align: center; }
+    .ob-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(234, 88, 12, 0.15); border: 1px solid #ea580c; color: #ea580c; font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .ob-title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .ob-desc { font-size: 12px; color: #a89f91; line-height: 1.5; margin-bottom: 18px; text-align: left; background: #120e0a; padding: 12px; border-radius: 8px; border: 1px solid #2a241e; }
+    .ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+    .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: #3b2820; transition: all 0.2s; }
+    .ob-dot.active { background: #ea580c; width: 22px; border-radius: 4px; }
+    .ob-actions { display: flex; gap: 8px; }
+    .btn-ob { flex: 1; padding: 11px; border-radius: 8px; border: none; font-weight: 800; font-size: 12px; cursor: pointer; }
+    .btn-ob-primary { background: #ea580c; color: #fff; }
+    .btn-ob-skip { background: #261f19; color: #a89f91; border: 1px solid #3b2820; }
+
+    /* Login Screen */
+    #loginScreen { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; justify-content: center; max-width: 480px; margin: 0 auto; width: 100%; }
+    .login-box { background: #181512; border: 1px solid #2a241e; border-radius: 14px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .login-badge { display: inline-block; font-size: 10px; font-weight: 800; color: #ea580c; background: rgba(234, 88, 12, 0.15); border: 1px solid rgba(234, 88, 12, 0.3); padding: 3px 8px; border-radius: 9999px; margin-bottom: 10px; text-transform: uppercase; }
+    .form-group { margin-bottom: 12px; text-align: left; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #a89f91; margin-bottom: 4px; text-transform: uppercase; }
+    .form-input { width: 100%; padding: 11px; background: #100904; border: 1px solid #3b2820; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; outline: none; }
+    .form-input:focus { border-color: #ea580c; }
+    .btn-login { width: 100%; padding: 12px; background: #ea580c; color: #fff; border: none; border-radius: 8px; font-weight: 800; font-size: 13px; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+    
+    .demo-presets { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a241e; text-align: left; }
+    .demo-title { font-size: 11px; font-weight: 800; color: #ea580c; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .demo-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .btn-demo { background: #14110e; border: 1px solid #332920; border-radius: 6px; padding: 8px; text-align: left; color: #f5ede6; cursor: pointer; transition: all 0.15s; }
+    .btn-demo:hover, .btn-demo:active { border-color: #ea580c; background: rgba(234, 88, 12, 0.1); }
+    .btn-demo-role { font-size: 11px; font-weight: 800; display: block; }
+    .btn-demo-id { font-size: 9px; color: #ea580c; font-family: monospace; }
+
+    .bypass-btn { margin-top: 14px; width: 100%; padding: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-weight: 800; font-size: 11px; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+
+    /* Workstation Containers */
+    main { flex: 1; padding: 12px; }
+    .view-container { display: none; }
+    .view-container.active { display: block; }
+
+    .clinician-card { background: #1c1814; border: 1px solid #2a241e; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .clinician-info h2 { font-size: 13px; font-weight: 800; color: #fff; }
+    .clinician-info p { font-size: 10px; color: #ea580c; font-weight: 600; text-transform: uppercase; }
+    .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 800; }
+
+    .card { background: #181512; border: 1px solid #2a241e; border-radius: 10px; padding: 14px; margin-bottom: 12px; position: relative; }
+    .card-title { font-size: 12px; font-weight: 800; color: #ea580c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+
+    /* Live Telemetry Bar */
+    .live-ticker-strip { background: #120e0a; border: 1px solid #2a241e; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px #34d399; animation: pulseGlow 1.2s infinite; }
+    @keyframes pulseGlow { 0% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0.4; transform: scale(0.9); } }
+
+    /* Real-Time HUD */
+    .hotspot-select { width: 100%; padding: 9px; background: #100904; border: 1px solid #3b2820; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 700; margin-bottom: 10px; outline: none; }
+    
+    .hud-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+    .hud-item { background: #120e0a; border: 1px solid #2a241e; border-radius: 6px; padding: 8px 4px; text-align: center; }
+    .hud-lbl { font-size: 9px; color: #8e8378; text-transform: uppercase; font-weight: 700; }
+    .hud-val { font-size: 14px; font-weight: 900; color: #fff; margin-top: 2px; }
+    
+    .route-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .route-btn { padding: 8px 6px; background: #14110e; border: 1px solid #2a241e; border-radius: 6px; text-align: center; color: #9c9187; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .route-btn.active { border-color: #ea580c; background: rgba(234, 88, 12, 0.12); color: #ea580c; }
+
+    .diversion-banner { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; border-radius: 8px; padding: 10px; margin-bottom: 12px; display: none; }
+    .diversion-banner.active { display: block; animation: bannerShake 0.4s ease; }
+    @keyframes bannerShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+    .div-title { font-size: 11px; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 4px; }
+    .div-text { font-size: 11px; color: #f5ede6; margin-bottom: 8px; line-height: 1.4; }
+    .btn-divert { background: #f59e0b; color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 800; cursor: pointer; }
+
+    /* Interactive Clinical Scenarios */
+    .scenario-ribbon { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+    .scenario-pill { white-space: nowrap; font-size: 10px; font-weight: 800; padding: 5px 10px; border-radius: 6px; background: #1c1814; border: 1px solid #3b2820; color: #d6cfc7; cursor: pointer; transition: all 0.15s; }
+    .scenario-pill:active, .scenario-pill.active { border-color: #ea580c; background: rgba(234, 88, 12, 0.15); color: #ea580c; }
+
+    /* Vitals */
+    .vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .vital-box { background: #120e0a; border: 1px solid #2a241e; border-radius: 8px; padding: 10px; position: relative; }
+    .vital-label { font-size: 10px; color: #8e8378; font-weight: 700; text-transform: uppercase; }
+    .vital-val { font-size: 20px; font-weight: 900; color: #fff; margin-top: 2px; }
+    .vital-unit { font-size: 11px; color: #ea580c; font-weight: normal; margin-left: 2px; }
+    .vital-sub { font-size: 9px; color: #8e8378; margin-top: 2px; }
+    .vital-slider { width: 100%; margin-top: 6px; accent-color: #ea580c; cursor: pointer; }
+
+    .acuity-banner { padding: 8px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .acuity-red { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; }
+    .acuity-yellow { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; }
+    .acuity-green { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; }
+
+    /* Destination Cards */
+    .option-card { background: #14110e; border: 1px solid #2a241e; border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; transition: all 0.2s; cursor: pointer; }
+    .option-card.top { border-color: rgba(234, 88, 12, 0.6); background: rgba(234, 88, 12, 0.08); box-shadow: 0 0 12px rgba(234, 88, 12, 0.15); }
+    .option-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .badge-gold { background: #ea580c; color: #fff; }
+    .badge-blue { background: #2563eb; color: #fff; }
+    .badge-gray { background: #4b5563; color: #fff; }
+    .hosp-name { font-size: 12px; font-weight: 800; color: #fff; }
+    .hosp-meta { font-size: 10px; color: #8e8378; margin-top: 2px; line-height: 1.3; }
+
+    .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 800; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s; }
+    .btn-emergency { background: #ea580c; color: #fff; box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35); }
+    .btn-emergency:active { transform: scale(0.98); background: #c2410c; }
+    .btn-greenwave { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; margin-top: 8px; }
+    .btn-greenwave.active { background: #059669; color: #fff; border-color: #059669; animation: sirenPulse 1.2s infinite; }
+
+    @keyframes sirenPulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #221c17; font-size: 11px; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-lbl { color: #8e8378; }
+    .stat-val { font-weight: 700; color: #fff; }
+
+    /* Interactive Queue Items */
+    .queue-item { background: #14110e; border: 1px solid #2a241e; border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-small { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; border: none; cursor: pointer; }
+    .btn-small-orange { background: #ea580c; color: #fff; }
+    .btn-small-green { background: #10b981; color: #fff; }
+
+    /* Modal Styles */
+    .app-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
+    .modal-box { background: #181512; border: 1px solid #3b2820; border-radius: 12px; width: 100%; max-width: 440px; padding: 18px; text-align: left; }
+    .check-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 11px; color: #d6cfc7; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">+</div>
+      <div class="brand-text">
+        <h1>TriageNet</h1>
+        <p id="headerSub">Companion v1.2.0</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="ota-pill" id="otaCheckBtn" onclick="checkOtaUpdates()">🚀 OTA v1.2.0</button>
+      <button class="btn-logout" id="logoutBtn" style="display:none;" onclick="handleLogout()">Logout</button>
+      <button class="ota-pill" id="guideBtn" onclick="openOnboarding()">Guide</button>
+    </div>
+  </header>
+
+  <!-- ONBOARDING MODAL -->
+  <div id="onboardingModal">
+    <div class="onboarding-card">
+      <div class="ob-icon" id="obIcon">🚑</div>
+      <div class="ob-title" id="obTitle">Welcome to TriageNet</div>
+      <div class="ob-desc" id="obDesc">
+        TriageNet is a clinical healthcare resource allocation companion modeled for Jharkhand emergency infrastructure.
+      </div>
+      <div class="ob-dots">
+        <div class="ob-dot active" id="dot0"></div>
+        <div class="ob-dot" id="dot1"></div>
+        <div class="ob-dot" id="dot2"></div>
+        <div class="ob-dot" id="dot3"></div>
+      </div>
+      <div class="ob-actions">
+        <button class="btn-ob btn-ob-skip" onclick="finishOnboarding()">Skip</button>
+        <button class="btn-ob btn-ob-primary" id="obNextBtn" onclick="nextOnboarding()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN SCREEN (Mandatory First Screen) -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <span class="login-badge">Clinical Authentication</span>
+      <h2 style="font-size:16px; font-weight:800; color:#fff; margin-bottom:12px;">Sign in to Station Console</h2>
+      
+      <div class="form-group">
+        <label class="form-label">Clinician / Staff ID</label>
+        <input type="text" class="form-input" id="loginId" placeholder="e.g. JH-DSP-5001" value="JH-DSP-5001">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="loginPass" placeholder="••••••••" value="Triage@2026!">
+      </div>
+      <button class="btn-login" onclick="performLogin()">Authenticate & Launch</button>
+
+      <!-- Quick Role Presets for Testing & Video Filming -->
+      <div class="demo-presets">
+        <div class="demo-title">
+          <span>Quick Preset Pass (One-Touch)</span>
+          <span style="font-size:9px; color:#8e8378;">DEMO RBAC</span>
+        </div>
+        <div class="demo-btn-grid">
+          <div class="btn-demo" onclick="fillAndLogin('JH-DSP-5001', 'AMBULANCE_DISPATCH')">
+            <span class="btn-demo-role">🚑 108 Paramedic</span>
+            <span class="btn-demo-id">JH-DSP-5001 (Vikram)</span>
+          </div>
+          <div class="btn-demo" onclick="fillAndLogin('JH-NUR-4001', 'TRIAGE_NURSE')">
+            <span class="btn-demo-role">🩺 Triage Nurse</span>
+            <span class="btn-demo-id">JH-NUR-4001 (Sunita)</span>
+          </div>
+          <div class="btn-demo" onclick="fillAndLogin('JH-ADM-3001', 'HOSPITAL_ADMIN')">
+            <span class="btn-demo-role">🏥 Superintendent</span>
+            <span class="btn-demo-id">JH-ADM-3001 (Dr. Verma)</span>
+          </div>
+          <div class="btn-demo" onclick="fillAndLogin('JH-CMO-2001', 'DISTRICT_CMO')">
+            <span class="btn-demo-role">🏛️ District CMO</span>
+            <span class="btn-demo-id">JH-CMO-2001 (Dr. Murmu)</span>
+          </div>
+        </div>
+
+        <button class="bypass-btn" onclick="launchFullWebWorkstation()">
+          ⚡ Load Full Live Web Console (Port 3000)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <!-- 🚑 108 EMT PARAMEDIC CONSOLE (Strict Single-Role View) -->
+    <div id="view-emt" class="view-container">
+      <div class="clinician-card">
+        <div class="clinician-info">
+          <h2>Vikram Singh • JH-DSP-5001</h2>
+          <p>108 Advanced Life Support • Ranchi Unit 1081</p>
+        </div>
+        <span class="status-badge">PARAMEDIC ACTIVE</span>
+      </div>
+
+      <!-- Live Vehicle Telemetry Ticker -->
+      <div class="live-ticker-strip">
+        <div>
+          <span class="pulse-dot"></span>
+          <span id="telemetryStatus" style="font-weight:700; color:#34d399;">EN-ROUTE • LIVE GPS TICKING</span>
+        </div>
+        <div id="liveCoords" style="font-family:monospace; color:#8e8378;">23.4731° N, 85.3424° E</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Active Highway Accident Hotspot</span>
+          <span style="color:#ea580c; font-size:10px;" id="corridorTag">NH-33 CORRIDOR</span>
+        </div>
+        <select class="hotspot-select" id="hotspotSelect" onchange="onHotspotChange(this.value)">
+          <option value="ormanjhi">Ormanjhi NH-33 Collision Zone (Ranchi)</option>
+          <option value="jharia">Jharia Colliery Road Accident Spot (Dhanbad)</option>
+          <option value="barhi">Barhi GT Road Intersection (Hazaribagh)</option>
+          <option value="bundu">Bundu Valley Ghats Curve (Ranchi South)</option>
+          <option value="adityapur">Adityapur Industrial Highway (Seraikela)</option>
+        </select>
+
+        <div class="hud-grid">
+          <div class="hud-item"><div class="hud-lbl">Speed</div><div class="hud-val" id="hudSpeed">58 <span style="font-size:9px;color:#ea580c">km/h</span></div></div>
+          <div class="hud-item"><div class="hud-lbl">Traffic</div><div class="hud-val" id="hudTraffic" style="color:#fbbf24">+12m</div></div>
+          <div class="hud-item"><div class="hud-lbl">Distance</div><div class="hud-val" id="hudDist">14.2 <span style="font-size:9px">km</span></div></div>
+          <div class="hud-item"><div class="hud-lbl">Live ETA</div><div class="hud-val" id="hudEta" style="color:#34d399">28m</div></div>
+        </div>
+
+        <div class="route-toggle">
+          <button class="route-btn active" id="btnRoute1" onclick="selectRoute(1)">Route 1: NH-33 Primary (14.2 km)</button>
+          <button class="route-btn" id="btnRoute2" onclick="selectRoute(2)">Route 2: Ring Road Bypass (18.6 km)</button>
+        </div>
+
+        <!-- Dynamic Specialist Traffic Diversion Banner -->
+        <div class="diversion-banner" id="diversionBanner">
+          <div class="div-title">🚨 Specialist Traffic Gridlock Alert</div>
+          <div class="div-text" id="divText">NH-33 is experiencing severe congestion (+18m delay). Sadar Hospital Ranchi has ready surgical trauma bay and saves 12 minutes!</div>
+          <button class="btn-divert" onclick="applyDiversion()">Apply Specialist Diversion</button>
+        </div>
+      </div>
+
+      <!-- Live Clinical Scenarios & Patient Critical Entry -->
+      <div class="card">
+        <div class="card-title">
+          <span>Clinical Vitals & Acuity</span>
+          <span style="font-size:10px; color:#8e8378;">TOUCH TO SIMULATE</span>
+        </div>
+
+        <!-- Scenario Quick Switches for OBS Recording -->
+        <div class="scenario-ribbon">
+          <div class="scenario-pill active" onclick="applyScenario('polytrauma')">💥 Code Red Polytrauma</div>
+          <div class="scenario-pill" onclick="applyScenario('respiratory')">🫁 Severe Hypoxia</div>
+          <div class="scenario-pill" onclick="applyScenario('cardiac')">⚡ Cardiac VFIB</div>
+          <div class="scenario-pill" onclick="applyScenario('stable')">🟢 Stable Transfer</div>
+        </div>
+
+        <div class="vitals-grid">
+          <div class="vital-box">
+            <div class="vital-label">Glasgow Coma Scale (GCS)</div>
+            <div class="vital-val" id="gcsVal">8<span class="vital-unit">/15</span></div>
+            <div class="vital-sub" id="gcsBreakdown">E2 V2 M4 • Severe Impairment</div>
+            <input type="range" class="vital-slider" min="3" max="15" value="8" oninput="updateVital('gcs', this.value)">
+          </div>
+          <div class="vital-box">
+            <div class="vital-label">SpO2 Oxygenation</div>
+            <div class="vital-val" id="spo2Val">88<span class="vital-unit">%</span></div>
+            <div class="vital-sub" id="spo2Sub">Requires 15 L/min Non-Rebreather</div>
+            <input type="range" class="vital-slider" min="60" max="100" value="88" oninput="updateVital('spo2', this.value)">
+          </div>
+          <div class="vital-box">
+            <div class="vital-label">Systolic BP</div>
+            <div class="vital-val" id="bpVal">82<span class="vital-unit">mmHg</span></div>
+            <div class="vital-sub" id="mapSub">MAP: 58 mmHg • Hypotensive Shock</div>
+            <input type="range" class="vital-slider" min="50" max="180" value="82" oninput="updateVital('bp', this.value)">
+          </div>
+          <div class="vital-box">
+            <div class="vital-label">Heart Rate</div>
+            <div class="vital-val" id="hrVal">128<span class="vital-unit">BPM</span></div>
+            <div class="vital-sub" id="shockIndexSub">Shock Index: 1.56 (Critical)</div>
+            <input type="range" class="vital-slider" min="40" max="180" value="128" oninput="updateVital('hr', this.value)">
+          </div>
+        </div>
+
+        <div class="acuity-banner acuity-red" id="acuityBanner">
+          <span id="acuityLabel">🚨 CODE RED • REVISED TRAUMA SCORE 4.8</span>
+          <span id="acuityAction" style="font-size:10px; font-weight:700;">NEURO TRAUMA BAY REQUIRED</span>
+        </div>
+      </div>
+
+      <!-- Multi-Criteria 1st, 2nd, 3rd Best Options -->
+      <div class="card">
+        <div class="card-title">AI Destination Recommendations (Live Ranked)</div>
+        
+        <div class="option-card top" id="optCard1" onclick="selectDestination(1)">
+          <span class="option-badge badge-gold">🏆 1ST BEST • RECOMMENDED APEX</span>
+          <div class="hosp-name" id="opt1Name">RIMS Ranchi Apex Trauma Centre</div>
+          <div class="hosp-meta" id="opt1Meta">Dr. R. Soren (Neurosurgeon Ready) • 28 mins • 3 ICU Beds Free</div>
+        </div>
+
+        <div class="option-card" id="optCard2" onclick="selectDestination(2)">
+          <span class="option-badge badge-blue">⚡ 2ND BEST • IMMEDIATE STABILIZATION</span>
+          <div class="hosp-name" id="opt2Name">Sadar Hospital Ranchi Emergency</div>
+          <div class="hosp-meta" id="opt2Meta">Dr. S. Kujur (Trauma Specialist) • 16 mins • Airway Intubation Ready</div>
+        </div>
+
+        <div class="option-card" id="optCard3" onclick="selectDestination(3)">
+          <span class="option-badge badge-gray">🛡️ 3RD BEST • SECONDARY STANDBY</span>
+          <div class="hosp-name" id="opt3Name">SNMMCH Dhanbad Regional Referral</div>
+          <div class="hosp-meta" id="opt3Meta">Dr. V. Tirkey (Orthopedic Specialist) • 42 mins • Corridor Standby</div>
+        </div>
+
+        <button class="action-btn btn-emergency" onclick="confirmDispatch()">Pre-Alert Trauma Bay & Dispatch</button>
+        <button class="action-btn btn-greenwave" id="sirenBtn" onclick="toggleGreenWave()">🚨 108 Green Wave Signal Siren [OFF]</button>
+      </div>
+    </div>
+
+    <!-- 🩺 TRIAGE BEDSIDE NURSE CONSOLE (Strict Single-Role View) -->
+    <div id="view-nurse" class="view-container">
+      <div class="clinician-card">
+        <div class="clinician-info">
+          <h2>Sunita Soren • JH-NUR-4001</h2>
+          <p>Lead ED Triage Nurse • RIMS Ranchi Resuscitation</p>
+        </div>
+        <span class="status-badge">NURSE STATION</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Emergency Department Queue Max-Heap</span>
+          <span style="color:#34d399; font-size:10px;">AUTO-BALANCED</span>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Waiting Arrivals</span><span class="stat-val" id="nurseWaitCount" style="color:#ea580c;">4 In-Queue</span></div>
+        <div class="stat-row"><span class="stat-lbl">Resuscitation Bays</span><span class="stat-val" id="nurseResusCount">2 Free / 4 Total</span></div>
+        <div class="stat-row"><span class="stat-lbl">ICU Surge Beds</span><span class="stat-val" id="nurseIcuCount">3 Beds Hold</span></div>
+        <div class="stat-row"><span class="stat-lbl">Bedside Ventilators</span><span class="stat-val">1 Online</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Active Patient Queue & Intakes</span>
+          <button class="btn-small btn-small-orange" onclick="openRapidIntakeModal()">+ Rapid Intake</button>
+        </div>
+        
+        <div id="nurseQueueList">
+          <div class="queue-item" id="qitem-1">
+            <div>
+              <div style="font-weight:800; font-size:12px; color:#fff;">P-6129 • Birsa Munda (Age 42)</div>
+              <div style="font-size:10px; color:#ea580c; margin-top:2px;">Code Red Polytrauma • Acuity 95</div>
+            </div>
+            <button class="btn-small btn-small-orange" onclick="allocateBed('P-6129', 'Bed 01')">Allocate Bay 01</button>
+          </div>
+          <div class="queue-item" id="qitem-2">
+            <div>
+              <div style="font-weight:800; font-size:12px; color:#fff;">P-6130 • Ananya Verma (Age 29)</div>
+              <div style="font-size:10px; color:#fbbf24; margin-top:2px;">Acute Sepsis Shock • Acuity 82</div>
+            </div>
+            <button class="btn-small btn-small-orange" onclick="allocateBed('P-6130', 'Bed 02')">Allocate Bay 02</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🏥 MEDICAL SUPERINTENDENT CONSOLE (Strict Single-Role View) -->
+    <div id="view-admin" class="view-container">
+      <div class="clinician-card">
+        <div class="clinician-info">
+          <h2>Dr. A. K. Verma • JH-ADM-3001</h2>
+          <p>Medical Superintendent • RIMS Ranchi Apex</p>
+        </div>
+        <span class="status-badge">COMMAND ACTIVE</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Hospital Bed Capacity & ICU Matrix</span>
+          <span style="font-size:10px; color:#ea580c;">SURGE PROTOCOL</span>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Operational Bed Capacity</span><span class="stat-val">320 Beds</span></div>
+        <div class="stat-row"><span class="stat-lbl">Current Occupancy</span><span class="stat-val" id="adminOccupancy" style="color:#f59e0b;">91.4% (Critical)</span></div>
+        <div class="stat-row"><span class="stat-lbl">Surge ICU Beds</span><span class="stat-val" id="adminFreeIcu" style="color:#34d399;">3 Available</span></div>
+        <div class="stat-row"><span class="stat-lbl">Surgeons on Active Duty</span><span class="stat-val">12 Specialists</span></div>
+
+        <div style="display:flex; gap:6px; margin-top:10px;">
+          <button class="action-btn btn-emergency" style="flex:1; padding:8px;" onclick="adminStepDownDischarge()">Discharge Step-Down (-1 Bed)</button>
+          <button class="action-btn btn-greenwave" style="flex:1; padding:8px; margin-top:0;" onclick="adminHoldSurgeBed()">Hold Surge ICU (+1 Bed)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">On-Duty Specialist Surgeon Roster</div>
+        <div class="stat-row">
+          <span>Dr. R. Soren (Neurosurgeon)</span>
+          <button class="btn-small btn-small-green" id="docBtn1" onclick="toggleDoctorStatus(1)">READY IN BAY</button>
+        </div>
+        <div class="stat-row">
+          <span>Dr. P. Tirkey (Trauma Surgeon)</span>
+          <button class="btn-small btn-small-green" id="docBtn2" onclick="toggleDoctorStatus(2)">READY IN BAY</button>
+        </div>
+        <div class="stat-row">
+          <span>Dr. M. Kujur (Burn Specialist)</span>
+          <button class="btn-small btn-small-orange" id="docBtn3" onclick="toggleDoctorStatus(3)">IN OT SURGERY</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Hospital ERP & ABDM Gateway</div>
+        <div class="stat-row"><span class="stat-lbl">HMS Core</span><span class="stat-val">NIC e-Hospital v4.2</span></div>
+        <div class="stat-row"><span class="stat-lbl">Reconciled Claims</span><span class="stat-val" id="claimsCount">142 Vouchers</span></div>
+        <div class="stat-row"><span class="stat-lbl">Net Surplus</span><span class="stat-val" id="surplusVal" style="color:#34d399;">+₹1.46 Cr</span></div>
+        <button class="action-btn btn-emergency" style="margin-top:10px;" id="reconcileBtn" onclick="reconcileErpClaims()">Reconcile e-Hospital Claims</button>
+      </div>
+    </div>
+
+    <!-- 🏛️ DISTRICT CMO CONSOLE (Strict Single-Role View) -->
+    <div id="view-cmo" class="view-container">
+      <div class="clinician-card">
+        <div class="clinician-info">
+          <h2>Dr. Rajesh Murmu • JH-CMO-2001</h2>
+          <p>Chief Medical Officer • Ranchi District Directorate</p>
+        </div>
+        <span class="status-badge">DISTRICT GOVERNANCE</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">District Focus Selector</div>
+        <select class="hotspot-select" id="cmoDistrictSelect" onchange="onCmoDistrictChange(this.value)">
+          <option value="Ranchi">Ranchi District (State Apex Hub)</option>
+          <option value="Dhanbad">Dhanbad District (Mining & Coal Belt)</option>
+          <option value="EastSinghbhum">East Singhbhum (Jamshedpur Industrial)</option>
+          <option value="Hazaribagh">Hazaribagh District (North Plateau)</option>
+          <option value="Bokaro">Bokaro Steel City District</option>
+        </select>
+
+        <div class="hud-grid">
+          <div class="hud-item"><div class="hud-lbl">Facilities</div><div class="hud-val" id="cmoFacCount">18</div></div>
+          <div class="hud-item"><div class="hud-lbl">108 Fleet</div><div class="hud-val" id="cmoFleetCount">24</div></div>
+          <div class="hud-item"><div class="hud-lbl">ICU Load</div><div class="hud-val" id="cmoIcuLoad" style="color:#fbbf24">88%</div></div>
+          <div class="hud-item"><div class="hud-lbl">Reserve</div><div class="hud-val" id="cmoReserve" style="color:#34d399">₹6.40 Cr</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">State Health Governance Actions</div>
+        <button class="action-btn btn-emergency" onclick="openTransferModal()">Authorize Regional Inter-Hospital Transfer</button>
+        
+        <div style="margin-top:12px;">
+          <div style="font-size:11px; font-weight:700; color:#8e8378; margin-bottom:6px;">DISBURSE EMERGENCY CONTINGENCY GRANT</div>
+          <div style="display:flex; gap:6px;">
+            <button class="action-btn btn-greenwave" style="flex:1; padding:8px; margin-top:0;" onclick="disburseGrant(0.25)">+₹25 Lakh</button>
+            <button class="action-btn btn-greenwave" style="flex:1; padding:8px; margin-top:0;" onclick="disburseGrant(0.50)">+₹50 Lakh</button>
+            <button class="action-btn btn-greenwave" style="flex:1; padding:8px; margin-top:0;" onclick="disburseGrant(1.00)">+₹1.00 Cr</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- VOUCHER MODAL (With Active Countdown & Interactive Checklist) -->
+  <div class="app-modal" id="voucherModal">
+    <div class="modal-box" style="border-color:#34d399; text-align:center;">
+      <div style="font-size:32px; margin-bottom:4px;">🚑</div>
+      <h3 style="font-size:15px; font-weight:800; color:#fff;">Trauma Bay Pre-Alert Dispatched</h3>
+      <div style="font-family:monospace; font-size:13px; color:#34d399; background:#100904; padding:6px; border-radius:4px; margin:8px 0; border:1px solid #2a241e;" id="vouchId">
+        JH-DSP-2026-9481
+      </div>
+      <div style="font-size:20px; font-weight:900; color:#ea580c; margin:8px 0;" id="vouchCountdown">
+        ETA: 19:42
+      </div>
+      <p style="font-size:11px; color:#8e8378; margin-bottom:12px; line-height:1.4;" id="vouchMsg">
+        RIMS Ranchi Apex Trauma Bay 02 pre-alerted. Surgical team scrubbed. Green wave signal preemption active on NH-33.
+      </p>
+
+      <!-- Interactive Checklist -->
+      <div style="text-align:left; background:#120e0a; border:1px solid #2a241e; border-radius:8px; padding:10px; margin-bottom:14px;">
+        <div style="font-size:10px; font-weight:800; color:#ea580c; text-transform:uppercase; margin-bottom:6px;">Paramedic Handover Checklist</div>
+        <label class="check-item"><input type="checkbox" checked> <span>C-Spine Immobilized & Hard Collar Locked</span></label>
+        <label class="check-item"><input type="checkbox" checked> <span>Bilateral 16G Large-Bore IV Lines Flushed</span></label>
+        <label class="check-item"><input type="checkbox" checked> <span>15 L/min Non-Rebreather Oxygen Attached</span></label>
+        <label class="check-item"><input type="checkbox"> <span>2 Units O-Negative PRBCs Pre-Crossmatched</span></label>
+      </div>
+
+      <button class="btn-ob btn-ob-primary" style="width:100%;" onclick="closeVoucher()">Acknowledge & Close Handover</button>
+    </div>
+  </div>
+
+  <!-- RAPID INTAKE MODAL (Nurse Console) -->
+  <div class="app-modal" id="intakeModal">
+    <div class="modal-box" style="border-color:#ea580c;">
+      <h3 style="font-size:14px; font-weight:800; color:#fff; margin-bottom:10px;">Rapid ED Patient Intake</h3>
+      <div class="form-group">
+        <label class="form-label">Patient Name</label>
+        <input type="text" class="form-input" id="intakeName" placeholder="e.g. Ramesh Kumar">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Triage Priority Category</label>
+        <select class="hotspot-select" id="intakeCategory" style="margin-bottom:0;">
+          <option value="Code Red Polytrauma (Acuity 96)">Code Red Polytrauma (Priority 1)</option>
+          <option value="Severe Head Injury (Acuity 90)">Severe Head Injury (Priority 1)</option>
+          <option value="Acute Sepsis Shock (Acuity 80)">Acute Sepsis Shock (Priority 2)</option>
+          <option value="Orthopedic Fracture (Acuity 60)">Orthopedic Fracture (Priority 3)</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn-ob btn-ob-skip" onclick="closeRapidIntakeModal()">Cancel</button>
+        <button class="btn-ob btn-ob-primary" onclick="submitRapidIntake()">Add to Intake Queue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSFER AUTHORIZATION MODAL (CMO Console) -->
+  <div class="app-modal" id="transferModal">
+    <div class="modal-box" style="border-color:#10b981; text-align:center;">
+      <div style="font-size:28px; margin-bottom:4px;">🏛️</div>
+      <h3 style="font-size:14px; font-weight:800; color:#fff;">Inter-Hospital Transfer Authorization</h3>
+      <p style="font-size:11px; color:#8e8378; margin:8px 0;">
+        Authorizing tertiary referral from Sadar Hospital Ranchi to RIMS Ranchi Apex Trauma Centre.
+      </p>
+      <div style="padding:10px; background:#120e0a; border:1px solid #10b981; border-radius:8px; font-size:11px; color:#34d399; font-weight:800; margin-bottom:14px;">
+        STATUS: APPROVED BY DISTRICT CMO (JH-CMO-2001)
+      </div>
+      <button class="btn-ob btn-ob-primary" style="width:100%;" onclick="closeTransferModal()">Issue Official Transfer Seal</button>
+    </div>
+  </div>
+
+  <script>
+    // ONBOARDING ENGINE
+    const onboardingSlides = [
+      {
+        icon: '🚑',
+        title: 'Welcome to TriageNet Companion',
+        desc: 'TriageNet is a clinical healthcare resource allocation companion modeled for Jharkhand emergency infrastructure. It connects 108 ambulances, hospital trauma bays, and state directors in real-time.'
+      },
+      {
+        icon: '🔒',
+        title: 'Strict Role-Based Console Access',
+        desc: 'Security and clinical role integrity are strictly enforced. Each clinician (108 Paramedic, ED Nurse, Superintendent, or CMO) signs in to their dedicated console without unauthorized role-switching.'
+      },
+      {
+        icon: '🛣️',
+        title: 'Highway Routing & 108 Green Wave',
+        desc: 'The app tracks real highway accident hotspots, calculates traffic delays, provides multi-corridor bypasses, and triggers 108 Green Wave traffic signal preemption.'
+      },
+      {
+        icon: '🩺',
+        title: 'AI Clinical Vitals & Specialist Matching',
+        desc: 'Field paramedics enter GCS, SpO2, and BP vitals. The AI matches clinical severity with on-duty specialists across Apex hospitals to recommend 1st, 2nd, and 3rd best options.'
+      }
+    ];
+
+    let currentObSlide = 0;
+
+    function renderObSlide() {
+      const s = onboardingSlides[currentObSlide];
+      document.getElementById('obIcon').innerText = s.icon;
+      document.getElementById('obTitle').innerText = s.title;
+      document.getElementById('obDesc').innerText = s.desc;
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('dot' + i).className = 'ob-dot' + (i === currentObSlide ? ' active' : '');
+      }
+      document.getElementById('obNextBtn').innerText = currentObSlide === 3 ? 'Get Started' : 'Next';
+    }
+
+    function nextOnboarding() {
+      if (currentObSlide < 3) {
+        currentObSlide++;
+        renderObSlide();
+      } else {
+        finishOnboarding();
+      }
+    }
+
+    function openOnboarding() {
+      currentObSlide = 0;
+      renderObSlide();
+      document.getElementById('onboardingModal').style.display = 'flex';
+    }
+
+    function finishOnboarding() {
+      document.getElementById('onboardingModal').style.display = 'none';
+      localStorage.setItem('triagenet_onboarding_done', 'true');
+    }
+
+    if (localStorage.getItem('triagenet_onboarding_done') === 'true') {
+      document.getElementById('onboardingModal').style.display = 'none';
+    } else {
+      renderObSlide();
+    }
+
+    // AUTHENTICATION & ROLE ROUTING
+    let currentUserRole = null;
+
+    function performLogin() {
+      const id = document.getElementById('loginId').value.trim().toUpperCase();
+      let role = 'AMBULANCE_DISPATCH';
+      if (id.includes('NUR')) role = 'TRIAGE_NURSE';
+      else if (id.includes('ADM')) role = 'HOSPITAL_ADMIN';
+      else if (id.includes('CMO')) role = 'DISTRICT_CMO';
+      else if (id.includes('DSP') || id.includes('EMT')) role = 'AMBULANCE_DISPATCH';
+
+      launchRoleConsole(role);
+    }
+
+    function fillAndLogin(id, role) {
+      document.getElementById('loginId').value = id;
+      launchRoleConsole(role);
+    }
+
+    function launchRoleConsole(role) {
+      currentUserRole = role;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'block';
+
+      // Hide all consoles
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+
+      if (role === 'AMBULANCE_DISPATCH') {
+        document.getElementById('view-emt').classList.add('active');
+        document.getElementById('headerSub').innerText = '108 EMT Paramedic';
+        startTelemetryLoop();
+      } else if (role === 'TRIAGE_NURSE') {
+        document.getElementById('view-nurse').classList.add('active');
+        document.getElementById('headerSub').innerText = 'ED Triage Nurse';
+      } else if (role === 'HOSPITAL_ADMIN') {
+        document.getElementById('view-admin').classList.add('active');
+        document.getElementById('headerSub').innerText = 'Hospital Superintendent';
+      } else if (role === 'DISTRICT_CMO') {
+        document.getElementById('view-cmo').classList.add('active');
+        document.getElementById('headerSub').innerText = 'District CMO';
+      }
+
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Logged in as ' + role);
+      }
+    }
+
+    function handleLogout() {
+      currentUserRole = null;
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('headerSub').innerText = 'Companion v1.2.0';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Logged out of station');
+      }
+    }
+
+    // FULL WEB WORKSTATION BYPASS
+    function launchFullWebWorkstation() {
+      const targetUrl = 'http://10.0.2.2:3000/ambulance';
+      if (window.AndroidBridge && window.AndroidBridge.loadLiveWorkstation) {
+        window.AndroidBridge.loadLiveWorkstation(targetUrl);
+      } else {
+        window.location.href = targetUrl;
+      }
+    }
+
+    // OTA UPDATES
+    function checkOtaUpdates() {
+      fetch('http://10.0.2.2:3000/api/app/version')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.latestVersion) {
+            const msg = 'OTA Update Check: Current build v' + data.latestVersion + ' is active and up to date!';
+            if (window.AndroidBridge && window.AndroidBridge.showToast) {
+              window.AndroidBridge.showToast(msg);
+            } else {
+              alert(msg);
+            }
+          }
+        })
+        .catch(err => {
+          if (window.AndroidBridge && window.AndroidBridge.showToast) {
+            window.AndroidBridge.showToast('TriageNet v1.2.0 • Offline Verified');
+          } else {
+            alert('TriageNet Companion v1.2.0 is running verified release.');
+          }
+        });
+    }
+
+    // REAL-TIME TELEMETRY LOOP
+    let telemetryInterval = null;
+    let baseSpeed = 58;
+    let distanceKm = 14.2;
+    let currentLat = 23.4731;
+    let currentLng = 85.3424;
+
+    function startTelemetryLoop() {
+      if (telemetryInterval) clearInterval(telemetryInterval);
+      telemetryInterval = setInterval(() => {
+        if (currentUserRole !== 'AMBULANCE_DISPATCH') return;
+
+        // Dynamic speed fluctuation with road realism
+        const jitter = (Math.random() * 4 - 2);
+        const actualSpeed = Math.max(20, Math.round(baseSpeed + jitter));
+        document.getElementById('hudSpeed').innerHTML = actualSpeed + ' <span style="font-size:9px;color:#ea580c">km/h</span>';
+
+        // Ticking distance & GPS
+        distanceKm = Math.max(0.1, distanceKm - 0.008);
+        document.getElementById('hudDist').innerHTML = distanceKm.toFixed(1) + ' <span style="font-size:9px">km</span>';
+
+        currentLat += 0.00008 * (Math.random() - 0.48);
+        currentLng += 0.00008 * (Math.random() - 0.48);
+        document.getElementById('liveCoords').innerText = currentLat.toFixed(4) + '° N, ' + currentLng.toFixed(4) + '° E';
+
+        // Update ETA countdown if voucher is open
+        if (countdownSeconds > 0) {
+          countdownSeconds--;
+          const m = Math.floor(countdownSeconds / 60);
+          const s = countdownSeconds % 60;
+          document.getElementById('vouchCountdown').innerText = 'ETA: ' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+      }, 1000);
+    }
+
+    // EMT HOTSPOT LOGIC
+    function onHotspotChange(val) {
+      if (val === 'ormanjhi') {
+        baseSpeed = sirenActive ? 78 : 58;
+        distanceKm = 14.2;
+        currentLat = 23.4731; currentLng = 85.3424;
+        document.getElementById('corridorTag').innerText = 'NH-33 CORRIDOR';
+        document.getElementById('hudTraffic').innerText = sirenActive ? '0m (CLEAR)' : '+12m';
+        document.getElementById('hudEta').innerText = sirenActive ? '19m' : '28m';
+        document.getElementById('opt1Name').innerText = 'RIMS Ranchi Apex Trauma Centre';
+        document.getElementById('opt1Meta').innerText = 'Dr. R. Soren (Neurosurgeon Ready) • 28 mins • 3 ICU Beds';
+        document.getElementById('opt2Name').innerText = 'Sadar Hospital Ranchi Emergency';
+        document.getElementById('opt2Meta').innerText = 'Dr. S. Kujur (Trauma Specialist) • 16 mins • Airway Intubation Ready';
+        document.getElementById('opt3Name').innerText = 'SNMMCH Dhanbad Regional Referral';
+        document.getElementById('diversionBanner').classList.remove('active');
+      } else if (val === 'jharia') {
+        baseSpeed = sirenActive ? 72 : 42;
+        distanceKm = 18.8;
+        currentLat = 23.7420; currentLng = 86.4180;
+        document.getElementById('corridorTag').innerText = 'COAL BELT CORRIDOR';
+        document.getElementById('hudTraffic').innerText = sirenActive ? '0m (CLEAR)' : '+24m';
+        document.getElementById('hudEta').innerText = sirenActive ? '26m' : '48m';
+        document.getElementById('opt1Name').innerText = 'SNMMCH Dhanbad Regional Referral';
+        document.getElementById('opt1Meta').innerText = 'Dr. A. Agarwal (Trauma Surgeon) • 48 mins (Heavy Delay)';
+        document.getElementById('opt2Name').innerText = 'Bokaro General Hospital Trauma Bay';
+        document.getElementById('opt2Meta').innerText = 'Dr. N. Singh (Surgical Lead) • 22 mins • Clear Corridor';
+        document.getElementById('diversionBanner').classList.add('active');
+        document.getElementById('divText').innerText = 'Severe coal corridor gridlock (+24m). Bokaro General Hospital has equivalent on-duty trauma team and saves 16 minutes!';
+      } else if (val === 'barhi') {
+        baseSpeed = sirenActive ? 82 : 64;
+        distanceKm = 26.4;
+        currentLat = 24.2980; currentLng = 85.4210;
+        document.getElementById('corridorTag').innerText = 'GT ROAD NH-19';
+        document.getElementById('hudTraffic').innerText = sirenActive ? '0m (CLEAR)' : '+6m';
+        document.getElementById('hudEta').innerText = sirenActive ? '22m' : '32m';
+        document.getElementById('opt1Name').innerText = 'Sadar Hospital Hazaribagh Emergency';
+        document.getElementById('opt1Meta').innerText = 'Dr. M. Prasad (Surgeon Ready) • 32 mins • Resus Free';
+        document.getElementById('diversionBanner').classList.remove('active');
+      } else if (val === 'bundu') {
+        baseSpeed = sirenActive ? 70 : 50;
+        distanceKm = 38.2;
+        currentLat = 23.1820; currentLng = 85.5840;
+        document.getElementById('corridorTag').innerText = 'NH-33 SOUTH GHATS';
+        document.getElementById('hudTraffic').innerText = sirenActive ? '0m (CLEAR)' : '+15m';
+        document.getElementById('hudEta').innerText = sirenActive ? '34m' : '46m';
+        document.getElementById('opt1Name').innerText = 'RIMS Ranchi Apex Trauma Centre';
+        document.getElementById('opt1Meta').innerText = 'Dr. R. Soren (Neurosurgeon) • 46 mins • Green Wave Requested';
+        document.getElementById('diversionBanner').classList.remove('active');
+      } else if (val === 'adityapur') {
+        baseSpeed = sirenActive ? 74 : 54;
+        distanceKm = 11.6;
+        currentLat = 22.7840; currentLng = 86.1620;
+        document.getElementById('corridorTag').innerText = 'TATA-KANDRA EXPRESSWAY';
+        document.getElementById('hudTraffic').innerText = sirenActive ? '0m (CLEAR)' : '+8m';
+        document.getElementById('hudEta').innerText = sirenActive ? '12m' : '18m';
+        document.getElementById('opt1Name').innerText = 'MGM Medical College Jamshedpur';
+        document.getElementById('opt1Meta').innerText = 'Dr. K. Hansda (General Surgeon) • 18 mins • Trauma Bay 01 Free';
+        document.getElementById('diversionBanner').classList.remove('active');
+      }
+    }
+
+    function selectRoute(num) {
+      document.getElementById('btnRoute1').className = 'route-btn' + (num === 1 ? ' active' : '');
+      document.getElementById('btnRoute2').className = 'route-btn' + (num === 2 ? ' active' : '');
+      if (num === 1) {
+        distanceKm = 14.2;
+        document.getElementById('hudEta').innerText = sirenActive ? '19m' : '28m';
+      } else {
+        distanceKm = 18.6;
+        document.getElementById('hudEta').innerText = sirenActive ? '17m' : '24m';
+      }
+      document.getElementById('hudDist').innerHTML = distanceKm.toFixed(1) + ' <span style="font-size:9px">km</span>';
+    }
+
+    function applyDiversion() {
+      document.getElementById('opt1Name').innerText = 'Bokaro General Hospital [DIVERTED FASTEST]';
+      document.getElementById('opt1Meta').innerText = 'Dr. N. Singh (Surgical Lead) • 22 mins (Saved 16m)';
+      document.getElementById('diversionBanner').classList.remove('active');
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Specialist Diversion Applied: 16 Mins Saved');
+      }
+    }
+
+    // INTERACTIVE SCENARIOS
+    function applyScenario(type) {
+      document.querySelectorAll('.scenario-pill').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (type === 'polytrauma') {
+        setVitalsValues(6, 86, 78, 134);
+      } else if (type === 'respiratory') {
+        setVitalsValues(12, 78, 110, 118);
+      } else if (type === 'cardiac') {
+        setVitalsValues(4, 72, 60, 162);
+      } else if (type === 'stable') {
+        setVitalsValues(15, 98, 122, 78);
+      }
+    }
+
+    function setVitalsValues(gcs, spo2, bp, hr) {
+      document.querySelector('input[oninput*="gcs"]').value = gcs;
+      document.querySelector('input[oninput*="spo2"]').value = spo2;
+      document.querySelector('input[oninput*="bp"]').value = bp;
+      document.querySelector('input[oninput*="hr"]').value = hr;
+      updateVital('gcs', gcs);
+      updateVital('spo2', spo2);
+      updateVital('bp', bp);
+      updateVital('hr', hr);
+    }
+
+    function updateVital(type, val) {
+      val = parseInt(val);
+      if (type === 'gcs') {
+        document.getElementById('gcsVal').innerHTML = val + '<span class="vital-unit">/15</span>';
+        if (val <= 8) document.getElementById('gcsBreakdown').innerText = 'E' + Math.min(2, Math.floor(val/3)) + ' V' + Math.min(2, Math.floor(val/3)) + ' M' + (val - 4) + ' • Severe Coma';
+        else if (val <= 12) document.getElementById('gcsBreakdown').innerText = 'Moderate Neurological Deficit';
+        else document.getElementById('gcsBreakdown').innerText = 'Intact Alert Sensorium';
+      }
+      if (type === 'spo2') {
+        document.getElementById('spo2Val').innerHTML = val + '<span class="vital-unit">%</span>';
+        if (val < 88) document.getElementById('spo2Sub').innerText = 'Critical Hypoxia • High-Flow O2 Required';
+        else if (val < 94) document.getElementById('spo2Sub').innerText = 'Mild Hypoxia • 4 L/min Nasal Cannula';
+        else document.getElementById('spo2Sub').innerText = 'Normal Oxygen Saturation';
+      }
+      if (type === 'bp') {
+        document.getElementById('bpVal').innerHTML = val + '<span class="vital-unit">mmHg</span>';
+        const map = Math.round(val * 0.7);
+        if (val < 90) document.getElementById('mapSub').innerText = 'MAP: ' + map + ' mmHg • Hypotensive Shock';
+        else document.getElementById('mapSub').innerText = 'MAP: ' + map + ' mmHg • Normotensive';
+      }
+      if (type === 'hr') {
+        document.getElementById('hrVal').innerHTML = val + '<span class="vital-unit">BPM</span>';
+        const sbp = parseInt(document.querySelector('input[oninput*="bp"]').value);
+        const si = (val / sbp).toFixed(2);
+        document.getElementById('shockIndexSub').innerText = 'Shock Index: ' + si + (si > 1.0 ? ' (Critical)' : ' (Stable)');
+      }
+      recalcTrauma();
+    }
+
+    function recalcTrauma() {
+      const gcs = parseInt(document.getElementById('gcsVal').innerText);
+      const spo2 = parseInt(document.getElementById('spo2Val').innerText);
+      const bp = parseInt(document.getElementById('bpVal').innerText);
+      const banner = document.getElementById('acuityBanner');
+
+      if (gcs <= 8 || spo2 < 90 || bp < 90) {
+        banner.className = 'acuity-banner acuity-red';
+        document.getElementById('acuityLabel').innerText = '🚨 CODE RED • REVISED TRAUMA SCORE 4.8';
+        document.getElementById('acuityAction').innerText = 'NEURO TRAUMA BAY REQUIRED';
+        document.getElementById('opt1Meta').innerText = 'Dr. R. Soren (Neurosurgeon Ready) • Trauma Bay 02 Pre-Alerted';
+      } else if (gcs <= 12 || spo2 < 94) {
+        banner.className = 'acuity-banner acuity-yellow';
+        document.getElementById('acuityLabel').innerText = '⚠️ CODE YELLOW • URGENT ED ADMISSION';
+        document.getElementById('acuityAction').innerText = 'MONITORED RESUSCITATION';
+      } else {
+        banner.className = 'acuity-banner acuity-green';
+        document.getElementById('acuityLabel').innerText = '🟢 CODE GREEN • STABLE PATIENT';
+        document.getElementById('acuityAction').innerText = 'ROUTINE ED INTAKE';
+      }
+    }
+
+    // 108 GREEN WAVE SIREN
+    let sirenActive = false;
+    function toggleGreenWave() {
+      sirenActive = !sirenActive;
+      const btn = document.getElementById('sirenBtn');
+      if (sirenActive) {
+        btn.classList.add('active');
+        btn.innerText = '🚨 108 Green Wave Siren [ACTIVE ON HIGHWAY]';
+        baseSpeed = 78;
+        document.getElementById('hudTraffic').innerText = '0m (CLEAR)';
+        document.getElementById('hudTraffic').style.color = '#34d399';
+        document.getElementById('hudEta').innerText = '19m';
+        if (window.AndroidBridge && window.AndroidBridge.showToast) {
+          window.AndroidBridge.showToast('🚨 Green Wave Traffic Preemption Activated!');
+        }
+      } else {
+        btn.classList.remove('active');
+        btn.innerText = '🚨 108 Green Wave Signal Siren [OFF]';
+        baseSpeed = 58;
+        document.getElementById('hudTraffic').innerText = '+12m';
+        document.getElementById('hudTraffic').style.color = '#fbbf24';
+        document.getElementById('hudEta').innerText = '28m';
+      }
+    }
+
+    function selectDestination(opt) {
+      document.querySelectorAll('.option-card').forEach(c => c.classList.remove('top'));
+      document.getElementById('optCard' + opt).classList.add('top');
+    }
+
+    // DISPATCH VOUCHER & COUNTDOWN
+    let countdownSeconds = 1182; // ~19m 42s
+    function confirmDispatch() {
+      const vid = 'JH-ALS-2026-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('vouchId').innerText = vid;
+      countdownSeconds = 1182;
+      document.getElementById('voucherModal').style.display = 'flex';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Trauma Bay Pre-Alert Transmitted: ' + vid);
+      }
+    }
+
+    function closeVoucher() {
+      document.getElementById('voucherModal').style.display = 'none';
+    }
+
+    // NURSE CONSOLE ACTIONS
+    function allocateBed(patientId, bedName) {
+      const item = event.target.closest('.queue-item');
+      item.style.opacity = '0.5';
+      event.target.innerText = 'Bed Allocated ✓';
+      event.target.disabled = true;
+      document.getElementById('nurseResusCount').innerText = '1 Free / 4 Total';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast(patientId + ' Allocated to ' + bedName);
+      }
+    }
+
+    function openRapidIntakeModal() {
+      document.getElementById('intakeModal').style.display = 'flex';
+    }
+    function closeRapidIntakeModal() {
+      document.getElementById('intakeModal').style.display = 'none';
+    }
+    function submitRapidIntake() {
+      const name = document.getElementById('intakeName').value.trim() || 'Urgent Patient';
+      const cat = document.getElementById('intakeCategory').value;
+      const pid = 'P-' + Math.floor(6200 + Math.random() * 100);
+
+      const div = document.createElement('div');
+      div.className = 'queue-item';
+      div.innerHTML = '<div><div style="font-weight:800;font-size:12px;color:#fff;">' + pid + ' • ' + name + '</div>' +
+                      '<div style="font-size:10px;color:#ea580c;margin-top:2px;">' + cat + '</div></div>' +
+                      '<button class="btn-small btn-small-orange" onclick="allocateBed(\'' + pid + '\', \'Bay 03\')">Allocate Bay 03</button>';
+      document.getElementById('nurseQueueList').prepend(div);
+      document.getElementById('nurseWaitCount').innerText = '5 In-Queue';
+      closeRapidIntakeModal();
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Intake Registered: ' + pid);
+      }
+    }
+
+    // SUPERINTENDENT ACTIONS
+    let adminBeds = 3;
+    function adminStepDownDischarge() {
+      adminBeds++;
+      document.getElementById('adminFreeIcu').innerText = adminBeds + ' Available';
+      document.getElementById('adminOccupancy').innerText = '89.1% (Relieved)';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Step-Down Discharge Approved • 1 ICU Bed Freed');
+      }
+    }
+    function adminHoldSurgeBed() {
+      if (adminBeds > 0) adminBeds--;
+      document.getElementById('adminFreeIcu').innerText = adminBeds + ' Available';
+      document.getElementById('adminOccupancy').innerText = '93.6% (Surge Active)';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Surge ICU Bed Locked for Incoming Polytrauma');
+      }
+    }
+
+    function toggleDoctorStatus(num) {
+      const btn = document.getElementById('docBtn' + num);
+      if (btn.innerText.includes('READY')) {
+        btn.innerText = 'IN OT SURGERY';
+        btn.className = 'btn-small btn-small-orange';
+      } else {
+        btn.innerText = 'READY IN BAY';
+        btn.className = 'btn-small btn-small-green';
+      }
+    }
+
+    function reconcileErpClaims() {
+      const btn = document.getElementById('reconcileBtn');
+      btn.innerText = 'Syncing NIC e-Hospital (100%)...';
+      setTimeout(() => {
+        document.getElementById('claimsCount').innerText = '145 Vouchers (+3 Auto-Reconciled)';
+        document.getElementById('surplusVal').innerText = '+₹1.48 Cr';
+        btn.innerText = 'Vouchers Reconciled Successfully ✓';
+        if (window.AndroidBridge && window.AndroidBridge.showToast) {
+          window.AndroidBridge.showToast('e-Hospital Claims Reconciled • +₹2.4 Lakh Escrow Settled');
+        }
+      }, 700);
+    }
+
+    // CMO CONSOLE ACTIONS
+    function onCmoDistrictChange(dist) {
+      if (dist === 'Dhanbad') {
+        document.getElementById('cmoFacCount').innerText = '14';
+        document.getElementById('cmoFleetCount').innerText = '19';
+        document.getElementById('cmoIcuLoad').innerText = '94%';
+      } else if (dist === 'EastSinghbhum') {
+        document.getElementById('cmoFacCount').innerText = '16';
+        document.getElementById('cmoFleetCount').innerText = '22';
+        document.getElementById('cmoIcuLoad').innerText = '86%';
+      } else if (dist === 'Hazaribagh') {
+        document.getElementById('cmoFacCount').innerText = '11';
+        document.getElementById('cmoFleetCount').innerText = '14';
+        document.getElementById('cmoIcuLoad').innerText = '78%';
+      } else {
+        document.getElementById('cmoFacCount').innerText = '18';
+        document.getElementById('cmoFleetCount').innerText = '24';
+        document.getElementById('cmoIcuLoad').innerText = '88%';
+      }
+    }
+
+    let reserveCr = 6.40;
+    function disburseGrant(amount) {
+      reserveCr = Math.max(0, (reserveCr - amount)).toFixed(2);
+      document.getElementById('cmoReserve').innerText = '₹' + reserveCr + ' Cr';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Emergency Grant ₹' + (amount * 100) + ' Lakh Disbursed to Network');
+      }
+    }
+
+    function openTransferModal() {
+      document.getElementById('transferModal').style.display = 'flex';
+    }
+    function closeTransferModal() {
+      document.getElementById('transferModal').style.display = 'none';
+      if (window.AndroidBridge && window.AndroidBridge.showToast) {
+        window.AndroidBridge.showToast('Transfer Authorization Issued');
+      }
+    }
+  </script>
+</body>
+</html>

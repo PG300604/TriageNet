@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scene 05 - Statewide Impact & Outro Finale</title>
+  <link rel="stylesheet" href="glassmorphic.css">
+  <style>
+    .outro-container {
+      width: 1600px;
+      height: 880px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .impact-phase {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Phase 1: 3 Big Metric Cards */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      width: 100%;
+    }
+
+    .metric-card {
+      padding: 44px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card.hero-card {
+      background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15), rgba(18, 24, 38, 0.75) 80%);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(16, 185, 129, 0.2);
+    }
+
+    .big-number {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    /* Phase 2: Grand Finale */
+    .finale-box {
+      padding: 70px 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      border-radius: 36px;
+      background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.85) 80%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 45px 100px rgba(0, 0, 0, 0.85), 0 0 80px rgba(56, 189, 248, 0.3);
+    }
+
+    .finale-title {
+      font-size: 96px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin: 20px 0 12px 0;
+      background: linear-gradient(135deg, #ffffff 0%, #bae6fd 40%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 10px 40px rgba(56, 189, 248, 0.5));
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Atmospheric Background -->
+  <div class="ambient-bg">
+    <div class="ambient-grid"></div>
+    <div class="glow-orb orb-emerald" id="ambient-orb1" style="top: 10%; left: 20%;"></div>
+    <div class="glow-orb orb-cyan" id="ambient-orb2" style="bottom: 15%; right: 20%;"></div>
+  </div>
+
+  <div class="scene-container">
+    <div class="outro-container">
+      <!-- PHASE 1: Statewide Impact Metrics (0 - 7.5s) -->
+      <div class="impact-phase" id="phase1">
+        <div style="text-align: center;">
+          <div class="glass-pill emerald">
+            <span class="status-dot emerald"></span>
+            MEASURABLE CLINICAL IMPACT · STATEWIDE JHARKHAND
+          </div>
+          <h1 class="gradient-title" style="font-size: 46px; margin-top: 14px;">
+            Transforming Emergency Outcomes Across 24 Districts
+          </h1>
+          <p style="color: var(--text-muted); font-size: 20px; margin-top: 6px;">
+            Real-time algorithmic triage replacing guesswork with precision healthcare delivery.
+          </p>
+        </div>
+
+        <div class="metric-grid">
+          <!-- Metric 1: Latency -->
+          <div class="glass-panel metric-card">
+            <div class="glass-pill cyan" style="font-size: 11px;">TRIAGE LATENCY</div>
+            <div class="big-number gradient-title-cyan" id="num-latency">18.4 min</div>
+            <h3 style="font-size: 22px; color: #fff;">Average Reduction</h3>
+            <p style="color: var(--text-muted); font-size: 15px; line-height: 1.4;">
+              Golden-Hour transit and ED handover expedited via pre-alert telemetry.
+            </p>
+            <div class="glass-pill emerald" style="font-size: 12px; margin-top: 8px;">
+              ▼ 68% FASTER INTAKE
+            </div>
+          </div>
+
+          <!-- Metric 2: Accuracy -->
+          <div class="glass-panel metric-card hero-card">
+            <div class="glass-pill emerald" style="font-size: 11px;">MATCH ACCURACY</div>
+            <div class="big-number gradient-title-emerald" id="num-accuracy">99.4%</div>
+            <h3 style="font-size: 22px; color: #fff;">Specialist Allocation</h3>
+            <p style="color: var(--text-muted); font-size: 15px; line-height: 1.4;">
+              Optimal Hungarian assignment eliminating secondary trauma diversions.
+            </p>
+            <div class="glass-pill cyan" style="font-size: 12px; margin-top: 8px;">
+              O(V³) OPTIMAL KUHN-MUNKRES
+            </div>
+          </div>
+
+          <!-- Metric 3: Network -->
+          <div class="glass-panel metric-card">
+            <div class="glass-pill amber" style="font-size: 11px;">NETWORK SCALE</div>
+            <div class="big-number gradient-title-amber" id="num-facilities">79</div>
+            <h3 style="font-size: 22px; color: #fff;">Connected Facilities</h3>
+            <p style="color: var(--text-muted); font-size: 15px; line-height: 1.4;">
+              2,027 live monitored beds and 108 ALS fleet across all 24 districts.
+            </p>
+            <div class="glass-pill emerald" style="font-size: 12px; margin-top: 8px;">
+              100% VOUCHER RECONCILED
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE 2: Grand Finale Logo Reveal (7.5 - 14.6s) -->
+      <div class="impact-phase" id="phase2" style="opacity: 0; pointer-events: none;">
+        <div class="glass-panel finale-box">
+          <div class="glass-pill cyan">
+            <span class="status-dot cyan"></span>
+            AUTONOMOUS CLINICAL OS
+          </div>
+          <h1 class="finale-title">TRIAGENET</h1>
+          <p style="color: #f1f5f9; font-size: 28px; font-weight: 600; line-height: 1.4; max-width: 900px;">
+            The Golden-Hour Clinical Operating System
+          </p>
+          <p style="color: var(--text-muted); font-size: 20px; margin-top: 10px;">
+            Autonomous Triage · Sub-50ms Real-Time Sync · Zero Black-Box Dependencies
+          </p>
+
+          <div style="display: flex; gap: 18px; margin-top: 40px;">
+            <div class="glass-pill emerald" style="font-size: 14px; padding: 10px 22px;">
+              ✓ 100% Hand-Crafted Algorithms
+            </div>
+            <div class="glass-pill cyan" style="font-size: 14px; padding: 10px 22px;">
+              ✓ Ready for 39.5M Citizens
+            </div>
+            <div class="glass-pill amber" style="font-size: 14px; padding: 10px 22px;">
+              ✓ Built for Jharkhand State
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3); }
+
+    window.setTimeline = function(p, t) {
+      const orb1 = document.getElementById('ambient-orb1');
+      const orb2 = document.getElementById('ambient-orb2');
+      const phase1 = document.getElementById('phase1');
+      const phase2 = document.getElementById('phase2');
+      const numLatency = document.getElementById('num-latency');
+      const numAccuracy = document.getElementById('num-accuracy');
+      const numFacilities = document.getElementById('num-facilities');
+
+      // Floating Orbs
+      orb1.style.transform = `translate(${Math.sin(p * Math.PI * 2) * 90}px, ${Math.cos(p * Math.PI * 2) * 60}px)`;
+      orb2.style.transform = `translate(${Math.cos(p * Math.PI * 2) * 90}px, ${Math.sin(p * Math.PI * 2) * 70}px)`;
+
+      // Animated Number Counting (0 - 3s)
+      if (t < 3.0) {
+        const prog = t / 3.0;
+        const lat = (prog * 18.4).toFixed(1);
+        const acc = (prog * 99.4).toFixed(1);
+        const fac = Math.round(prog * 79);
+        numLatency.innerText = `${lat} min`;
+        numAccuracy.innerText = `${acc}%`;
+        numFacilities.innerText = `${fac}`;
+      } else {
+        numLatency.innerText = `18.4 min`;
+        numAccuracy.innerText = `99.4%`;
+        numFacilities.innerText = `79`;
+      }
+
+      // Phase 1: 0 - 7.5s
+      if (t < 7.5) {
+        const enterP = Math.min(1, t / 0.8);
+        const eased = easeOutCubic(enterP);
+        phase1.style.opacity = String(eased);
+        phase1.style.transform = `translateY(${(1 - eased) * 30}px)`;
+        phase2.style.opacity = '0';
+        phase2.style.transform = 'translateY(40px) scale(0.96)';
+      } 
+      // Phase 2: 7.5 - 14.6s
+      else {
+        phase1.style.opacity = '0';
+        phase1.style.transform = 'translateY(-30px) scale(0.96)';
+
+        const enterP = Math.min(1, (t - 7.5) / 0.8);
+        const eased = easeOutCubic(enterP);
+        // At the very end (last 1.5s), subtle fade out
+        let fade = 1.0;
+        if (t > 13.0) {
+          fade = Math.max(0, 1.0 - (t - 13.0) / 1.6);
+        }
+        phase2.style.opacity = String(eased * fade);
+        phase2.style.transform = `translateY(${(1 - eased) * 30}px) scale(${0.96 + eased * 0.04})`;
+      }
+    };
+  </script>
+</body>
+</html>

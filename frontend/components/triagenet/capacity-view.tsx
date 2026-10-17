@@ -58,6 +58,36 @@ export function CapacityView({
   const waitingPatientsCount = state.patients.filter((p) => p.status === 'Waiting').length
   const avgWaitTillAssigned = getAverageWaitTillAssigned(state.patients)
 
+  // Real Clinical Triage & Acuity Breakdown
+  const redPatientsCount = state.patients.filter((p) => p.status !== 'Transferred' && p.status !== 'Discharged' && p.severity >= 80).length
+  const yellowPatientsCount = state.patients.filter((p) => p.status !== 'Transferred' && p.status !== 'Discharged' && p.severity >= 60 && p.severity < 80).length
+  const greenPatientsCount = state.patients.filter((p) => p.status !== 'Transferred' && p.status !== 'Discharged' && p.severity < 60).length
+  const totalActivePatients = Math.max(1, redPatientsCount + yellowPatientsCount + greenPatientsCount)
+  const redPercent = Math.round((redPatientsCount / totalActivePatients) * 100)
+  const yellowPercent = Math.round((yellowPatientsCount / totalActivePatients) * 100)
+  const greenPercent = Math.max(0, 100 - redPercent - yellowPercent)
+
+  const ventOccupancyPercent = Math.round((usedVents / (totalVents || 1)) * 100)
+
+  // Facility strain distribution (peak vs relief)
+  const sortedByOccupancy = [...state.hospitals].sort((a, b) => {
+    const occA = (a.beds?.used ?? 0) / (a.beds?.total || 1)
+    const occB = (b.beds?.used ?? 0) / (b.beds?.total || 1)
+    return occB - occA
+  })
+  const peakHospital = sortedByOccupancy[0] ?? selectedHospital ?? null
+  const reliefHospital = sortedByOccupancy[sortedByOccupancy.length - 1] ?? selectedHospital ?? null
+  const peakOccupancy = peakHospital && peakHospital.beds
+    ? Math.round(((peakHospital.beds.used ?? 0) / (peakHospital.beds.total || 1)) * 100)
+    : 0
+  const reliefOccupancy = reliefHospital && reliefHospital.beds
+    ? Math.round(((reliefHospital.beds.used ?? 0) / (reliefHospital.beds.total || 1)) * 100)
+    : 0
+
+  const assignedCount = state.patients.filter((p) => p.status === 'Assigned').length
+  const preemptedCount = state.patients.filter((p) => p.status === 'Preempted').length
+  const dischargedCount = state.patients.filter((p) => p.status === 'Discharged').length
+
   // Boltshift Segmented Arc Radial Gauge calculations
   // Arc of 24 segments (180 degree semi-circle)
   const numSegments = 24
@@ -240,84 +270,154 @@ export function CapacityView({
           </div>
         </div>
 
-        {/* Continuous Simulation Engine Control Bar */}
+        {/* Caseload Acuity & Critical Care Saturation Matrix */}
         <div className="lg:col-span-2 rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="flex size-8 items-center justify-center rounded-xl bg-[#382416] text-[#ffedd7]">
                 <Activity className="size-4 text-[#ea580c]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#382416]">Continuous Simulation Engine</h3>
+                <h3 className="text-sm font-bold text-[#382416]">Caseload Acuity & Critical Care Saturation</h3>
                 <p className="text-[11px] text-stone-400">
-                  Automated time forward step & Hungarian hospital rebalancing
+                  Real-time clinical severity distribution & ICU/Ventilator buffer telemetry
                 </p>
               </div>
             </div>
-            {isPlaying && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                Live Continuous Mode
-              </span>
-            )}
-          </div>
-
-          <div className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-stone-100 bg-stone-50/70 p-4">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-stone-800">
-                Simulation Step Interval: <span className="font-bold text-[#ea580c]">7 Minutes</span>
-              </p>
-              <p className="text-[11px] text-stone-500">
-                Advances vitals decay, Hungarian bed reassignment, and step-down discharge.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              {onTogglePlay && (
-                <button
-                  type="button"
-                  onClick={onTogglePlay}
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-xs',
-                    isPlaying
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                      : 'bg-[#382416] hover:bg-[#28180d] text-[#ffedd7]'
-                  )}
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="size-3.5 fill-white" />
-                      <span>Pause Auto-Play</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="size-3.5 fill-[#ffedd7]" />
-                      <span>Start Auto-Play</span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              {onFastForward && (
-                <button
-                  type="button"
-                  onClick={() => onFastForward(15)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-50 cursor-pointer shadow-2xs transition-colors"
-                >
-                  <FastForward className="size-3.5 text-[#ea580c]" />
-                  <span>+15m Step</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-stone-500">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-emerald-600" />
-              Real-time Dijkstra shortest-path rerouting enabled
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+              <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              Live Clinical Telemetry
             </span>
-            <span className="font-semibold text-stone-600">
-              Active Connected Nodes: {state.hospitals.length} Facilities
+          </div>
+
+          {/* Acuity Tiers Breakdown Bar */}
+          <div className="my-3 rounded-xl border border-stone-100 bg-[#fdfbf7] p-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-[#382416] uppercase text-[10px] tracking-wider">
+                Emergency Severity Index (ESI) Caseload Distribution
+              </span>
+              <span className="text-[10px] text-stone-400 font-mono">
+                {state.patients.length} Registered Caseload
+              </span>
+            </div>
+
+            {/* Stacked Proportional Bar */}
+            <div className="h-2 w-full rounded-full bg-stone-200 overflow-hidden flex">
+              <div
+                style={{ width: `${redPercent}%` }}
+                className="bg-rose-500 transition-all duration-500"
+                title={`Code Red (Resuscitation): ${redPatientsCount} patients (${redPercent}%)`}
+              />
+              <div
+                style={{ width: `${yellowPercent}%` }}
+                className="bg-amber-500 transition-all duration-500"
+                title={`Code Yellow (Urgent): ${yellowPatientsCount} patients (${yellowPercent}%)`}
+              />
+              <div
+                style={{ width: `${greenPercent}%` }}
+                className="bg-emerald-500 transition-all duration-500"
+                title={`Code Green (Stable): ${greenPatientsCount} patients (${greenPercent}%)`}
+              />
+            </div>
+
+            {/* Acuity Badges */}
+            <div className="grid grid-cols-3 gap-2 pt-0.5 text-center font-mono">
+              <div className="rounded-lg bg-rose-50/80 border border-rose-200/60 p-1.5">
+                <span className="text-[9px] font-bold uppercase text-rose-700 block">Tier 1: Red Resus</span>
+                <p className="text-xs font-extrabold text-rose-800">{redPatientsCount} Patients ({redPercent}%)</p>
+              </div>
+              <div className="rounded-lg bg-amber-50/80 border border-amber-200/60 p-1.5">
+                <span className="text-[9px] font-bold uppercase text-amber-700 block">Tier 2: Yellow Urgent</span>
+                <p className="text-xs font-extrabold text-amber-800">{yellowPatientsCount} Patients ({yellowPercent}%)</p>
+              </div>
+              <div className="rounded-lg bg-emerald-50/80 border border-emerald-200/60 p-1.5">
+                <span className="text-[9px] font-bold uppercase text-emerald-700 block">Tier 3: Green Stable</span>
+                <p className="text-xs font-extrabold text-emerald-800">{greenPatientsCount} Patients ({greenPercent}%)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Metric Cards: ICU Saturation, Ventilator Headroom, District Variance */}
+          <div className="my-1 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* ICU Index */}
+            <div className="rounded-xl border border-stone-100 bg-[#fdfbf7] p-2.5 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                <span>ICU Strain</span>
+                <span className={cn('font-bold font-mono', icuOccupancyPercent >= 80 ? 'text-rose-600' : 'text-emerald-600')}>
+                  {icuOccupancyPercent}%
+                </span>
+              </div>
+              <p className="text-xs font-bold text-[#382416]">
+                {usedIcuBeds} / {totalIcuBeds} <span className="text-[10px] font-normal text-stone-500">Beds Active</span>
+              </p>
+              <div className="h-1.5 w-full rounded-full bg-stone-200 overflow-hidden">
+                <div
+                  style={{ width: `${Math.min(100, icuOccupancyPercent)}%` }}
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    icuOccupancyPercent >= 80 ? 'bg-rose-500' : icuOccupancyPercent >= 65 ? 'bg-amber-500' : 'bg-emerald-500'
+                  )}
+                />
+              </div>
+              <p className="text-[9px] text-stone-500 pt-0.5 font-medium">
+                {availableIcu > 0 ? `${availableIcu} Critical ICU Beds Left` : '⚠ ICU At Capacity'}
+              </p>
+            </div>
+
+            {/* Ventilator Headroom */}
+            <div className="rounded-xl border border-stone-100 bg-[#fdfbf7] p-2.5 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                <span>Ventilators</span>
+                <span className={cn('font-bold font-mono', ventOccupancyPercent >= 80 ? 'text-rose-600' : 'text-emerald-600')}>
+                  {ventOccupancyPercent}%
+                </span>
+              </div>
+              <p className="text-xs font-bold text-[#382416]">
+                {usedVents} / {totalVents} <span className="text-[10px] font-normal text-stone-500">Operating</span>
+              </p>
+              <div className="h-1.5 w-full rounded-full bg-stone-200 overflow-hidden">
+                <div
+                  style={{ width: `${Math.min(100, ventOccupancyPercent)}%` }}
+                  className={cn(
+                    'h-full rounded-full transition-all',
+                    ventOccupancyPercent >= 80 ? 'bg-rose-500' : ventOccupancyPercent >= 65 ? 'bg-amber-500' : 'bg-emerald-500'
+                  )}
+                />
+              </div>
+              <p className="text-[9px] text-stone-500 pt-0.5 font-medium">
+                {availableVents} Units on Standby
+              </p>
+            </div>
+
+            {/* District Load Variance */}
+            <div className="rounded-xl border border-stone-100 bg-[#fdfbf7] p-2.5 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                <span>Node Strain</span>
+                <span className="font-bold text-[#ea580c] font-mono">
+                  {state.hospitals.length} Nodes
+                </span>
+              </div>
+              <p className="text-xs font-bold text-[#382416] truncate" title={peakHospital?.name || 'Assigned Peak'}>
+                Peak: <span className="text-rose-600 font-extrabold">{peakHospital?.short || peakHospital?.name || 'Monitoring'} ({peakOccupancy}%)</span>
+              </p>
+              <p className="text-xs font-medium text-stone-600 truncate" title={reliefHospital?.name || 'Relief Facility'}>
+                Relief: <span className="text-emerald-600 font-bold">{reliefHospital?.short || reliefHospital?.name || 'Balanced'} ({reliefOccupancy}%)</span>
+              </p>
+              <p className="text-[9px] text-stone-500 pt-0.5 font-medium">
+                {availableBeds} Aggregate Beds Available
+              </p>
+            </div>
+          </div>
+
+          {/* Footer Throughput Summary */}
+          <div className="flex flex-wrap items-center justify-between text-xs text-stone-500 pt-2 border-t border-stone-100 gap-2">
+            <span className="flex items-center gap-1.5 text-[11px]">
+              <ShieldCheck className="size-3.5 text-emerald-600 shrink-0" />
+              <span>Throughput: <strong className="text-stone-800">{assignedCount}</strong> Assigned · <strong className="text-stone-800">{preemptedCount}</strong> Preemptions · <strong className="text-stone-800">{dischargedCount}</strong> Discharged</span>
+            </span>
+            <span className="font-semibold text-stone-600 font-mono text-[11px]">
+              Waitlist: {waitingPatientsCount} Queued · Avg {avgWaitTillAssigned}m Turnaround
             </span>
           </div>
         </div>

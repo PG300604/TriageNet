@@ -18,6 +18,7 @@ import {
   Layers,
   FileCheck2,
   Clock,
+  AlertTriangle,
 } from 'lucide-react'
 
 export interface SupplyRequisition {
@@ -38,6 +39,10 @@ export interface SupplyRequisition {
   reliefPct?: number
   clinicalJustification: string
   timestamp?: string
+  sourceRecId?: string
+  grantAmountCr?: number
+  currentReserveCr?: number
+  projectedReserveCr?: number
 }
 
 interface SupplyApprovalPillModalProps {
@@ -62,7 +67,14 @@ export function SupplyApprovalPillModal({
 
   if (!isOpen || !requisition || !mounted) return null
 
+  const currentReserve = requisition.currentReserveCr ?? 6.4
+  const grantAmount = requisition.grantAmountCr ?? (requisition.urgency === 'Critical P1' ? 1.5 : 0.8)
+  const projectedReserve = requisition.projectedReserveCr !== undefined ? requisition.projectedReserveCr : Math.round((currentReserve - grantAmount) * 100) / 100
+  const isDeficit = requisition.tier === 'STATE_GRANT' && (currentReserve < grantAmount || projectedReserve < 0)
+  const isLowBudget = requisition.tier === 'STATE_GRANT' && !isDeficit && projectedReserve < 3.0
+
   const handleAuthorize = () => {
+    if (isDeficit) return
     setIsAuthorizing(true)
     setTimeout(() => {
       setIsAuthorizing(false)
@@ -139,6 +151,68 @@ export function SupplyApprovalPillModal({
                 {requisition.urgency}
               </span>
             </div>
+
+            {/* State Grant Budget Allocation & Fiscal Projection Card */}
+            {requisition.tier === 'STATE_GRANT' && (
+              <div className="rounded-xl border border-orange-200 bg-orange-50/70 p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs border-b border-orange-200/80 pb-2">
+                  <span className="font-bold text-[#382416] uppercase tracking-wider flex items-center gap-1.5">
+                    <IndianRupee className="size-4 text-[#ea580c]" />
+                    Contingency Budget & Reserve Projection
+                  </span>
+                  <span className="font-mono text-[11px] font-bold text-orange-900 bg-orange-200/60 px-2 py-0.5 rounded">
+                    State Health Pool
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5 text-xs">
+                  <div className="bg-white p-2.5 rounded-lg border border-orange-200/80">
+                    <span className="text-[10px] uppercase font-bold text-stone-500 block">Available Pool</span>
+                    <span className="font-mono font-extrabold text-sm text-stone-900">
+                      ₹{currentReserve.toFixed(2)} Cr
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-orange-200/80">
+                    <span className="text-[10px] uppercase font-bold text-stone-500 block">Grant to Release</span>
+                    <span className="font-mono font-extrabold text-sm text-rose-600">
+                      -₹{grantAmount.toFixed(2)} Cr
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-orange-200/80">
+                    <span className="text-[10px] uppercase font-bold text-stone-500 block">Projected Reserve</span>
+                    <span className={`font-mono font-extrabold text-sm ${projectedReserve < 0 ? 'text-red-700' : projectedReserve < 3.0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                      ₹{projectedReserve.toFixed(2)} Cr
+                    </span>
+                  </div>
+                </div>
+
+                {/* Critical Deficit Alert */}
+                {isDeficit && (
+                  <div className="rounded-lg border border-red-300 bg-red-100/90 p-3 flex items-start gap-2.5 text-xs text-red-900 animate-pulse">
+                    <AlertTriangle className="size-4 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">🚨 CRITICAL DEFICIT WARNING: Insufficient Contingency Reserve!</strong>
+                      <span>
+                        Requested grant of <strong>₹{grantAmount.toFixed(2)} Cr</strong> exceeds available state reserve (<strong>₹{currentReserve.toFixed(2)} Cr</strong>). Disbursing this grant would push the state health pool into fiscal deficit. Please click <strong>&quot;Refetch Inflow&quot;</strong> on the dashboard to replenish funds before approving.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Low Budget Warning Banner */}
+                {isLowBudget && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-100/90 p-3 flex items-start gap-2.5 text-xs text-amber-900">
+                    <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">⚠️ LOW CONTINGENCY BUDGET WARNING:</strong>
+                      <span>
+                        Releasing this grant leaves only <strong>₹{projectedReserve.toFixed(2)} Cr</strong> in state contingency reserve (below the recommended buffer of ₹3.00 Cr). Monitor incoming Ayushman Bharat recoveries.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Source to Recipient Route Card */}
             <div className="rounded-xl border border-stone-200/90 bg-stone-50/70 p-4">
@@ -251,11 +325,11 @@ export function SupplyApprovalPillModal({
             <button
               type="button"
               onClick={handleAuthorize}
-              disabled={isAuthorizing}
-              className="rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-5 py-2 text-xs font-bold shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={isAuthorizing || isDeficit}
+              className="rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-5 py-2 text-xs font-bold shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="size-4" />
-              <span>{isAuthorizing ? 'Authorizing Live...' : 'Authorize & Disburse Live'}</span>
+              <span>{isAuthorizing ? 'Authorizing Live...' : isDeficit ? 'Deficit Blocked' : 'Authorize & Disburse Live'}</span>
             </button>
           </div>
         </motion.div>

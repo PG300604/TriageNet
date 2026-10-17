@@ -43,11 +43,10 @@ export const metadata: Metadata = {
     'Medical Superintendent Command Dashboard',
   ],
   authors: [
-    { name: 'Department of Health, Medical Education & Family Welfare, Government of Jharkhand' },
-    { name: 'TriageNet AI Systems' },
+    { name: 'TriageNet Research & AI Systems (Modeled for Jharkhand Healthcare)' },
   ],
-  creator: 'Department of Health & Family Welfare, Government of Jharkhand',
-  publisher: 'National Health Mission (NHM) Jharkhand',
+  creator: 'TriageNet Systems Project',
+  publisher: 'TriageNet Emergency Healthcare Project',
   formatDetection: {
     email: false,
     address: false,
@@ -59,10 +58,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    siteName: 'TriageNet — Government of Jharkhand Emergency Healthcare Network',
-    title: 'TriageNet — Intelligent Healthcare Resource & 108 Ambulance Dispatch',
+    siteName: 'TriageNet — Emergency Healthcare Allocation Network (Modeled for Jharkhand)',
+    title: 'TriageNet — Intelligent Healthcare Resource & Ambulance Dispatch Model',
     description:
-      'Real-time emergency triage, hospital ICU surge capacity, and 108 ambulance dispatch command across all 24 districts of Jharkhand.',
+      'Real-time emergency triage, hospital ICU surge capacity, and ambulance dispatch simulation modeled for emergency healthcare in Jharkhand.',
     images: [
       {
         url: '/ember-waves.png',
@@ -74,11 +73,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TriageNet — Jharkhand State Emergency Triage & 108 Dispatch',
+    title: 'TriageNet — Healthcare Resource Allocation Model (Jharkhand)',
     description:
-      'Algorithmic healthcare resource allocation, dynamic ICU bed reservation, and 108 ambulance spatial routing network.',
+      'Algorithmic healthcare resource allocation, dynamic ICU bed reservation, and spatial routing simulation.',
     images: ['/ember-waves.png'],
-    creator: '@TriageNetJH',
+    creator: '@TriageNet',
   },
   robots: {
     index: true,
@@ -116,24 +115,24 @@ const jsonLdStructuredData = {
   '@context': 'https://schema.org',
   '@graph': [
     {
-      '@type': 'GovernmentOrganization',
+      '@type': 'MedicalOrganization',
       '@id': '#organization',
-      name: 'Department of Health, Medical Education & Family Welfare, Government of Jharkhand',
-      alternateName: ['NHM Jharkhand', 'Jharkhand Health Department'],
+      name: 'TriageNet Emergency Healthcare Project (Modeled for Jharkhand)',
+      alternateName: ['TriageNet Emergency Systems', 'TriageNet Model'],
       url: '/',
       logo: '/triagenet-logo.png',
       contactPoint: [
         {
           '@type': 'ContactPoint',
           telephone: '108',
-          contactType: 'Emergency Ambulance & Triage Dispatch',
+          contactType: 'Emergency Ambulance & Triage Dispatch (Modeled Helpline)',
           areaServed: 'IN-JH',
           availableLanguage: ['Hindi', 'English', 'Santhali', 'Ho', 'Mundari'],
         },
         {
           '@type': 'ContactPoint',
           telephone: '104',
-          contactType: 'Jharkhand State Health Helpline',
+          contactType: 'State Health Helpline',
           areaServed: 'IN-JH',
         },
       ],
@@ -150,16 +149,16 @@ const jsonLdStructuredData = {
         priceCurrency: 'INR',
       },
       description:
-        'State-wide intelligent healthcare resource allocation and 108 emergency ambulance dispatch network for Jharkhand.',
+        'State-wide intelligent healthcare resource allocation and emergency ambulance dispatch simulation modeled for Jharkhand.',
       provider: {
         '@id': '#organization',
       },
     },
     {
-      '@type': 'GovernmentService',
+      '@type': 'Service',
       '@id': '#service',
-      name: 'Jharkhand Emergency Triage & 108 Dispatch Network',
-      serviceType: 'Emergency Healthcare Resource Coordination',
+      name: 'TriageNet Emergency Triage & Dispatch Simulation',
+      serviceType: 'Emergency Healthcare Resource Coordination Simulation',
       provider: {
         '@id': '#organization',
       },

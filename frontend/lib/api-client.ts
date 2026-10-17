@@ -204,8 +204,10 @@ export interface PendingStaffUser {
   role: string;
   hospitalId?: string;
   hospitalName: string;
-  status: string;
+  status?: string;
   createdAt: string;
+  registrationNumber?: string;
+  qualifications?: string;
 }
 
 export interface TwoFactorSetupData {

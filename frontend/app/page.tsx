@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    siteName: 'TriageNet — Government of Jharkhand Emergency Healthcare Network',
+    siteName: 'TriageNet — Intelligent Healthcare Resource Allocation (Modeled for Jharkhand)',
     title: 'TriageNet — Intelligent Healthcare Resource & Emergency Dispatch Platform',
     description:
       'Algorithmic healthcare resource allocation platform for hospital surge capacity, dynamic priority queuing, Hungarian bipartite matching, and Dijkstra 108 ambulance regional routing across Jharkhand.',

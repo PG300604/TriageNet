@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-context'
-import type { Hospital, Patient, ScenarioKey } from '@/lib/triage-data'
+import type { Hospital, Patient } from '@/lib/triage-data'
 import {
   Building2,
   Check,
@@ -10,10 +10,12 @@ import {
   Search,
   X,
   MapPin,
+  BadgeCheck,
 } from 'lucide-react'
 
 import { useEffect, useRef, useState } from 'react'
 import { ClinicianProfileModal } from './clinician-profile-modal'
+import { StaffApprovalModal } from '@/components/staff-approval-modal'
 
 interface TopBarProps {
   hospitals: Hospital[]
@@ -22,11 +24,6 @@ interface TopBarProps {
   onSelectHospital: (id: string) => void
   selectedDistrict?: string
   onSelectDistrict?: (district: string) => void
-  scenario?: ScenarioKey
-  onRunScenario?: (scenario: ScenarioKey) => void
-  onFastForward?: (stepMinutes: number) => void
-  isPlaying?: boolean
-  onTogglePlay?: () => void
   onNavigateView?: (view: string) => void
 }
 
@@ -49,11 +46,6 @@ export function TopBar({
   onSelectHospital,
   selectedDistrict = 'ALL',
   onSelectDistrict,
-  scenario,
-  onRunScenario,
-  onFastForward,
-  isPlaying = false,
-  onTogglePlay,
   onNavigateView,
 }: TopBarProps) {
   const { user } = useAuth()
@@ -62,6 +54,7 @@ export function TopBar({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [staffApprovalModalOpen, setStaffApprovalModalOpen] = useState(false)
 
   // Auto-lock district selector if user is District CMO or Hospital Staff
   useEffect(() => {
@@ -264,6 +257,23 @@ export function TopBar({
           <span>Live Network Synced</span>
         </div>
 
+        {/* Physical Clinician Badge & Dual-Control Verification Desk */}
+        {(user?.role === 'SUPER_ADMIN' ||
+          user?.role === 'STATE_HEALTH_DEPT' ||
+          user?.role === 'DISTRICT_CMO' ||
+          user?.role === 'HOSPITAL_ADMIN') && (
+          <button
+            type="button"
+            onClick={() => setStaffApprovalModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-full border border-amber-600/30 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-900 transition-all shadow-2xs cursor-pointer"
+            title="Open Physical Badge & Dual-Control Verification Desk"
+          >
+            <BadgeCheck className="size-3.5 text-amber-700" />
+            <span className="hidden lg:inline text-[11px]">Badge Desk</span>
+            <span className="size-1.5 rounded-full bg-amber-600 animate-pulse" />
+          </button>
+        )}
+
         {/* Clinician Profile Trigger Button */}
         <button
           type="button"
@@ -283,6 +293,11 @@ export function TopBar({
           isOpen={profileModalOpen}
           onClose={() => setProfileModalOpen(false)}
           mode="self"
+        />
+
+        <StaffApprovalModal
+          isOpen={staffApprovalModalOpen}
+          onClose={() => setStaffApprovalModalOpen(false)}
         />
       </div>
     </header>

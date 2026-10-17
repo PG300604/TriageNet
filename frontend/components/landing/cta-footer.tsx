@@ -55,6 +55,12 @@ export function CtaFooter() {
 
 
           <div className="flex items-center gap-6 font-mono text-[11px]">
+            <Link
+              href="/downloads"
+              className="flex items-center gap-1.5 uppercase hover:text-[#ffedd7] transition-colors text-[#ea580c]"
+            >
+              <span>📱 DOWNLOAD APP</span>
+            </Link>
             <a
               href="https://github.com/PG300604"
               target="_blank"

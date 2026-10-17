@@ -70,8 +70,8 @@ export function ClinicalView({ state, onStateChange }: ClinicalViewProps) {
       const q = searchQuery.trim().toLowerCase()
       const matchesSearch =
         !q ||
-        h.name.toLowerCase().includes(q) ||
-        h.short.toLowerCase().includes(q) ||
+        (h.name && h.name.toLowerCase().includes(q)) ||
+        (h.short && h.short.toLowerCase().includes(q)) ||
         (h.district && h.district.toLowerCase().includes(q))
       return matchesDistrict && matchesTier && matchesSearch
     })

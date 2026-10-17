@@ -27,8 +27,10 @@ import {
   Radio,
   X,
   ShieldCheck,
+  BadgeCheck,
 } from 'lucide-react'
 import { ClinicianProfileModal } from './clinician-profile-modal'
+import { StaffApprovalModal } from '@/components/staff-approval-modal'
 
 export type ViewKey =
   | 'capacity'
@@ -90,6 +92,9 @@ export const ROLE_ALLOWED_VIEWS: Record<UserRole, ViewKey[]> = {
   AMBULANCE_DISPATCH: [
     'network', 'queue', 'comms'
   ],
+  HOSPITAL_STAFF: [
+    'capacity', 'patients', 'queue', 'doctors', 'clinical', 'supplies', 'docs'
+  ],
 }
 
 export const ROLE_CONFIGS: Record<UserRole, { title: string; badge: string; color: string; icon: typeof Shield }> = {
@@ -99,6 +104,7 @@ export const ROLE_CONFIGS: Record<UserRole, { title: string; badge: string; colo
   HOSPITAL_ADMIN: { title: 'Medical Superintendent', badge: 'HOSPITAL ADMIN', color: 'bg-stone-800 text-stone-100 border-stone-600', icon: Hospital },
   TRIAGE_NURSE: { title: 'Emergency Triage Nurse', badge: 'TRIAGE LEAD', color: 'bg-rose-900 text-rose-100 border-rose-700', icon: Stethoscope },
   AMBULANCE_DISPATCH: { title: '108 Dispatch Control', badge: 'DISPATCH CONTROL', color: 'bg-amber-900 text-amber-100 border-amber-700', icon: Truck },
+  HOSPITAL_STAFF: { title: 'Medical Officer', badge: 'MEDICAL OFFICER', color: 'bg-stone-800 text-stone-100 border-stone-600', icon: Stethoscope },
 }
 
 export function Sidebar({
@@ -113,6 +119,7 @@ export function Sidebar({
   const { user, logout } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [staffApprovalModalOpen, setStaffApprovalModalOpen] = useState(false)
   const [navSearch, setNavSearch] = useState('')
 
   useEffect(() => {
@@ -273,6 +280,30 @@ export function Sidebar({
 
       {/* Modern User Profile Card (Bright Leads & Boltshift pattern) */}
       <div className="border-t border-stone-100 p-3" suppressHydrationWarning>
+        {/* Physical Badge & Staff Verification Desk Button for Leadership Roles */}
+        {(user?.role === 'SUPER_ADMIN' ||
+          user?.role === 'STATE_HEALTH_DEPT' ||
+          user?.role === 'DISTRICT_CMO' ||
+          user?.role === 'HOSPITAL_ADMIN') && (
+          <button
+            type="button"
+            onClick={() => setStaffApprovalModalOpen(true)}
+            className="w-full hidden md:flex items-center justify-between rounded-xl border border-amber-600/30 bg-amber-50/80 hover:bg-amber-100/90 p-2.5 text-xs font-bold text-amber-900 transition-all cursor-pointer mb-2.5 shadow-2xs group"
+            title="Open Physical Badge & Staff Dual-Control Verification Desk"
+          >
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="size-4 text-amber-700 group-hover:scale-105 transition-transform" />
+              <span>Badge Desk</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono bg-white/80 border border-amber-300 px-1.5 py-0.2 rounded text-amber-800">
+                PENDING
+              </span>
+              <span className="size-2 rounded-full bg-amber-600 animate-pulse" />
+            </div>
+          </button>
+        )}
+
         <div
           suppressHydrationWarning
           onClick={() => setProfileModalOpen(true)}
@@ -327,6 +358,12 @@ export function Sidebar({
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
         mode="self"
+      />
+
+      {/* Physical Badge & Staff Verification Desk Modal */}
+      <StaffApprovalModal
+        isOpen={staffApprovalModalOpen}
+        onClose={() => setStaffApprovalModalOpen(false)}
       />
     </aside>
   )

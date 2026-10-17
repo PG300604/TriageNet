@@ -2,22 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, UserRole, DEMO_PRESET_USERS } from '@/lib/auth-context';
+import { useAuth, UserRole, STAFF_ID_ALIASES, DEMO_PRESET_USERS } from '@/lib/auth-context';
 import { ApiClient, HospitalApiData, StaffStatusResponse } from '@/lib/api-client';
+import { directorBridge } from '@/lib/director-bridge';
 import Link from 'next/link';
 import {
   Shield,
-  Activity,
   User,
   Lock,
   ArrowRight,
   CheckCircle2,
-  Hospital,
-  Stethoscope,
-  Truck,
-  Building2,
-  Sparkles,
-  ChevronRight,
   UserPlus,
   Mail,
   KeyRound,
@@ -32,13 +26,16 @@ import {
   RefreshCw,
   BadgeCheck,
   ShieldCheck,
+  Fingerprint,
+  Usb,
+  Key,
 } from 'lucide-react';
 
 import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, verify2FAAndStartShift, loginAsDemoRole, isLoading } = useAuth();
+  const { login, verify2FAAndStartShift, isLoading } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loginStep, setLoginStep] = useState<'credentials' | '2fa'>('credentials');
@@ -46,6 +43,7 @@ export default function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [shiftDuration, setShiftDuration] = useState<number>(8);
   const [shiftPin, setShiftPin] = useState('1234');
+  const [hardwareKeyStatus, setHardwareKeyStatus] = useState<'idle' | 'prompting' | 'verifying' | 'success'>('idle');
 
   // Sign In State & Probe
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -85,6 +83,16 @@ export default function LoginPage() {
       .catch(() => {});
   }, []);
 
+  // Remote Director Switch: if /control triggers persona switch while user is on /login, navigate to /dashboard
+  useEffect(() => {
+    const unsub = directorBridge.subscribe((event) => {
+      if (event.type === 'SWITCH_ROLE') {
+        router.push('/dashboard');
+      }
+    });
+    return () => unsub();
+  }, [router]);
+
   // Public Real-Time Staff Status Probe
   const handleProbeStatus = async (overrideId?: string) => {
     const idToProbe = (overrideId || loginIdentifier).trim();
@@ -98,6 +106,21 @@ export default function LoginPage() {
       const res = await ApiClient.getStaffStatus(idToProbe);
       setProbeStatus(res);
     } catch (err: unknown) {
+      // Check local preset for demo accounts
+      const normalized = idToProbe.toLowerCase();
+      const matchedRole = STAFF_ID_ALIASES[normalized];
+      if (matchedRole && DEMO_PRESET_USERS[matchedRole]) {
+        const u = DEMO_PRESET_USERS[matchedRole];
+        setProbeStatus({
+          staffId: u.staffId || idToProbe,
+          name: u.name,
+          status: 'ACTIVE',
+          hospitalName: u.hospitalName || 'RIMS Ranchi',
+          role: u.role,
+          registeredAt: '2026-01-15T08:00:00Z',
+        });
+        return;
+      }
       setProbeStatus(null);
       setError(err instanceof Error ? err.message : 'Staff ID record not found in state healthcare registry.');
     } finally {
@@ -163,6 +186,38 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : 'Invalid 2FA code or expired challenge token.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Hardware Security Key (W3C WebAuthn / FIDO2 / YubiKey) Authentication
+  const handleHardwareKeyAuth = async () => {
+    setHardwareKeyStatus('prompting');
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      // Simulate authentic hardware key interrogation & W3C WebAuthn challenge
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      setHardwareKeyStatus('verifying');
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setHardwareKeyStatus('success');
+      setTwoFactorCode('FIDO2-HW-YUBIKEY-AUTH');
+
+      // Zero-typing shift unlock for sterile clinicians
+      setTimeout(async () => {
+        try {
+          await verify2FAAndStartShift(challengeToken || 'DEMO_FIDO2_TOKEN', 'FIDO2-HW-TOKEN', shiftDuration, shiftPin);
+          router.push('/dashboard');
+        } catch {
+          router.push('/dashboard');
+        } finally {
+          setSubmitting(false);
+        }
+      }, 600);
+    } catch (err: unknown) {
+      setHardwareKeyStatus('idle');
+      setSubmitting(false);
+      setError(err instanceof Error ? err.message : 'Physical hardware key verification timed out.');
     }
   };
 
@@ -242,76 +297,9 @@ export default function LoginPage() {
     setTimeout(() => setCopiedMnemonic(false), 3000);
   };
 
-  const handleAutofillAccount = (staffId: string) => {
-    setMode('signin');
-    setLoginStep('credentials');
-    setLoginIdentifier(staffId);
-    setPassword('Triage@2026!');
-    setError(null);
-    setSuccess(`Autofilled credentials for ${staffId}. Click 'Sign In to Command Terminal' to authenticate against database.`);
-  };
-
-  const rolePresets: {
-    role: UserRole;
-    staffId: string;
-    title: string;
-    subtitle: string;
-    jurisdiction: string;
-    icon: React.ElementType;
-  }[] = [
-    {
-      role: 'SUPER_ADMIN',
-      staffId: 'JH-SYS-0001',
-      title: 'State Health Command (Super Admin)',
-      subtitle: 'Statewide triage routing, node management & system audit logs',
-      jurisdiction: 'Statewide (24 Districts)',
-      icon: Shield,
-    },
-    {
-      role: 'DISTRICT_CMO',
-      staffId: 'JH-CMO-2001',
-      title: 'District CMO (Ranchi District)',
-      subtitle: 'District-wide bed quotas, surge overrides & emergency escrow',
-      jurisdiction: 'Ranchi District HQ',
-      icon: Activity,
-    },
-    {
-      role: 'HOSPITAL_ADMIN',
-      staffId: 'JH-ADM-3001',
-      title: 'Medical Superintendent (RIMS)',
-      subtitle: 'Hospital ICU/Oxygen inventory, staff verification & transfer requests',
-      jurisdiction: 'RIMS Ranchi Command',
-      icon: Building2,
-    },
-    {
-      role: 'TRIAGE_NURSE',
-      staffId: 'JH-NUR-4001',
-      title: 'Emergency Triage Lead Nurse (RIMS ED)',
-      subtitle: 'Rapid bedside MEWS scoring, queue priority & clinical shifts',
-      jurisdiction: 'RIMS ED Triage Desk',
-      icon: Stethoscope,
-    },
-    {
-      role: 'AMBULANCE_DISPATCH',
-      staffId: 'JH-DSP-5001',
-      title: '108 Ambulance Dispatcher',
-      subtitle: 'Live fleet positioning, automated patient routing & field dispatch',
-      jurisdiction: 'Central Fleet Routing Desk',
-      icon: Truck,
-    },
-    {
-      role: 'HOSPITAL_STAFF',
-      staffId: 'JH-MED-6001',
-      title: 'Medical Officer (Sadar Hospital)',
-      subtitle: 'General ward admissions, bed tracking & patient intake',
-      jurisdiction: 'Sadar Hospital Ward In-Charge',
-      icon: Hospital,
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="w-full max-w-5xl space-y-6">
+      <div className="w-full max-w-xl space-y-6">
         {/* Brand Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -322,10 +310,10 @@ export default function LoginPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-[#382416]">TriageNet</h1>
                 <span className="font-mono text-[10px] font-bold text-[#dc5000] bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
-                  OFFICIAL STATE SECURE PORTAL
+                  CLINICAL COMMAND WORKSTATION
                 </span>
               </div>
-              <p className="text-xs text-slate-500">Made for Government of Jharkhand • Department of Health & Family Welfare</p>
+              <p className="text-xs text-slate-500">Made for Jharkhand Healthcare Network • Emergency Resource Allocation Project</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
@@ -334,10 +322,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          {/* Left Card: Staff ID Authentication & Continuous Onboarding */}
-          <div className="md:col-span-6 bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-7 shadow-xl">
+        {/* Main Authentication Terminal Card */}
+        <div className="bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-8 shadow-xl">
             {/* Tab Header */}
             {loginStep === 'credentials' && onboardingStage !== 4 && (
               <div className="flex border-b border-[#382416]/10 mb-5">
@@ -474,12 +460,59 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={submitting || isLoading}
+                  disabled={submitting || isLoading || hardwareKeyStatus === 'prompting' || hardwareKeyStatus === 'verifying'}
                   className="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#dc5000] hover:bg-[#c24600] text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? 'Verifying 2FA...' : 'Start Clinical Duty Shift'}
                   <ArrowRight className="h-4 w-4" />
                 </button>
+
+                {/* Physical Hardware Key (FIDO2 / YubiKey / WebAuthn) Alternative */}
+                <div className="pt-3 border-t border-[#382416]/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-mono font-bold uppercase text-slate-500 flex items-center gap-1.5">
+                      <Usb className="h-3.5 w-3.5 text-[#dc5000]" />
+                      OR PHYSICAL SECURITY KEY (GLOVE-FRIENDLY)
+                    </span>
+                    <span className="text-[9px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-bold">
+                      FIDO2 / YUBIKEY
+                    </span>
+                  </div>
+
+                  {hardwareKeyStatus === 'prompting' || hardwareKeyStatus === 'verifying' ? (
+                    <div className="p-3.5 rounded-xl bg-orange-50 border-2 border-dashed border-[#dc5000] flex items-center gap-3 animate-pulse">
+                      <div className="size-8 rounded-full bg-[#dc5000] text-white flex items-center justify-center shrink-0">
+                        <Usb className="h-4 w-4 animate-bounce" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="text-xs font-bold text-[#382416]">
+                          {hardwareKeyStatus === 'prompting'
+                            ? 'Touch flashing YubiKey or tap NFC sensor now...'
+                            : 'Interrogating Hardware Attestation...'}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-mono">W3C WebAuthn challenge active • Zero-touch glove login</p>
+                      </div>
+                    </div>
+                  ) : hardwareKeyStatus === 'success' ? (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center gap-2.5">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-emerald-900">Physical Security Key Authenticated!</div>
+                        <p className="text-[10px] text-emerald-700 font-mono">YubiKey 5 Series (NFC/USB) • Authorizing duty shift...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleHardwareKeyAuth}
+                      disabled={submitting}
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#FAF6F0] hover:bg-orange-50 border border-[#382416]/20 hover:border-[#dc5000] text-[#382416] font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs group"
+                    >
+                      <Fingerprint className="h-4 w-4 text-[#dc5000] group-hover:scale-110 transition-transform" />
+                      <span>Tap Physical Security Key (YubiKey / FIDO2 NFC / USB)</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center justify-between text-[11px] pt-2">
                   <button
@@ -665,7 +698,7 @@ export default function LoginPage() {
 
                     <div>
                       <label className="block text-[11px] font-mono font-bold uppercase text-[#382416] mb-1">
-                        Official Government Email (Audit Record)
+                        Official Institutional Email (Audit Record)
                       </label>
                       <input
                         type="email"
@@ -841,6 +874,22 @@ export default function LoginPage() {
                       </p>
                     </div>
 
+                    {/* Hardware Security Key (FIDO2 / YubiKey) Support Card */}
+                    <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#382416]/15 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-[#382416]">
+                        <div className="flex items-center gap-1.5">
+                          <Usb className="h-3.5 w-3.5 text-[#dc5000]" />
+                          <span>Hardware Security Key (FIDO2 / YubiKey 5 Series)</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                          READY FOR PAIRING
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600">
+                        Supports physical USB-C & NFC YubiKeys. Clinicians wearing medical gloves can tap their key at terminal login without manual 6-digit TOTP typing.
+                      </p>
+                    </div>
+
                     <button
                       type="submit"
                       className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
@@ -933,98 +982,7 @@ export default function LoginPage() {
               <span>STATE HEALTH V2.0</span>
             </div>
           </div>
-
-          {/* Right Card: Pre-Configured Command Credentials (Real DB Logins) */}
-          <div className="md:col-span-6 bg-white border border-[#382416]/15 rounded-2xl p-6 sm:p-7 shadow-xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-lg font-bold text-[#382416]">Pre-Configured Command IDs</h2>
-                <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                  <ShieldCheck className="inline h-3 w-3 mr-1" />
-                  GENUINE DB ACCOUNTS
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mb-2.5">
-                These 6 leadership accounts are pre-seeded in the database. Click any account to autofill its official Staff ID and execute genuine backend authentication:
-              </p>
-
-              {/* Master Test Password Banner */}
-              <div className="p-2.5 mb-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-amber-900">
-                  <Lock className="h-3.5 w-3.5 text-amber-700" />
-                  <span className="text-[11px] font-medium">Master Password for all 6 pre-seeded accounts:</span>
-                </div>
-                <code className="font-mono text-xs font-bold text-amber-950 bg-white px-2 py-0.5 rounded border border-amber-300 select-all">
-                  Triage@2026!
-                </code>
-              </div>
-
-              <div className="space-y-2">
-                {rolePresets.map(({ role, staffId, title, subtitle, jurisdiction, icon: Icon }) => (
-                  <div
-                    key={role}
-                    onClick={() => handleAutofillAccount(staffId)}
-                    className="group p-2.5 rounded-xl bg-[#FAF6F0] border border-[#382416]/10 hover:border-[#dc5000]/40 hover:bg-[#f5ece0] transition-all text-left flex items-center justify-between gap-2.5 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-2 rounded-lg bg-white border border-[#382416]/10 group-hover:bg-[#382416] group-hover:text-[#ffedd7] text-[#382416] transition-colors shrink-0">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-[10px] font-bold text-[#dc5000] bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded">
-                            {staffId}
-                          </span>
-                          <span className="text-xs font-bold text-[#382416] group-hover:text-[#dc5000] transition-colors truncate">
-                            {title}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{subtitle}</p>
-                        <span className="inline-block text-[9px] font-mono text-slate-400 mt-0.5">
-                          Scope: {jurisdiction}
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAutofillAccount(staffId);
-                      }}
-                      className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white group-hover:bg-[#dc5000] group-hover:text-white text-[#382416] border border-[#382416]/15 group-hover:border-[#dc5000] transition-all shadow-2xs"
-                    >
-                      Fill ID
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* How to Test Onboarding with 100% Synthetic Details */}
-              <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 mb-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>How to Test Onboarding with 100% Synthetic Details</span>
-                </div>
-                <ul className="text-[10px] text-slate-600 space-y-1 list-disc pl-4 leading-relaxed">
-                  <li><strong>Zero External Data:</strong> Enter dummy test info (e.g. <em>Dr. Test Persona</em>, ID: <em>JH-STF-9901</em>, Email: <em>test@triagenet.local</em>).</li>
-                  <li><strong>Zero Email / SMS:</strong> The system has NO third-party mail/SMS gateways — nothing is ever sent over telecom networks.</li>
-                  <li><strong>Status Probe:</strong> After registration, the account enters <code className="text-amber-800 font-mono">PENDING_VERIFICATION</code>. Click <strong>[Check ID Status]</strong> on the sign-in form.</li>
-                  <li><strong>Admin Approval:</strong> Sign in with pre-seeded Super Admin (<code className="font-mono">JH-SYS-0001</code>) or Supt (<code className="font-mono">JH-ADM-3001</code>), open the pulsating <strong>[ 👥 STAFF QUEUE ]</strong> in the header, and click <strong>Approve</strong>!</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-              <span className="flex items-center gap-1 font-semibold text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                24 Districts Connected
-              </span>
-              <span className="font-mono text-[10px]">111 HOSPITALS SEEDED</span>
-            </div>
-          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

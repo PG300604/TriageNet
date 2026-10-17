@@ -158,9 +158,15 @@ export const ShiftLockModal: React.FC = () => {
             End Shift & Handover
           </button>
 
-          <span className="text-[10px] font-mono text-slate-500">
-            [INSTANT 1-SEC UNLOCK]
-          </span>
+          <button
+            type="button"
+            onClick={() => handleUnlock('1234')}
+            className="text-[10px] font-mono text-[#ea580c] hover:text-[#ffedd7] bg-[#ea580c]/10 hover:bg-[#ea580c]/20 border border-[#ea580c]/30 px-2 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+            title="Instant unlock with default Shift PIN (1234)"
+          >
+            <KeyRound className="size-3" />
+            PIN: 1234 [QUICK UNLOCK]
+          </button>
         </div>
       </div>
     </div>

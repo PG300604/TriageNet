@@ -98,6 +98,73 @@
 
 ---
 
+---
+
+## 🔮 Phase 10.5: High-Fidelity 3D Ambulance, Swiggy/Domino's Road Navigation & Dijkstra Patient Flow (Current)
+
+### 1. High-Fidelity 3D Isometric Ambulance Van Model
+- Replaces generic box markers with an authentic isometric emergency ambulance van silhouette:
+  - White emergency chassis with high-visibility fluorescent yellow and orange/green **Battenburg retroreflective checkerboard markings**.
+  - Dual alternating red and blue LED strobe lightbar with emergency pulsing light halo.
+  - Forward headlights projecting dual yellow conical illumination beams directly onto the road surface.
+  - Tinted windshield, side mirrors, medical cross emblem, and rear patient compartment doors.
+  - Directional heading rotation strictly aligned with road segment tangents.
+
+### 2. Swiggy / Domino's Style Road-Snapped Navigation & Path Refreshing
+- **Real Road Polyline Snapping**: Vehicle coordinates strictly traverse real OpenRouteService / OSRM highway coordinates, eliminating straight-line "air flying".
+- **Dynamic Path Consuming**: As the ambulance moves along the road, the traveled path behind it fades out or updates, while the remaining path ahead stays vibrantly highlighted in emergency traffic color (green/amber/red/green-wave cyan).
+- **Traffic-Aware Multi-Corridor & Specialist Diversion Algorithm**:
+  - Compares Primary Highway (e.g. NH-33 with toll queue) vs Low-Traffic Outer Bypass (Ring Road).
+  - Evaluates alternative hospitals with equivalent ready surgical specialists if the primary hospital's corridor suffers severe traffic gridlock.
+
+### 3. Animated Dijkstra Patient Flow Telemetry
+- Animated particle flow waves and glowing pulse packets traveling along transfer edges from hospital to hospital in the SVG Dijkstra topology graph.
+- Real-time patient transfer badges displaying active clinical priority and remaining transit ETA.
+
+---
+
+## 🔮 Phase 11: Unified Multi-Role Flutter Companion Mobile Application (`mobile/`)
+
+- **Single Mobile Codebase**: Unified Flutter (Dart) monorepo inside `mobile/`.
+- **Role-Based Dynamic Redirection**:
+  - **108 Ambulance Field Crew**: Live onboard vitals entry (GCS, SpO2, BP, HR), turn-by-turn road navigation, 108 Green Wave siren preemption, trauma bay pre-alerting.
+  - **Emergency Triage Nurse**: Bedside intake, ML vital sign scoring, bed allocation confirmation, ward shortage reporting.
+  - **Medical Superintendent & Hospital Admin**: Real-time ward capacity, ICU meters, shortage requisitions, department configuration.
+  - **District CMO**: District health oversight, inter-facility transfer authorizations, emergency grant releases.
+  - **Super Admin**: Statewide macro GIS map and state health statistics.
+- **Offline Capabilities**: SQLite / Drift local caching for zero-connectivity rural Jharkhand blocks.
+
+---
+
+## 🔮 Phase 12: Dual-Mode Platform Architecture (Demo Test Mode vs Clean Production Release)
+
+- **Mode A: Demonstration / Test Mode (Permanent Local & Showcase Link)**:
+  - Bundled with pre-fetched simulation data (79 hospitals, mock patients, pre-loaded transfers).
+  - Director's Control Center (`/control`) enabled for remote video recording and evaluator walkthroughs.
+  - Hosted at a permanent test link on GitHub for live interactive demonstration.
+- **Mode B: Clean Production Release (GitHub Releases)**:
+  - Official production distribution published on GitHub Releases.
+  - **Zero mock patients or fake shortage records**: Starts with a clean relational ledger.
+  - **Permanent Base Geography**: Pre-seeded with 111 authentic Jharkhand government hospital coordinates, tiers, and district administrative boundaries.
+  - **Self-Service Institutional Onboarding**:
+    - Each hospital and clinician self-registers their official credentials and license numbers.
+    - Super Admin verifies institutional accounts.
+    - Medical Superintendents configure wards, departments, and ICU bed capacities.
+    - Persistent PostgreSQL JPA storage with full enterprise audit logging.
+
+---
+
+## 🔮 Phase 13: Mobile App Downloads Portal & In-App OTA Update Engine
+
+- **Web App Downloads Portal (`/downloads`)**:
+  - Dedicated download section on the TriageNet website offering Android APK downloads (`triagenet-companion.apk`).
+  - Architecture-specific packages (ARM64, ARMv7, x86_64) with cryptographic SHA-256 checksums and mobile QR code.
+- **In-App OTA Update Engine**:
+  - Companion app periodically polls `/api/app/version`.
+  - Non-intrusive in-app update notification banner alerting frontline workers to download and install new releases.
+
+---
+
 ## 🚀 Strategic Multi-Phase Roadmap Overview
 
 | Phase | Title | Focus & Deliverables | Status |
@@ -106,19 +173,22 @@
 | **Phase 9.2** | Official Staff ID & Dual-Control Onboarding | `JH-STF-XXXX` identifier, probe endpoint, Medical Superintendent verification queue | ✅ Completed |
 | **Phase 9.3** | UI/UX Modernization & Doctor Availability | Plus Jakarta Sans typography, Boltshift KPIs, Globetrans Map HUD, Doctor Roster | ✅ Completed |
 | **Phase 9.4** | Clinician & Doctor Profile Customization | Individual editable profile cards, cross-user inspection, user-customizable credentials & tactile parameters | ✅ Completed |
-| **Phase 9.5** | AI Predictive Shortage & Proactive Pre-Fetch | Bottom-up shortage incident logging, AI pre-fetch recommendations, triage queue insight alerts | ✅ Architecture Embedded |
+| **Phase 9.5** | AI Predictive Shortage & Proactive Pre-Fetch | Bottom-up shortage incident logging, AI pre-fetch recommendations, triage queue insight alerts | ✅ Completed |
 | **Phase 9.6** | GIS Map Overhaul, Multi-Ambulance Fleet & 3-Tier Inventory | Real GPS hospital positioning, surge capacity coloring, 6-unit ALS/BLS fleet command, role-scoped inventory governance | ✅ Completed |
-| **Sprint 10** | Security Hardening & Patchworks (Hermes Audit B1-B5) | Dynamic dev CSPRNG JWT secret, Content-Security-Policy headers, hospital scoping, example secret cleansing | ✅ Completed |
-| **Phase 10** | FIDO2 / WebAuthn Hardware Security Keys | Physical YubiKey 5 NFC / USB-C & biometric fingerprint passkey support | 🔮 Planned |
-| **Phase 11** | Real-Time Bed & Oxygen IoT Telemetry | PSA oxygen plant telemetry, LMO pressure sensors, HL7/FHIR ventilator polling | 🔮 Planned |
-| **Phase 12** | 108 Ambulance Dedicated Field Mobile App | Flutter/React Native PWA, `< 2KB` payload, offline SQLite queue, glove-friendly UI | 🔮 Planned |
-| **Phase 13** | W3C Web Push & Sound Beacon Sirens | Zero-SMS native browser push notifications, acoustic siren for incoming trauma | 🔮 Planned |
-| **Phase 14** | ABDM & ABHA National Health ID Linking | Ayushman Bharat 14-digit ABHA integration, consent-based emergency EHR retrieval | 🔮 Planned |
+| **Phase 10.1** | Director Control Center (`/control`) & Production UI Polish | Remote broadcast orchestrator for zero-clutter OBS video recording | ✅ Completed |
+| **Phase 10.2** | AI Accident Blackspots & Doctor Roster Matching | 5 Jharkhand blackspots, doctor readiness (Ready/OT/None), 1st/2nd/3rd best hospital options | ✅ Completed |
+| **Phase 10.3** | 108 Ambulance EMT In-Transit Mobile Companion | Mobile paramedic terminal (`/ambulance`), live field vitals entry, zero-latency broadcast sync | ✅ Completed |
+| **Phase 10.5** | High-Fidelity 3D Vehicle, Road Snapping & Dijkstra Flow | Realistic isometric ambulance van, Swiggy/Domino's road path, animated patient flow particles | 🚀 Implementing Now |
+| **Phase 11** | Unified Multi-Role Flutter Companion App | Single Flutter codebase in `mobile/`, role-based dynamic redirection, offline SQLite sync | 📅 Next Phase |
+| **Phase 12** | OBS Video Capture via Director Control | Silent Tech Keynote video recording without cursor clutter | 📅 Next Phase |
+| **Phase 13** | Dual-Mode Architecture & Institutional Onboarding | Demo Test Mode vs Clean Production Release on GitHub Releases, self-service onboarding | 📅 Next Phase |
+| **Phase 14** | Web App Downloads Portal & OTA Update Engine | Website APK download portal, in-app update notifications & OTA checks | 📅 Final Phase |
 
 ---
 
 ## 🛡️ Architectural Principles
-1. **Separation of Concerns**: High-level station command web dashboards are reserved for leadership (Super Admin, District CMO, Hospital Admin, ED Triage Lead, 108 Dispatcher); downstream routine mobile tasks are relegated to dedicated mobile apps.
-2. **Zero Plaintext Secrets**: All sensitive identifiers and credentials must remain cryptographically hashed.
-3. **No Breaking Telemetry**: Profile inspection must be non-blocking and zero-latency during emergency mass-casualty triage.
-4. **Proactive Over Reactive Logistics**: Equipment and beds must be mobilized based on predictive AI shortage telemetry *before* triage bays reach critical saturation.
+1. **Separation of Concerns**: High-level station command web dashboards are reserved for leadership; routine frontline tasks run on the unified Flutter mobile companion app.
+2. **Zero Plaintext Secrets**: All sensitive identifiers and credentials remain cryptographically hashed.
+3. **No Breaking Telemetry**: Real-time patient telemetry streaming uses zero-latency browser `BroadcastChannel` and Redis pub/sub.
+4. **Proactive Over Reactive Logistics**: Equipment and beds are mobilized based on predictive AI shortage telemetry before triage bays reach critical saturation.
+

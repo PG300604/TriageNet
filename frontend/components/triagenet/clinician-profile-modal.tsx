@@ -392,7 +392,7 @@ export function ClinicianProfileModal({
                       Cryptographically Sealed Clinical Identity
                     </span>
                     <p className="text-[11px] text-stone-400 leading-relaxed font-mono">
-                      SHA256: 9b4d8e2... Verified by Government of Jharkhand Health Command
+                      SHA256: 9b4d8e2... Verified by TriageNet Institutional Authority
                     </p>
                   </div>
                 </div>

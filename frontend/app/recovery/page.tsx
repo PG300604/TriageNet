@@ -392,7 +392,7 @@ export default function AccountRecoveryPage() {
                   <UserCheck className="h-4 w-4 text-blue-600" />
                   Dual-Control Emergency Clinical Escrow Protocol
                 </p>
-                If an on-duty clinician has lost both their phone authenticator and 12-word recovery sheet, they must present their physical government medical badge to the on-duty <strong>Medical Superintendent</strong> or <strong>District CMO</strong>. The CMO can authorize an emergency 15-minute clinical shift bypass.
+                If an on-duty clinician has lost both their phone authenticator and 12-word recovery sheet, they must present their physical clinician ID badge to the on-duty <strong>Medical Superintendent</strong> or <strong>District CMO</strong>. The CMO can authorize an emergency 15-minute clinical shift bypass.
               </div>
 
               <form onSubmit={handleCmoEscrow} className="space-y-4">
@@ -417,7 +417,7 @@ export default function AccountRecoveryPage() {
                     rows={2}
                     value={escrowReason}
                     onChange={(e) => setEscrowReason(e.target.value)}
-                    placeholder="Verified government medical registration in person. Phone lost during trauma ambulance transit."
+                    placeholder="Verified institutional medical registration in person. Phone lost during trauma ambulance transit."
                     className="w-full p-3 bg-[#FAF6F0] border border-[#382416]/20 rounded-xl text-xs font-medium text-[#382416] focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>

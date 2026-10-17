@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   type TriageState,
   type Hospital,
@@ -29,6 +29,12 @@ import {
   Sparkles,
   Clock,
   TrendingUp,
+  RefreshCw,
+  Info,
+  X,
+  Coins,
+  HelpCircle,
+  ExternalLink,
 } from 'lucide-react'
 import {
   SupplyApprovalPillModal,
@@ -104,6 +110,32 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
   const [inspectHospital, setInspectHospital] = useState<Hospital | null>(null)
   const [logShortageModalOpen, setLogShortageModalOpen] = useState(false)
   const [lastEventToast, setLastEventToast] = useState<string | null>(null)
+
+  // Role-Based Manual Data Entry Modal States
+  // 1. Super Admin: New GeM Contract Deal
+  const [newGeMModalOpen, setNewGeMModalOpen] = useState(false)
+  const [gemItemName, setGemItemName] = useState('Philips Respironics V60 Ventilators')
+  const [gemSpec, setGemSpec] = useState('Non-invasive ICU & High Flow BiPAP Resuscitation')
+  const [gemContractRate, setGemContractRate] = useState('₹8.40 L')
+  const [gemMarketRate, setGemMarketRate] = useState('₹11.90 L')
+  const [gemQuantity, setGemQuantity] = useState(60)
+  const [gemSupplier, setGemSupplier] = useState('Philips Medical Systems India (GeM-L1)')
+
+  // 2. District CMO: Emergency District Requisition
+  const [cmoRequisitionModalOpen, setCmoRequisitionModalOpen] = useState(false)
+  const [cmoTargetHospId, setCmoTargetHospId] = useState(hospitals[0]?.id || '')
+  const [cmoResourceType, setCmoResourceType] = useState('Intensive Care Ventilator Units')
+  const [cmoQuantity, setCmoQuantity] = useState(4)
+  const [cmoPriority, setCmoPriority] = useState<'P1_CRITICAL' | 'P2_URGENT' | 'P3_ROUTINE'>('P1_CRITICAL')
+  const [cmoJustification, setCmoJustification] = useState('Surge in acute hypoxemic respiratory cases exceeding active ICU buffer')
+
+  // 3. Hospital Superintendent: Add/Reconfigure Ward Care Bays
+  const [wardModalOpen, setWardModalOpen] = useState(false)
+  const [wardDeptName, setWardDeptName] = useState('Trauma Resuscitation Bay 2')
+  const [wardCategory, setWardCategory] = useState<'Critical Care' | 'Emergency' | 'Inpatient' | 'Pediatric'>('Critical Care')
+  const [wardBeds, setWardBeds] = useState(12)
+  const [wardVents, setWardVents] = useState(4)
+  const [wardBudgetLakhs, setWardBudgetLakhs] = useState(35)
 
   // AI Predictive Telemetry State
   const [shortageReports, setShortageReports] = useState<ShortageIncidentReport[]>(INITIAL_SHORTAGE_INCIDENTS)
@@ -369,10 +401,16 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       .sort((a, b) => occupancyRatio(b.beds) - occupancyRatio(a.beds))
   }, [districtHospitals])
 
+  // Dynamic State Health Budget Pool
+  const [totalFiscalPoolCr, setTotalFiscalPoolCr] = useState<number>(28.5)
+  const [contingencyReserveCr, setContingencyReserveCr] = useState<number>(6.4)
+  const [disbursedBudgetCr, setDisbursedBudgetCr] = useState<number>(22.1)
+  const [inflowModalOpen, setInflowModalOpen] = useState<boolean>(false)
+
   // Aggregate metrics
-  const totalStateBudgetCr = 28.5
-  const releasedStateBudgetCr = districtRecords.reduce((acc, d) => acc + d.releasedBudgetCr, 0)
-  const stateReserveCr = Math.round((totalStateBudgetCr - releasedStateBudgetCr) * 100) / 100
+  const totalStateBudgetCr = totalFiscalPoolCr
+  const releasedStateBudgetCr = disbursedBudgetCr
+  const stateReserveCr = contingencyReserveCr
   const totalBeds = hospitals.reduce((acc, h) => acc + h.beds.total, 0)
   const totalBedsUsed = hospitals.reduce((acc, h) => acc + h.beds.used, 0)
   const totalIcuBeds = hospitals.reduce((acc, h) => acc + h.icuBeds.total, 0)
@@ -384,6 +422,73 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
   }, [hospitals, userHospitalId])
 
   // --- REQUISITION & TELEMETRY ACTIONS ---
+
+  // Refetch and replenish budget from Ayushman Bharat recoveries and GeM savings
+  const handleReplenishBudget = () => {
+    const inflow = 2.5
+    setContingencyReserveCr((prev) => Math.round((prev + inflow) * 100) / 100)
+    setTotalFiscalPoolCr((prev) => Math.round((prev + inflow) * 100) / 100)
+    const toast = `[TREASURY REPLENISHED] Refetched +₹2.50 Cr into State Health Contingency Reserve from Ayushman Bharat PMJAY claim recoveries and GeM bulk procurement savings!`
+    setLastEventToast(toast)
+    setAuditLogs((prev) => [
+      { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: toast, tier: 'State Treasury' },
+      ...prev,
+    ])
+  }
+
+  // Inject a specific statutory treasury inflow tranche
+  const handleInjectSpecificInflow = (streamName: string, amountCr: number, statutoryCode: string) => {
+    setContingencyReserveCr((prev) => Math.round((prev + amountCr) * 100) / 100)
+    setTotalFiscalPoolCr((prev) => Math.round((prev + amountCr) * 100) / 100)
+    const toast = `[STATUTORY INFLOW] +₹${amountCr.toFixed(2)} Cr credited from ${streamName} (${statutoryCode}). Contingency Reserve updated to ₹${Math.round((contingencyReserveCr + amountCr) * 100) / 100} Cr.`
+    setLastEventToast(toast)
+    setAuditLogs((prev) => [
+      { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: toast, tier: 'Treasury Escrow' },
+      ...prev,
+    ])
+  }
+
+  // Handle procurement deal with strict State Health Budget deduction
+  const handleProcureDeal = (deal: BulkProcurementDeal) => {
+    const dealBatches: Record<string, { batch: number; costCr: number }> = {
+      'DEAL-VENTILATORS': { batch: 5, costCr: 0.62 }, // 5 units @ 12.5L = 62.5L = 0.62 Cr
+      'DEAL-ICU-BEDS': { batch: 10, costCr: 0.28 }, // 10 beds @ 2.85L = 28.5L = 0.28 Cr
+      'DEAL-PSA-O2': { batch: 1, costCr: 0.18 }, // 1 plant @ 18L = 18L = 0.18 Cr
+      'DEAL-TRAUMA-KITS': { batch: 250, costCr: 0.05 }, // 250 kits @ 4,500 = 11.25L = 0.05 Cr
+    }
+
+    const config = dealBatches[deal.id] || { batch: 10, costCr: 0.25 }
+
+    if (contingencyReserveCr < config.costCr) {
+      const errorToast = `[BUDGET DEFICIT] Insufficient Contingency Reserve (₹${contingencyReserveCr.toFixed(2)} Cr remaining). Procuring ${config.batch} ${deal.unit} of ${deal.itemName} requires ₹${config.costCr.toFixed(2)} Cr. Refetch Treasury Inflow first!`
+      setLastEventToast(errorToast)
+      return
+    }
+
+    const nextReserve = Math.max(0, Math.round((contingencyReserveCr - config.costCr) * 100) / 100)
+    const nextDisbursed = Math.round((disbursedBudgetCr + config.costCr) * 100) / 100
+
+    setContingencyReserveCr(nextReserve)
+    setDisbursedBudgetCr(nextDisbursed)
+    setBulkDeals((prev) =>
+      prev.map((d) =>
+        d.id === deal.id
+          ? {
+              ...d,
+              availableStock: d.availableStock + config.batch,
+              totalProcured: d.totalProcured + config.batch,
+            }
+          : d
+      )
+    )
+
+    const successToast = `[GeM PROCUREMENT] Purchase Order PO-${Math.floor(1000 + Math.random() * 9000)} executed. +${config.batch} ${deal.unit} ${deal.itemName} delivered to State Reserve. ₹${config.costCr.toFixed(2)} Cr deducted from State Health Contingency Reserve. Reserve remaining: ₹${nextReserve.toFixed(2)} Cr.`
+    setLastEventToast(successToast)
+    setAuditLogs((prev) => [
+      { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: successToast, tier: 'State Directorate' },
+      ...prev,
+    ])
+  }
 
   // Handle logging a bottom-up shortage incident by a frontline clinical officer
   const handleLogShortageSubmit = (report: ShortageIncidentReport) => {
@@ -432,6 +537,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       source: rec.sourceFacilityOrStore,
       destination: `${rec.targetFacilityName} (${rec.department})`,
       urgency: 'High P2',
+      sourceRecId: rec.id,
       items: [
         { label: 'Pre-Fetch Resource', value: `${rec.recommendedQuantity}x ${rec.recommendedItem}`, highlight: true },
         { label: 'Window', value: `< ${rec.preFetchWindowHours} Hours`, icon: 'box' },
@@ -445,6 +551,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
   // Tier 1 Action: Super Admin releases district healthcare grant
   const handleOpenDistrictGrantModal = (district: DistrictBudgetRecord) => {
     const grantAmountCr = district.status === 'CRITICAL_SURGE' ? 1.5 : 0.8
+    const projReserve = Math.round((contingencyReserveCr - grantAmountCr) * 100) / 100
 
     setActiveRequisition({
       id: `REQ-JH-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -453,6 +560,9 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
       source: 'Jharkhand State Health Directorate (Contingency Reserve)',
       destination: `${district.districtName} District Healthcare Pool`,
       urgency: district.status === 'CRITICAL_SURGE' ? 'Critical P1' : 'High P2',
+      grantAmountCr: grantAmountCr,
+      currentReserveCr: contingencyReserveCr,
+      projectedReserveCr: projReserve,
       items: [
         { label: 'Fiscal Grant', value: `₹${grantAmountCr.toFixed(2)} Cr`, icon: 'cash', highlight: true },
         { label: 'ICU Bed Quota', value: '+12 Beds', icon: 'icu' },
@@ -534,12 +644,18 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
     const nowStr = new Date().toLocaleTimeString()
 
     if (req.tier === 'STATE_GRANT') {
+      const grantAmount = req.grantAmountCr || (req.urgency === 'Critical P1' ? 1.5 : 0.8)
+      setContingencyReserveCr((prev) => Math.max(0, Math.round((prev - grantAmount) * 100) / 100))
+      setDisbursedBudgetCr((prev) => Math.round((prev + grantAmount) * 100) / 100)
       setDistrictRecords((prev) =>
         prev.map((d) => {
           if (req.destination.includes(d.districtName)) {
+            const nextReleased = Math.round((d.releasedBudgetCr + grantAmount) * 100) / 100
+            const nextTotal = Math.max(d.totalBudgetCr, nextReleased)
             return {
               ...d,
-              releasedBudgetCr: Math.min(d.totalBudgetCr, d.releasedBudgetCr + 1.5),
+              totalBudgetCr: nextTotal,
+              releasedBudgetCr: nextReleased,
               capacityLoadPct: Math.max(50, d.capacityLoadPct - 14),
               status: 'NOMINAL',
               pendingRequisitions: Math.max(0, d.pendingRequisitions - 1),
@@ -548,17 +664,25 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
           return d
         })
       )
-      const toast = `[STATE CLEARANCE] Requisition ${req.id} authorized. ₹1.50 Cr released to ${req.destination}.`
+      const toast = `[STATE CLEARANCE] Requisition ${req.id} authorized. ₹${grantAmount.toFixed(2)} Cr released to ${req.destination}. Remaining contingency pool: ₹${Math.max(0, Math.round((contingencyReserveCr - grantAmount) * 100) / 100).toFixed(2)} Cr.`
       setLastEventToast(toast)
       setAuditLogs((prev) => [
         { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: nowStr, text: toast, tier: 'State Directorate' },
         ...prev,
       ])
     } else if (req.tier === 'DISTRICT_TRANSFER') {
+      // Remove authorized proposal from predictive recommendations
+      if (req.sourceRecId) {
+        setPredictiveRecs((prev) => prev.filter((r) => r.id !== req.sourceRecId))
+      } else if (req.id.startsWith('REQ-PREFETCH-')) {
+        setPredictiveRecs((prev) =>
+          prev.filter((r) => !req.destination.includes(r.targetFacilityName))
+        )
+      }
       if (onRunAiSupplyDispatch) {
         onRunAiSupplyDispatch()
       }
-      const toast = `[DISTRICT CMO CLEARANCE] Requisition ${req.id} executed. Supplies transferred to ${req.destination}. Capacity relief: -${req.reliefPct}%.`
+      const toast = `[PRE-FETCH DISPATCHED] Requisition ${req.id} executed. Supplies authorized and dispatched to ${req.destination}. Capacity relief: -${req.reliefPct || 12}%.`
       setLastEventToast(toast)
       setAuditLogs((prev) => [
         { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: nowStr, text: toast, tier: 'District CMO' },
@@ -636,6 +760,634 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         officerRole={user?.roleTitle || 'Clinical Triage Officer'}
         onSubmitShortage={handleLogShortageSubmit}
       />
+
+      {/* STATUTORY TREASURY INFLOW SOURCES MODAL */}
+      <AnimatePresence>
+        {inflowModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-2xl rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl text-stone-900 space-y-5"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
+                    <Landmark className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#382416] flex items-center gap-2">
+                      State Health Budget & Statutory Inflow Streams
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      State Health Infrastructure Directorate (Modeled for Jharkhand) · Escrow Tranche Telemetry
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInflowModalOpen(false)}
+                  className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Pool Overview Bar */}
+              <div className="grid grid-cols-3 gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-3.5 text-xs font-mono">
+                <div>
+                  <span className="text-[10px] text-stone-500 uppercase block font-semibold">Total Fiscal Pool</span>
+                  <span className="text-base font-extrabold text-[#382416]">₹{totalFiscalPoolCr.toFixed(2)} Cr</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-stone-500 uppercase block font-semibold">Disbursed To Date</span>
+                  <span className="text-base font-extrabold text-stone-700">₹{disbursedBudgetCr.toFixed(2)} Cr</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-orange-800 uppercase block font-semibold">Remaining Contingency</span>
+                  <span className="text-base font-extrabold text-orange-700">₹{contingencyReserveCr.toFixed(2)} Cr</span>
+                </div>
+              </div>
+
+              {/* Inflow Streams Explanations & Tranche Triggers */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-700">
+                    Statutory Revenue & Central Fund Inflow Channels
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    3 Active Channels
+                  </span>
+                </div>
+
+                {/* Channel 1: National Health Mission (NHM) */}
+                <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 space-y-2 hover:border-indigo-300 transition-colors">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="max-w-md">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[#382416]">1. National Health Mission (NHM) Flexible Tranche</span>
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded">
+                          Central Grant (60:40)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-600 mt-0.5">
+                        Ministry of Health &amp; Family Welfare (MoHFW) quarterly programmatic release for 24 high-burden aspirational districts. Funds hospital surge beds, oxygen infrastructure &amp; maternal critical care.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleInjectSpecificInflow('National Health Mission Tranche', 2.0, 'MoHFW-JH-NHM-2026')}
+                      className="rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs font-bold shadow-2xs cursor-pointer transition-colors shrink-0 flex items-center gap-1"
+                    >
+                      <PlusCircle className="size-3.5" />
+                      <span>Credit NHM Tranche (+₹2.00 Cr)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Channel 2: Ayushman Bharat PM-JAY Tertiary Hospital Claims */}
+                <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 space-y-2 hover:border-emerald-300 transition-colors">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="max-w-md">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[#382416]">2. Ayushman Bharat PM-JAY Claims Recovery</span>
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
+                          NHA Escrow Settlement
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-600 mt-0.5">
+                        National Health Authority (NHA) &amp; State Health Agency (SHA) adjudicated claims. Critical care procedures performed at RIMS, MGM, and SNMMCH reimburse care costs into the state emergency pool.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleInjectSpecificInflow('Ayushman Bharat PM-JAY Recoveries', 1.5, 'NHA-SHA-JH-PMJAY')}
+                      className="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs font-bold shadow-2xs cursor-pointer transition-colors shrink-0 flex items-center gap-1"
+                    >
+                      <PlusCircle className="size-3.5" />
+                      <span>Credit Ayushman Escrow (+₹1.50 Cr)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Channel 3: GeM Bulk Tender Savings & Supplier Liquidated Damages */}
+                <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 space-y-2 hover:border-amber-300 transition-colors">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="max-w-md">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-[#382416]">3. GeM Bulk Procurement Rebates &amp; SLA Recoveries</span>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded">
+                          GeM Master Rate Contracts
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-600 mt-0.5">
+                        Jharkhand Medical Services Procurement Corp (JMSCL) 25%–34% pre-negotiated volume discount rebates and supplier SLA default liquidated damages returned to the contingency reserve.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleInjectSpecificInflow('GeM Volume Rebate & SLA Penalty', 0.8, 'GeM-JMSCL-SAVINGS-JH')}
+                      className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 text-xs font-bold shadow-2xs cursor-pointer transition-colors shrink-0 flex items-center gap-1"
+                    >
+                      <PlusCircle className="size-3.5" />
+                      <span>Credit GeM Rebate (+₹0.80 Cr)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between border-t border-stone-200 pt-3">
+                <span className="text-[11px] text-stone-500 flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5 text-emerald-600" />
+                  All inflows audited under Jharkhand Public Financial Management System (JPFMS)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInflowModalOpen(false)}
+                  className="rounded-xl bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Close Telemetry
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 1. SUPER ADMIN: NEW GeM BULK PROCUREMENT RATE CONTRACT MODAL */}
+      <AnimatePresence>
+        {newGeMModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl text-stone-900 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#ea580c]">
+                    <ShieldCheck className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#382416]">
+                      Register New GeM Bulk Procurement Rate Contract
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Super Admin Authority · State Master Rate Contract Tender
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNewGeMModalOpen(false)}
+                  className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const rateNum = parseFloat(gemContractRate.replace(/[^0-9.]/g, '')) || 8.4
+                  const marketNum = parseFloat(gemMarketRate.replace(/[^0-9.]/g, '')) || 11.9
+                  const savings = Math.max(10, Math.round(((marketNum - rateNum) / marketNum) * 100))
+                  const newDeal: BulkProcurementDeal = {
+                    id: `DEAL-GEM-${Math.floor(100 + Math.random() * 900)}`,
+                    itemName: gemItemName,
+                    specification: gemSpec,
+                    contractRate: gemContractRate,
+                    openMarketRate: gemMarketRate,
+                    savingsPct: savings,
+                    totalProcured: gemQuantity,
+                    availableStock: gemQuantity,
+                    unit: 'Units',
+                    supplier: gemSupplier,
+                  }
+                  setBulkDeals((prev) => [newDeal, ...prev])
+                  setNewGeMModalOpen(false)
+                  const msg = `[GeM CONTRACT REGISTERED] Super Admin registered tender for ${gemQuantity}x ${gemItemName} via ${gemSupplier} (Tender: ${gemContractRate}).`
+                  setLastEventToast(msg)
+                  setAuditLogs((prev) => [
+                    { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: msg, tier: 'State Directorate' },
+                    ...prev,
+                  ])
+                }}
+                className="space-y-3.5 text-xs font-mono"
+              >
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Equipment / Medical Supply Name:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={gemItemName}
+                    onChange={(e) => setGemItemName(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Technical Specifications:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={gemSpec}
+                    onChange={(e) => setGemSpec(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      GeM Contract Rate:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={gemContractRate}
+                      onChange={(e) => setGemContractRate(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Open Market Rate:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={gemMarketRate}
+                      onChange={(e) => setGemMarketRate(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Total Batch Units:
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={gemQuantity}
+                      onChange={(e) => setGemQuantity(Number(e.target.value))}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Authorized GeM Supplier:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={gemSupplier}
+                      onChange={(e) => setGemSupplier(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-[#ea580c] focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setNewGeMModalOpen(false)}
+                    className="rounded-xl border border-stone-300 bg-white hover:bg-stone-100 px-3.5 py-2 text-xs font-bold text-stone-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-[#ea580c] hover:bg-[#d94e08] text-white px-4 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <PlusCircle className="size-3.5" />
+                    <span>Authorize GeM Contract</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. DISTRICT CMO: EMERGENCY DISTRICT REQUISITION MODAL */}
+      <AnimatePresence>
+        {cmoRequisitionModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl text-stone-900 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                    <FileCheck2 className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#382416]">
+                      Submit District Emergency Supply Requisition
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Chief Medical Officer ({userDistrict} District) · State Directorate Escalation
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCmoRequisitionModalOpen(false)}
+                  className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const targetH = hospitals.find((h) => h.id === cmoTargetHospId) || hospitals[0]
+                  setDistrictRecords((prev) =>
+                    prev.map((d) =>
+                      d.districtName.toLowerCase().includes(userDistrict.toLowerCase())
+                        ? { ...d, pendingRequisitions: d.pendingRequisitions + 1, status: 'CRITICAL_SURGE' }
+                        : d
+                    )
+                  )
+                  setCmoRequisitionModalOpen(false)
+                  const msg = `[CMO REQUISITION FILED] Requisition #REQ-JH-2026-${Math.floor(100 + Math.random() * 900)} submitted by CMO ${userDistrict} for ${cmoQuantity}x ${cmoResourceType} at ${targetH.name}.`
+                  setLastEventToast(msg)
+                  setAuditLogs((prev) => [
+                    { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: msg, tier: 'District CMO' },
+                    ...prev,
+                  ])
+                }}
+                className="space-y-3.5 text-xs font-mono"
+              >
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Target District Hospital:
+                  </label>
+                  <select
+                    value={cmoTargetHospId}
+                    onChange={(e) => setCmoTargetHospId(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-indigo-600 focus:outline-hidden"
+                  >
+                    {districtHospitals.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name} (Load: {Math.round(occupancyRatio(h.beds) * 100)}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Resource Category:
+                    </label>
+                    <select
+                      value={cmoResourceType}
+                      onChange={(e) => setCmoResourceType(e.target.value)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-indigo-600 focus:outline-hidden"
+                    >
+                      <option value="Intensive Care Ventilator Units">Intensive Care Ventilators</option>
+                      <option value="Motorized Acute ICU Beds">Motorized Acute ICU Beds</option>
+                      <option value="Liquid Oxygen Cryogenic Cylinders">Liquid O2 Cylinders (D-Type)</option>
+                      <option value="Trauma Surgical Intervention Kits">Trauma Surgical Intervention Kits</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Requisition Quantity:
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="50"
+                      value={cmoQuantity}
+                      onChange={(e) => setCmoQuantity(Number(e.target.value))}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-indigo-600 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Triage Urgency Level:
+                  </label>
+                  <select
+                    value={cmoPriority}
+                    onChange={(e) => setCmoPriority(e.target.value as any)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-indigo-600 focus:outline-hidden"
+                  >
+                    <option value="P1_CRITICAL">P1 Critical (Immediate Release &lt; 4 Hours)</option>
+                    <option value="P2_URGENT">P2 Urgent (&lt; 12 Hours Escalation)</option>
+                    <option value="P3_ROUTINE">P3 Buffer Maintenance (&lt; 48 Hours)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Clinical Justification:
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={cmoJustification}
+                    onChange={(e) => setCmoJustification(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-indigo-600 focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setCmoRequisitionModalOpen(false)}
+                    className="rounded-xl border border-stone-300 bg-white hover:bg-stone-100 px-3.5 py-2 text-xs font-bold text-stone-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white px-4 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <FileCheck2 className="size-3.5" />
+                    <span>Submit CMO Requisition</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 3. MEDICAL SUPERINTENDENT: ADD / RECONFIGURE WARD CARE BAYS MODAL */}
+      <AnimatePresence>
+        {wardModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="relative w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl text-stone-900 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                    <BedDouble className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#382416]">
+                      Add / Reconfigure Hospital Care Ward Bay
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      Medical Superintendent Authority · {activeHospital.name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWardModalOpen(false)}
+                  className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  const newDept: DepartmentAllocation = {
+                    id: `dept-${Date.now()}`,
+                    name: wardDeptName,
+                    short: wardDeptName.split(' ').map((w) => w[0]).join('').substring(0, 4).toUpperCase(),
+                    category: wardCategory,
+                    allocatedBeds: wardBeds,
+                    usedBeds: Math.round(wardBeds * 0.4),
+                    allocatedVents: wardVents,
+                    usedVents: Math.round(wardVents * 0.3),
+                    allocatedBudgetLakhs: wardBudgetLakhs,
+                    status: 'NOMINAL',
+                  }
+                  setDepartments((prev) => [newDept, ...prev])
+                  setWardModalOpen(false)
+                  const msg = `[WARD RECONFIGURED] Medical Superintendent registered ${wardDeptName} with ${wardBeds} beds and ${wardVents} ventilators at ${activeHospital.name}.`
+                  setLastEventToast(msg)
+                  setAuditLogs((prev) => [
+                    { id: `AUD-${Math.floor(100 + Math.random() * 900)}`, time: new Date().toLocaleTimeString(), text: msg, tier: 'Facility Supt' },
+                    ...prev,
+                  ])
+                }}
+                className="space-y-3.5 text-xs font-mono"
+              >
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                    Department / Ward Bay Name:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={wardDeptName}
+                    onChange={(e) => setWardDeptName(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-teal-600 focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Clinical Category:
+                    </label>
+                    <select
+                      value={wardCategory}
+                      onChange={(e) => setWardCategory(e.target.value as any)}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-teal-600 focus:outline-hidden"
+                    >
+                      <option value="Critical Care">Critical Care / ICU</option>
+                      <option value="Emergency">Emergency Trauma</option>
+                      <option value="Inpatient">General Inpatient</option>
+                      <option value="Pediatric">Pediatric / PICU</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Bed Capacity:
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="2"
+                      value={wardBeds}
+                      onChange={(e) => setWardBeds(Number(e.target.value))}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-teal-600 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Dedicated Ventilators:
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={wardVents}
+                      onChange={(e) => setWardVents(Number(e.target.value))}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-teal-600 focus:outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block mb-1">
+                      Allocated Budget (₹ Lakhs):
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="5"
+                      value={wardBudgetLakhs}
+                      onChange={(e) => setWardBudgetLakhs(Number(e.target.value))}
+                      className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 font-semibold text-stone-900 focus:border-teal-600 focus:outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setWardModalOpen(false)}
+                    className="rounded-xl border border-stone-300 bg-white hover:bg-stone-100 px-3.5 py-2 text-xs font-bold text-stone-700 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-teal-700 hover:bg-teal-600 text-white px-4 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <BedDouble className="size-3.5" />
+                    <span>Deploy Care Ward Bay</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
@@ -746,55 +1498,77 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
               </span>
             </div>
 
-            <div className="space-y-2.5">
-              {predictiveRecs.map((rec) => (
-                <div
-                  key={rec.id}
-                  className="p-3.5 rounded-xl border border-indigo-200 bg-white shadow-2xs space-y-2 hover:border-indigo-300 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-sm text-[#382416] flex items-center gap-1.5">
-                        <span>{rec.recommendedQuantity}x {rec.recommendedItem}</span>
-                      </div>
-                      <div className="text-[11px] text-stone-500">
-                        Target: <strong>{rec.targetFacilityName}</strong> ({rec.department})
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
-                        {rec.confidenceScore}% AI Match
-                      </span>
-                      <span className="text-[10px] font-bold text-orange-800 bg-orange-100 border border-orange-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Clock className="size-3" />
-                        &lt; {rec.preFetchWindowHours}h
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-stone-600 bg-stone-50 p-2.5 rounded-lg border border-stone-100 leading-relaxed">
-                    <span className="font-semibold text-stone-800">AI Deducement: </span>
-                    {rec.clinicalDriver}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 text-xs">
-                    <span className="text-[11px] text-stone-500">
-                      Source: <strong>{rec.sourceFacilityOrStore}</strong>
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleAuthorizePreFetch(rec)}
-                      className="rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <CheckCircle2 className="size-3.5" />
-                      <span>Authorize Pre-Fetch</span>
-                    </button>
-                  </div>
+            {predictiveRecs.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-emerald-200 bg-emerald-50/50 shadow-2xs text-center space-y-3">
+                <div className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 mx-auto">
+                  <CheckCircle2 className="size-5" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <h4 className="text-sm font-bold text-stone-900">All AI Pre-Fetch Proposals Executed</h4>
+                  <p className="text-xs text-stone-600 mt-1 max-w-sm mx-auto">
+                    Active surge inventory has been authorized and dispatched to facility emergency stores.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPredictiveRecs(INITIAL_PREDICTIVE_RECOMMENDATIONS)}
+                  className="rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Sparkles className="size-3.5" />
+                  <span>Synthesize Fresh Proposals</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {predictiveRecs.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="p-3.5 rounded-xl border border-indigo-200 bg-white shadow-2xs space-y-2 hover:border-indigo-300 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-sm text-[#382416] flex items-center gap-1.5">
+                          <span>{rec.recommendedQuantity}x {rec.recommendedItem}</span>
+                        </div>
+                        <div className="text-[11px] text-stone-500">
+                          Target: <strong>{rec.targetFacilityName}</strong> ({rec.department})
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                          {rec.confidenceScore}% AI Match
+                        </span>
+                        <span className="text-[10px] font-bold text-orange-800 bg-orange-100 border border-orange-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Clock className="size-3" />
+                          &lt; {rec.preFetchWindowHours}h
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-stone-600 bg-stone-50 p-2.5 rounded-lg border border-stone-100 leading-relaxed">
+                      <span className="font-semibold text-stone-800">AI Deducement: </span>
+                      {rec.clinicalDriver}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-xs">
+                      <span className="text-[11px] text-stone-500">
+                        Source: <strong>{rec.sourceFacilityOrStore}</strong>
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAuthorizePreFetch(rec)}
+                        className="rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        <span>Authorize Pre-Fetch</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Column 2: Frontline Shortage Telemetry Log Feed (Bottom-up recordings) */}
@@ -809,39 +1583,48 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
               </span>
             </div>
 
-            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
               {shortageReports.map((report) => (
                 <div
                   key={report.id}
-                  className="p-3 rounded-xl border border-stone-200 bg-stone-50/70 space-y-1.5 text-xs text-stone-700"
+                  className="p-3.5 rounded-xl border border-stone-200 bg-white shadow-2xs space-y-2 text-xs text-stone-700 hover:border-stone-300 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] font-bold text-stone-600 bg-stone-200 px-1.5 py-0.2 rounded">
+                      <span className="font-mono text-[10px] font-bold text-stone-600 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded">
                         {report.id}
                       </span>
                       <span className="font-bold text-stone-900">{report.facilityName}</span>
                     </div>
 
-                    <span className="font-mono text-[10px] text-stone-400">{report.timestamp}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                        -{report.quantityDeficit} {report.resourceType}
+                      </span>
+                      <span className="font-mono text-[10px] text-stone-400">{report.timestamp}</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                    <span className="font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                      Shortage: -{report.quantityDeficit} {report.resourceType}
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-stone-600">
+                    <span className="bg-stone-50 border border-stone-200 px-2 py-0.5 rounded-md font-medium">
+                      Dept: {report.department}
                     </span>
-                    <span className="text-stone-500">Dept: {report.department}</span>
-                    <span className="text-stone-400">·</span>
-                    <span className="text-stone-600">Impact: {report.patientImpactCount} Patients</span>
+                    <span className="bg-stone-50 border border-stone-200 px-2 py-0.5 rounded-md font-medium">
+                      Impact: {report.patientImpactCount} Queued Patients
+                    </span>
                   </div>
 
-                  <p className="text-stone-600 text-[11px] italic bg-white p-2 rounded border border-stone-200/80">
+                  <p className="text-stone-700 text-xs italic bg-stone-50/80 p-2.5 rounded-lg border border-stone-200/60 leading-relaxed">
                     &quot;{report.clinicalNotes}&quot;
                   </p>
 
-                  <div className="flex items-center justify-between text-[10px] text-stone-400 pt-0.5">
-                    <span>Reported by: <strong>{report.reportingOfficerName}</strong> ({report.reportingOfficerRole})</span>
-                    <span className="font-bold text-indigo-700">[ANALYZED BY AI]</span>
+                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-1 border-t border-stone-100">
+                    <span>
+                      Reported by: <strong className="text-stone-700">{report.reportingOfficerName}</strong> ({report.reportingOfficerRole})
+                    </span>
+                    <span className="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-[10px]">
+                      [ANALYZED BY AI]
+                    </span>
                   </div>
                 </div>
               ))}
@@ -857,23 +1640,49 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         <div className="space-y-6">
           {/* Statewide Macro Metrics Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Total Healthcare Reserve */}
-            <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-[#ea580c] to-[#c2410c] p-5 text-white shadow-md">
+            {/* Card 1: Available Unallocated Contingency Pool */}
+            <div className="rounded-2xl border border-orange-500/20 bg-gradient-to-br from-[#ea580c] to-[#c2410c] p-5 text-white shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-orange-100">
+                <span className="text-xs font-semibold uppercase tracking-wider text-orange-100 flex items-center gap-1.5">
+                  <Landmark className="size-3.5" />
                   State Health Budget
                 </span>
-                <div className="flex size-9 items-center justify-center rounded-full bg-white/20">
-                  <IndianRupee className="size-4 text-white" />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setInflowModalOpen(true)}
+                    title="Inspect statutory funding sources & breakdown"
+                    className="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[10px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Info className="size-3" />
+                    <span>Inflow Sources</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReplenishBudget}
+                    title="Refetch and replenish funds from Ayushman recoveries & GeM savings"
+                    className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-[10px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <RefreshCw className="size-3" />
+                    <span>+₹2.50 Cr</span>
+                  </button>
                 </div>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold tracking-tight">₹{totalStateBudgetCr.toFixed(2)} Cr</span>
-                <span className="text-xs font-medium text-orange-100">Total Fiscal Pool</span>
+                <span className="text-3xl font-extrabold tracking-tight">₹{contingencyReserveCr.toFixed(2)} Cr</span>
+                <span className="text-xs font-medium text-orange-100">Remaining Contingency</span>
               </div>
-              <p className="mt-2 text-xs text-orange-100/80">
-                ₹{releasedStateBudgetCr.toFixed(2)} Cr Disbursed · ₹{stateReserveCr.toFixed(2)} Cr Contingency Pool
+              <p className="mt-2 text-xs text-orange-100/90 flex items-center justify-between">
+                <span>₹{disbursedBudgetCr.toFixed(2)} Cr Disbursed</span>
+                <span>Pool: ₹{totalFiscalPoolCr.toFixed(2)} Cr</span>
               </p>
+              {/* Dynamic utilization progress meter */}
+              <div className="mt-2.5 h-1.5 w-full rounded-full bg-black/20 overflow-hidden">
+                <div
+                  className="h-full bg-white rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (disbursedBudgetCr / totalFiscalPoolCr) * 100)}%` }}
+                />
+              </div>
             </div>
 
             {/* Card 2: Acute Surge Deficit Districts */}
@@ -952,9 +1761,27 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                 </p>
               </div>
 
-              <span className="text-xs font-semibold text-stone-600 bg-stone-100 px-3 py-1 rounded-full border border-stone-200">
-                Jharkhand Health Directorate (24 Districts)
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInflowModalOpen(true)}
+                  className="rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <Info className="size-3 text-indigo-600" />
+                  <span>Funding Sources</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReplenishBudget}
+                  className="rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <RefreshCw className="size-3 text-emerald-600" />
+                  <span>Refetch Inflow (+₹2.50 Cr)</span>
+                </button>
+                <span className="text-xs font-semibold text-stone-600 bg-stone-100 px-3 py-1 rounded-full border border-stone-200">
+                  Jharkhand Health Directorate (24 Districts)
+                </span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -1057,9 +1884,19 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                 </p>
               </div>
 
-              <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
-                State Rate Contracts Active
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewGeMModalOpen(true)}
+                  className="rounded-xl bg-[#ea580c] hover:bg-[#d94e08] text-white px-3.5 py-1.5 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                >
+                  <PlusCircle className="size-3.5" />
+                  <span>Register GeM Contract Deal</span>
+                </button>
+                <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                  State Rate Contracts Active
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1097,16 +1934,11 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                     <span>Vendor: <strong>{deal.supplier}</strong></span>
                     <button
                       type="button"
-                      onClick={() => {
-                        setBulkDeals((prev) =>
-                          prev.map((d) => (d.id === deal.id ? { ...d, availableStock: d.availableStock + 10 } : d))
-                        )
-                        setLastEventToast(`Procured +10 units to State Bulk Reserve: ${deal.itemName}`)
-                      }}
-                      className="text-xs font-bold text-[#ea580c] hover:underline cursor-pointer flex items-center gap-1"
+                      onClick={() => handleProcureDeal(deal)}
+                      className="text-xs font-bold text-[#ea580c] hover:underline cursor-pointer flex items-center gap-1 bg-orange-50 border border-orange-200 hover:bg-orange-100 px-2.5 py-1 rounded-lg transition-colors shadow-2xs"
                     >
                       <PlusCircle className="size-3.5" />
-                      <span>Procure More</span>
+                      <span>Procure Batch</span>
                     </button>
                   </div>
                 </div>
@@ -1141,6 +1973,15 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                 </p>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setCmoRequisitionModalOpen(true)}
+              className="rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white px-3.5 py-2 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors self-start sm:self-auto"
+            >
+              <FileCheck2 className="size-3.5" />
+              <span>Submit District Emergency Requisition</span>
+            </button>
           </div>
 
           {/* District Fiscal Pool Summary */}
@@ -1408,9 +2249,19 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
                 </p>
               </div>
 
-              <span className="text-xs font-semibold text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">
-                Facility Total: ₹2.40 Cr Disbursed
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWardModalOpen(true)}
+                  className="rounded-xl bg-teal-700 hover:bg-teal-600 text-white px-3.5 py-1.5 text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                >
+                  <PlusCircle className="size-3.5" />
+                  <span>Add / Reconfigure Ward Bay</span>
+                </button>
+                <span className="text-xs font-semibold text-teal-800 bg-teal-100 px-3 py-1 rounded-full border border-teal-300">
+                  Facility Total: ₹2.40 Cr Disbursed
+                </span>
+              </div>
             </div>
 
             <div className="space-y-3">

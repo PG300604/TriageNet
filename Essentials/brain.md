@@ -63,6 +63,29 @@ This file serves as the standing, persistent context for the AI coding agent (**
   - **Master Assembly**: DaVinci Resolve Free (4K 60fps timeline, Text+ with motion blur, no watermarks, audio mixing).
 - **Explicit Non-Adoption**: Commercial watermark tools (e.g. Rotato free tier) are excluded to preserve production polish.
 
+### G. AI Automated Accident Hotspot & Dynamic Casualty Router Telemetry
+- **5 Authentic Jharkhand Highway Blackspots**: Ormanjhi NH-33 Toll Plaza (TBI/Neurosurgeon), Jharia Colliery Belt (CO Gas/Pulmonologist), Barhi GT Road Junction (Flail Chest/Trauma Surgeon), Bundu Valley Ghats (Spine Fracture/Ortho), Adityapur Industrial Complex (45% Burns/Plastic Surgeon).
+- **Multi-Criteria Doctor & Hospital Matching**: Evaluates on-duty doctor presence (`READY_TRAUMA_BAY`, `OCCUPIED_IN_OT`, `NOT_AVAILABLE`), ICU capacity, and real-time highway congestion delays.
+- **Tiered Triage Options**:
+  - **1st Best (Recommended Apex Facility)**: Definitive tertiary care with on-duty specialist present & ready in trauma bay.
+  - **2nd Best (Immediate Stabilization Fallback)**: Closer intermediate facility for airway, IV resuscitation, or chest tube decompression if patient decompensates in transit.
+  - **3rd Best (Alternative Apex Backup)**: Tertiary standby facility with contingency ICU capacity.
+- **Highway Traffic & 108 Green Wave Preemption**: Real highway traffic congestion delay modeling with dynamic 3D ambulance movement speeds (74 km/h under Green Wave preemption vs 24 km/h under Heavy gridlock).
+
+### H. 108 Ambulance EMT In-Transit Mobile Companion App (`/ambulance`)
+- Dedicated, mobile-optimized live telemetry terminal for 108 EMT Paramedics.
+- Live onboard patient vital sign entry (GCS slider, SpO2 %, Systolic BP, Heart Rate) and injury mechanism classification.
+- Real-time cross-tab/cross-device synchronization via `directorBridge` (BroadcastChannel API): vitals entered on a smartphone or tablet immediately reflect on the State Command Dashboard (`/dashboard`) and Director's Control (`/control`) in real-time.
+- One-touch 108 Green Wave Signal Preemption and Trauma Bay pre-alerting.
+
+### I. 3D Isometric Ambulance Van Model, Swiggy-Style Road Pathing & SVG Topology Flow
+- **3D Isometric Emergency Van Vehicle**: Custom 28x54px aerodynamic ambulance van SVG (`leaflet-map.tsx`) with retroreflective Battenburg yellow/green check livery, dual alternating red/blue LED strobe lightbars with pulsing radiant halos, forward-facing headlight cones shining on the road surface, medical cross `+`, 108 ALS badging, and realistic asphalt drop shadow.
+- **Swiggy / Domino's Road-Snapped Dynamic Pathing**: Vehicles follow authentic GPS highway coordinates (NH-33, GT Road, NH-20, Subarnarekha Expressway). Path dynamically splits into a dimmed gray dashed traveled trail behind the vehicle and an animated emergency traffic-colored corridor ahead with flowing directional chevrons.
+- **Hardware-Accelerated SVG Dijkstra Patient Flow**: Topology graph uses SVG `<animateMotion>` to stream continuous glowing patient flow waves and transfer particles between hospital nodes along active transfers and shortest-path corridors.
+- **Multi-Corridor Bypass Selection & AI Specialist Traffic Diversion**:
+  - Multi-corridor selection between Primary Highway and Express Ring Road Bypass with live distance/delay delta.
+  - Automatic Dynamic Specialist Diversion: If the primary route suffers >=10 min congestion, re-routes to the fastest alternative tertiary hospital with verified ready surgical specialists, saving critical minutes.
+
 ---
 
 ## 4. Non-Negotiable Core Engineering Principles
@@ -118,3 +141,10 @@ TriageNet/
 - The 111 authentic Jharkhand facilities across 24 districts.
 - The 6 RBAC user roles and their security permission model.
 - The Panacea SaaS design aesthetic and `#491205` brand palette.
+
+---
+
+## 7. Current Project State & Shipping Status (October 2026)
+
+- **Apple Keynote Video Release Completed**: Native 4K UHD 60FPS explainer video (ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4, 3840x2160, 60 FPS, 1:53 exact duration) with official Spring Boot branding and Java 17 LTS architecture.
+- **Tomorrow's Shipping Objective**: Final DevOps, Docker Compose containerization (Spring Boot 3.3, Next.js 15, PostgreSQL 16, Redis 7, Nginx), CI/CD verification, and public GitHub repository launch.

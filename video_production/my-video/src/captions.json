@@ -1,0 +1,1058 @@
+[
+  {
+    "text": "In critical trauma, minutes decide mortality.",
+    "startMs": 900,
+    "endMs": 4316,
+    "words": [
+      {
+        "word": "In",
+        "startMs": 900,
+        "endMs": 1469
+      },
+      {
+        "word": "critical",
+        "startMs": 1469,
+        "endMs": 2038
+      },
+      {
+        "word": "trauma,",
+        "startMs": 2038,
+        "endMs": 2608
+      },
+      {
+        "word": "minutes",
+        "startMs": 2608,
+        "endMs": 3177
+      },
+      {
+        "word": "decide",
+        "startMs": 3177,
+        "endMs": 3746
+      },
+      {
+        "word": "mortality.",
+        "startMs": 3746,
+        "endMs": 4316
+      }
+    ]
+  },
+  {
+    "text": "Across twenty-four rural districts, delayed response has cost countless lives.",
+    "startMs": 4266,
+    "endMs": 9419,
+    "words": [
+      {
+        "word": "Across",
+        "startMs": 4266,
+        "endMs": 4781
+      },
+      {
+        "word": "twenty-four",
+        "startMs": 4781,
+        "endMs": 5296
+      },
+      {
+        "word": "rural",
+        "startMs": 5296,
+        "endMs": 5811
+      },
+      {
+        "word": "districts,",
+        "startMs": 5811,
+        "endMs": 6327
+      },
+      {
+        "word": "delayed",
+        "startMs": 6327,
+        "endMs": 6842
+      },
+      {
+        "word": "response",
+        "startMs": 6842,
+        "endMs": 7357
+      },
+      {
+        "word": "has",
+        "startMs": 7357,
+        "endMs": 7873
+      },
+      {
+        "word": "cost",
+        "startMs": 7873,
+        "endMs": 8388
+      },
+      {
+        "word": "countless",
+        "startMs": 8388,
+        "endMs": 8903
+      },
+      {
+        "word": "lives.",
+        "startMs": 8903,
+        "endMs": 9419
+      }
+    ]
+  },
+  {
+    "text": "Until now.",
+    "startMs": 9420,
+    "endMs": 10988,
+    "words": [
+      {
+        "word": "Until",
+        "startMs": 9420,
+        "endMs": 10204
+      },
+      {
+        "word": "now.",
+        "startMs": 10204,
+        "endMs": 10988
+      }
+    ]
+  },
+  {
+    "text": "Introducing TriageNet.",
+    "startMs": 11600,
+    "endMs": 13790,
+    "words": [
+      {
+        "word": "Introducing",
+        "startMs": 11600,
+        "endMs": 12695
+      },
+      {
+        "word": "TriageNet.",
+        "startMs": 12695,
+        "endMs": 13790
+      }
+    ]
+  },
+  {
+    "text": "The unified real-time emergency care grid orchestrating statewide trauma response.",
+    "startMs": 13740,
+    "endMs": 19140,
+    "words": [
+      {
+        "word": "The",
+        "startMs": 13740,
+        "endMs": 14280
+      },
+      {
+        "word": "unified",
+        "startMs": 14280,
+        "endMs": 14820
+      },
+      {
+        "word": "real-time",
+        "startMs": 14820,
+        "endMs": 15360
+      },
+      {
+        "word": "emergency",
+        "startMs": 15360,
+        "endMs": 15900
+      },
+      {
+        "word": "care",
+        "startMs": 15900,
+        "endMs": 16440
+      },
+      {
+        "word": "grid",
+        "startMs": 16440,
+        "endMs": 16980
+      },
+      {
+        "word": "orchestrating",
+        "startMs": 16980,
+        "endMs": 17520
+      },
+      {
+        "word": "statewide",
+        "startMs": 17520,
+        "endMs": 18060
+      },
+      {
+        "word": "trauma",
+        "startMs": 18060,
+        "endMs": 18600
+      },
+      {
+        "word": "response.",
+        "startMs": 18600,
+        "endMs": 19140
+      }
+    ]
+  },
+  {
+    "text": "Engineered with modern distributed architecture.",
+    "startMs": 20300,
+    "endMs": 23445,
+    "words": [
+      {
+        "word": "Engineered",
+        "startMs": 20300,
+        "endMs": 20929
+      },
+      {
+        "word": "with",
+        "startMs": 20929,
+        "endMs": 21558
+      },
+      {
+        "word": "modern",
+        "startMs": 21558,
+        "endMs": 22187
+      },
+      {
+        "word": "distributed",
+        "startMs": 22187,
+        "endMs": 22816
+      },
+      {
+        "word": "architecture.",
+        "startMs": 22816,
+        "endMs": 23445
+      }
+    ]
+  },
+  {
+    "text": "High-throughput Spring Boot 3 reactive microservices, Redis in-memory queues, and multi-district Docker orchestration.",
+    "startMs": 23395,
+    "endMs": 30953,
+    "words": [
+      {
+        "word": "High-throughput",
+        "startMs": 23395,
+        "endMs": 23976
+      },
+      {
+        "word": "Spring",
+        "startMs": 23976,
+        "endMs": 24557
+      },
+      {
+        "word": "Boot",
+        "startMs": 24557,
+        "endMs": 25139
+      },
+      {
+        "word": "3",
+        "startMs": 25139,
+        "endMs": 25720
+      },
+      {
+        "word": "reactive",
+        "startMs": 25720,
+        "endMs": 26301
+      },
+      {
+        "word": "microservices,",
+        "startMs": 26301,
+        "endMs": 26883
+      },
+      {
+        "word": "Redis",
+        "startMs": 26883,
+        "endMs": 27464
+      },
+      {
+        "word": "in-memory",
+        "startMs": 27464,
+        "endMs": 28046
+      },
+      {
+        "word": "queues,",
+        "startMs": 28046,
+        "endMs": 28627
+      },
+      {
+        "word": "and",
+        "startMs": 28627,
+        "endMs": 29208
+      },
+      {
+        "word": "multi-district",
+        "startMs": 29208,
+        "endMs": 29790
+      },
+      {
+        "word": "Docker",
+        "startMs": 29790,
+        "endMs": 30371
+      },
+      {
+        "word": "orchestration.",
+        "startMs": 30371,
+        "endMs": 30953
+      }
+    ]
+  },
+  {
+    "text": "Powered by predictive machine learning.",
+    "startMs": 31900,
+    "endMs": 34526,
+    "words": [
+      {
+        "word": "Powered",
+        "startMs": 31900,
+        "endMs": 32425
+      },
+      {
+        "word": "by",
+        "startMs": 32425,
+        "endMs": 32950
+      },
+      {
+        "word": "predictive",
+        "startMs": 32950,
+        "endMs": 33475
+      },
+      {
+        "word": "machine",
+        "startMs": 33475,
+        "endMs": 34000
+      },
+      {
+        "word": "learning.",
+        "startMs": 34000,
+        "endMs": 34526
+      }
+    ]
+  },
+  {
+    "text": "The SeverityScorer evaluates vital shock vectors, classifying level-one trauma in one point four eight milliseconds.",
+    "startMs": 34476,
+    "endMs": 41976,
+    "words": [
+      {
+        "word": "The",
+        "startMs": 34476,
+        "endMs": 34976
+      },
+      {
+        "word": "SeverityScorer",
+        "startMs": 34976,
+        "endMs": 35476
+      },
+      {
+        "word": "evaluates",
+        "startMs": 35476,
+        "endMs": 35976
+      },
+      {
+        "word": "vital",
+        "startMs": 35976,
+        "endMs": 36476
+      },
+      {
+        "word": "shock",
+        "startMs": 36476,
+        "endMs": 36976
+      },
+      {
+        "word": "vectors,",
+        "startMs": 36976,
+        "endMs": 37476
+      },
+      {
+        "word": "classifying",
+        "startMs": 37476,
+        "endMs": 37976
+      },
+      {
+        "word": "level-one",
+        "startMs": 37976,
+        "endMs": 38476
+      },
+      {
+        "word": "trauma",
+        "startMs": 38476,
+        "endMs": 38976
+      },
+      {
+        "word": "in",
+        "startMs": 38976,
+        "endMs": 39476
+      },
+      {
+        "word": "one",
+        "startMs": 39476,
+        "endMs": 39976
+      },
+      {
+        "word": "point",
+        "startMs": 39976,
+        "endMs": 40476
+      },
+      {
+        "word": "four",
+        "startMs": 40476,
+        "endMs": 40976
+      },
+      {
+        "word": "eight",
+        "startMs": 40976,
+        "endMs": 41476
+      },
+      {
+        "word": "milliseconds.",
+        "startMs": 41476,
+        "endMs": 41976
+      }
+    ]
+  },
+  {
+    "text": "A mathematical data flow connects field telemetry directly to operating rooms with zero human friction.",
+    "startMs": 42700,
+    "endMs": 48982,
+    "words": [
+      {
+        "word": "A",
+        "startMs": 42700,
+        "endMs": 43118
+      },
+      {
+        "word": "mathematical",
+        "startMs": 43118,
+        "endMs": 43537
+      },
+      {
+        "word": "data",
+        "startMs": 43537,
+        "endMs": 43956
+      },
+      {
+        "word": "flow",
+        "startMs": 43956,
+        "endMs": 44375
+      },
+      {
+        "word": "connects",
+        "startMs": 44375,
+        "endMs": 44794
+      },
+      {
+        "word": "field",
+        "startMs": 44794,
+        "endMs": 45212
+      },
+      {
+        "word": "telemetry",
+        "startMs": 45212,
+        "endMs": 45631
+      },
+      {
+        "word": "directly",
+        "startMs": 45631,
+        "endMs": 46050
+      },
+      {
+        "word": "to",
+        "startMs": 46050,
+        "endMs": 46469
+      },
+      {
+        "word": "operating",
+        "startMs": 46469,
+        "endMs": 46888
+      },
+      {
+        "word": "rooms",
+        "startMs": 46888,
+        "endMs": 47306
+      },
+      {
+        "word": "with",
+        "startMs": 47306,
+        "endMs": 47725
+      },
+      {
+        "word": "zero",
+        "startMs": 47725,
+        "endMs": 48144
+      },
+      {
+        "word": "human",
+        "startMs": 48144,
+        "endMs": 48563
+      },
+      {
+        "word": "friction.",
+        "startMs": 48563,
+        "endMs": 48982
+      }
+    ]
+  },
+  {
+    "text": "Paramedics capture vital physiological signs with offline-first intake, streaming live telemetry and generating tamper-proof digital vouchers before transport begins.",
+    "startMs": 51600,
+    "endMs": 61290,
+    "words": [
+      {
+        "word": "Paramedics",
+        "startMs": 51600,
+        "endMs": 52110
+      },
+      {
+        "word": "capture",
+        "startMs": 52110,
+        "endMs": 52620
+      },
+      {
+        "word": "vital",
+        "startMs": 52620,
+        "endMs": 53130
+      },
+      {
+        "word": "physiological",
+        "startMs": 53130,
+        "endMs": 53640
+      },
+      {
+        "word": "signs",
+        "startMs": 53640,
+        "endMs": 54150
+      },
+      {
+        "word": "with",
+        "startMs": 54150,
+        "endMs": 54660
+      },
+      {
+        "word": "offline-first",
+        "startMs": 54660,
+        "endMs": 55170
+      },
+      {
+        "word": "intake,",
+        "startMs": 55170,
+        "endMs": 55680
+      },
+      {
+        "word": "streaming",
+        "startMs": 55680,
+        "endMs": 56190
+      },
+      {
+        "word": "live",
+        "startMs": 56190,
+        "endMs": 56700
+      },
+      {
+        "word": "telemetry",
+        "startMs": 56700,
+        "endMs": 57210
+      },
+      {
+        "word": "and",
+        "startMs": 57210,
+        "endMs": 57720
+      },
+      {
+        "word": "generating",
+        "startMs": 57720,
+        "endMs": 58230
+      },
+      {
+        "word": "tamper-proof",
+        "startMs": 58230,
+        "endMs": 58740
+      },
+      {
+        "word": "digital",
+        "startMs": 58740,
+        "endMs": 59250
+      },
+      {
+        "word": "vouchers",
+        "startMs": 59250,
+        "endMs": 59760
+      },
+      {
+        "word": "before",
+        "startMs": 59760,
+        "endMs": 60270
+      },
+      {
+        "word": "transport",
+        "startMs": 60270,
+        "endMs": 60780
+      },
+      {
+        "word": "begins.",
+        "startMs": 60780,
+        "endMs": 61290
+      }
+    ]
+  },
+  {
+    "text": "State dispatchers dynamically balance hospital assignment, matching patient acuity to available intensive care beds with ninety-nine point four percent precision.",
+    "startMs": 63300,
+    "endMs": 72518,
+    "words": [
+      {
+        "word": "State",
+        "startMs": 63300,
+        "endMs": 63760
+      },
+      {
+        "word": "dispatchers",
+        "startMs": 63760,
+        "endMs": 64221
+      },
+      {
+        "word": "dynamically",
+        "startMs": 64221,
+        "endMs": 64682
+      },
+      {
+        "word": "balance",
+        "startMs": 64682,
+        "endMs": 65143
+      },
+      {
+        "word": "hospital",
+        "startMs": 65143,
+        "endMs": 65604
+      },
+      {
+        "word": "assignment,",
+        "startMs": 65604,
+        "endMs": 66065
+      },
+      {
+        "word": "matching",
+        "startMs": 66065,
+        "endMs": 66526
+      },
+      {
+        "word": "patient",
+        "startMs": 66526,
+        "endMs": 66987
+      },
+      {
+        "word": "acuity",
+        "startMs": 66987,
+        "endMs": 67448
+      },
+      {
+        "word": "to",
+        "startMs": 67448,
+        "endMs": 67909
+      },
+      {
+        "word": "available",
+        "startMs": 67909,
+        "endMs": 68369
+      },
+      {
+        "word": "intensive",
+        "startMs": 68369,
+        "endMs": 68830
+      },
+      {
+        "word": "care",
+        "startMs": 68830,
+        "endMs": 69291
+      },
+      {
+        "word": "beds",
+        "startMs": 69291,
+        "endMs": 69752
+      },
+      {
+        "word": "with",
+        "startMs": 69752,
+        "endMs": 70213
+      },
+      {
+        "word": "ninety-nine",
+        "startMs": 70213,
+        "endMs": 70674
+      },
+      {
+        "word": "point",
+        "startMs": 70674,
+        "endMs": 71135
+      },
+      {
+        "word": "four",
+        "startMs": 71135,
+        "endMs": 71596
+      },
+      {
+        "word": "percent",
+        "startMs": 71596,
+        "endMs": 72057
+      },
+      {
+        "word": "precision.",
+        "startMs": 72057,
+        "endMs": 72518
+      }
+    ]
+  },
+  {
+    "text": "Along the highway corridor, green wave navigation clears traffic lights ahead of the ambulance, cutting transit time by forty-two percent.",
+    "startMs": 74100,
+    "endMs": 82233,
+    "words": [
+      {
+        "word": "Along",
+        "startMs": 74100,
+        "endMs": 74506
+      },
+      {
+        "word": "the",
+        "startMs": 74506,
+        "endMs": 74913
+      },
+      {
+        "word": "highway",
+        "startMs": 74913,
+        "endMs": 75319
+      },
+      {
+        "word": "corridor,",
+        "startMs": 75319,
+        "endMs": 75726
+      },
+      {
+        "word": "green",
+        "startMs": 75726,
+        "endMs": 76133
+      },
+      {
+        "word": "wave",
+        "startMs": 76133,
+        "endMs": 76539
+      },
+      {
+        "word": "navigation",
+        "startMs": 76539,
+        "endMs": 76946
+      },
+      {
+        "word": "clears",
+        "startMs": 76946,
+        "endMs": 77353
+      },
+      {
+        "word": "traffic",
+        "startMs": 77353,
+        "endMs": 77759
+      },
+      {
+        "word": "lights",
+        "startMs": 77759,
+        "endMs": 78166
+      },
+      {
+        "word": "ahead",
+        "startMs": 78166,
+        "endMs": 78573
+      },
+      {
+        "word": "of",
+        "startMs": 78573,
+        "endMs": 78979
+      },
+      {
+        "word": "the",
+        "startMs": 78979,
+        "endMs": 79386
+      },
+      {
+        "word": "ambulance,",
+        "startMs": 79386,
+        "endMs": 79793
+      },
+      {
+        "word": "cutting",
+        "startMs": 79793,
+        "endMs": 80199
+      },
+      {
+        "word": "transit",
+        "startMs": 80199,
+        "endMs": 80606
+      },
+      {
+        "word": "time",
+        "startMs": 80606,
+        "endMs": 81013
+      },
+      {
+        "word": "by",
+        "startMs": 81013,
+        "endMs": 81419
+      },
+      {
+        "word": "forty-two",
+        "startMs": 81419,
+        "endMs": 81826
+      },
+      {
+        "word": "percent.",
+        "startMs": 81826,
+        "endMs": 82233
+      }
+    ]
+  },
+  {
+    "text": "At the trauma center, surgical teams and blood banks mobilize fifteen minutes before arrival for zero-minute door-to-OR handover.",
+    "startMs": 85100,
+    "endMs": 93057,
+    "words": [
+      {
+        "word": "At",
+        "startMs": 85100,
+        "endMs": 85542
+      },
+      {
+        "word": "the",
+        "startMs": 85542,
+        "endMs": 85984
+      },
+      {
+        "word": "trauma",
+        "startMs": 85984,
+        "endMs": 86426
+      },
+      {
+        "word": "center,",
+        "startMs": 86426,
+        "endMs": 86868
+      },
+      {
+        "word": "surgical",
+        "startMs": 86868,
+        "endMs": 87310
+      },
+      {
+        "word": "teams",
+        "startMs": 87310,
+        "endMs": 87752
+      },
+      {
+        "word": "and",
+        "startMs": 87752,
+        "endMs": 88194
+      },
+      {
+        "word": "blood",
+        "startMs": 88194,
+        "endMs": 88636
+      },
+      {
+        "word": "banks",
+        "startMs": 88636,
+        "endMs": 89078
+      },
+      {
+        "word": "mobilize",
+        "startMs": 89078,
+        "endMs": 89520
+      },
+      {
+        "word": "fifteen",
+        "startMs": 89520,
+        "endMs": 89962
+      },
+      {
+        "word": "minutes",
+        "startMs": 89962,
+        "endMs": 90404
+      },
+      {
+        "word": "before",
+        "startMs": 90404,
+        "endMs": 90846
+      },
+      {
+        "word": "arrival",
+        "startMs": 90846,
+        "endMs": 91288
+      },
+      {
+        "word": "for",
+        "startMs": 91288,
+        "endMs": 91730
+      },
+      {
+        "word": "zero-minute",
+        "startMs": 91730,
+        "endMs": 92172
+      },
+      {
+        "word": "door-to-OR",
+        "startMs": 92172,
+        "endMs": 92614
+      },
+      {
+        "word": "handover.",
+        "startMs": 92614,
+        "endMs": 93057
+      }
+    ]
+  },
+  {
+    "text": "Complete statewide accountability with emergency contingency liquidity, clinician roster verification, and automated Ayushman Bharat reimbursement.",
+    "startMs": 95300,
+    "endMs": 104188,
+    "words": [
+      {
+        "word": "Complete",
+        "startMs": 95300,
+        "endMs": 95892
+      },
+      {
+        "word": "statewide",
+        "startMs": 95892,
+        "endMs": 96485
+      },
+      {
+        "word": "accountability",
+        "startMs": 96485,
+        "endMs": 97077
+      },
+      {
+        "word": "with",
+        "startMs": 97077,
+        "endMs": 97670
+      },
+      {
+        "word": "emergency",
+        "startMs": 97670,
+        "endMs": 98262
+      },
+      {
+        "word": "contingency",
+        "startMs": 98262,
+        "endMs": 98855
+      },
+      {
+        "word": "liquidity,",
+        "startMs": 98855,
+        "endMs": 99447
+      },
+      {
+        "word": "clinician",
+        "startMs": 99447,
+        "endMs": 100040
+      },
+      {
+        "word": "roster",
+        "startMs": 100040,
+        "endMs": 100632
+      },
+      {
+        "word": "verification,",
+        "startMs": 100632,
+        "endMs": 101225
+      },
+      {
+        "word": "and",
+        "startMs": 101225,
+        "endMs": 101817
+      },
+      {
+        "word": "automated",
+        "startMs": 101817,
+        "endMs": 102410
+      },
+      {
+        "word": "Ayushman",
+        "startMs": 102410,
+        "endMs": 103002
+      },
+      {
+        "word": "Bharat",
+        "startMs": 103002,
+        "endMs": 103595
+      },
+      {
+        "word": "reimbursement.",
+        "startMs": 103595,
+        "endMs": 104188
+      }
+    ]
+  },
+  {
+    "text": "TriageNet.",
+    "startMs": 105100,
+    "endMs": 106665,
+    "words": [
+      {
+        "word": "TriageNet.",
+        "startMs": 105100,
+        "endMs": 106665
+      }
+    ]
+  },
+  {
+    "text": "Designed for life.",
+    "startMs": 106615,
+    "endMs": 108572,
+    "words": [
+      {
+        "word": "Designed",
+        "startMs": 106615,
+        "endMs": 107267
+      },
+      {
+        "word": "for",
+        "startMs": 107267,
+        "endMs": 107919
+      },
+      {
+        "word": "life.",
+        "startMs": 107919,
+        "endMs": 108572
+      }
+    ]
+  },
+  {
+    "text": "Built for scale across thirty-nine million citizens.",
+    "startMs": 108573,
+    "endMs": 112181,
+    "words": [
+      {
+        "word": "Built",
+        "startMs": 108573,
+        "endMs": 109088
+      },
+      {
+        "word": "for",
+        "startMs": 109088,
+        "endMs": 109603
+      },
+      {
+        "word": "scale",
+        "startMs": 109603,
+        "endMs": 110119
+      },
+      {
+        "word": "across",
+        "startMs": 110119,
+        "endMs": 110634
+      },
+      {
+        "word": "thirty-nine",
+        "startMs": 110634,
+        "endMs": 111150
+      },
+      {
+        "word": "million",
+        "startMs": 111150,
+        "endMs": 111665
+      },
+      {
+        "word": "citizens.",
+        "startMs": 111665,
+        "endMs": 112181
+      }
+    ]
+  }
+]

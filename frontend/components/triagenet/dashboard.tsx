@@ -21,6 +21,7 @@ import {
 } from '@/lib/triage-data'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   getHospitalsForDistrict,
   convertFacilityToHospital,
@@ -155,7 +156,7 @@ function mapApiHospitalToLocal(h: HospitalApiData, idx: number, total: number): 
  * Returns the data source mode and loading state. Non-blocking — if the
  * backend is unreachable, silently falls back to simulation mode.
  */
-function useBackendConnection(): {
+function useBackendConnection(isGuest: boolean = false): {
   mode: DataSourceMode
   isChecking: boolean
   stateOverview: StateOverviewData | null
@@ -163,12 +164,20 @@ function useBackendConnection(): {
   retryConnection: () => void
 } {
   const [mode, setMode] = useState<DataSourceMode>('simulated')
-  const [isChecking, setIsChecking] = useState(true)
+  const [isChecking, setIsChecking] = useState(false)
   const [stateOverview, setStateOverview] = useState<StateOverviewData | null>(null)
   const [liveHospitals, setLiveHospitals] = useState<Hospital[]>([])
   const retryRef = useRef(0)
 
   const checkConnection = useCallback(async () => {
+    if (isGuest) {
+      setMode('simulated')
+      setIsChecking(false)
+      setStateOverview(null)
+      setLiveHospitals([])
+      return
+    }
+
     setIsChecking(true)
     try {
       const controller = new AbortController()
@@ -193,7 +202,7 @@ function useBackendConnection(): {
     } finally {
       setIsChecking(false)
     }
-  }, [])
+  }, [isGuest])
 
   useEffect(() => {
     checkConnection()
@@ -282,25 +291,19 @@ function buildDistrictState(districtName: string, scenarioKey: ScenarioKey = 'st
 
 export function Dashboard() {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isGuest, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (mounted && !isLoading && !isAuthenticated) {
-      router.push('/login?redirect=/dashboard')
-    }
-  }, [mounted, isLoading, isAuthenticated, router])
-
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
   const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
 
-  // Live backend connection probe
-  const { mode: dataSourceMode, isChecking: isCheckingBackend, stateOverview, liveHospitals, retryConnection } = useBackendConnection()
+  // Live backend connection probe (only for active users; guests stay strictly in simulated mode)
+  const { mode: dataSourceMode, isChecking: isCheckingBackend, stateOverview, liveHospitals, retryConnection } = useBackendConnection(isGuest)
 
   const initialDistrict = user?.districtName || 'Ranchi'
   const [selectedDistrict, setSelectedDistrict] = useState<string>(initialDistrict)
@@ -684,13 +687,13 @@ export function Dashboard() {
     [state.patients],
   )
 
-  if (!mounted || isLoading || !isAuthenticated) {
+  if (!mounted || isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#181512] text-stone-100 font-sans">
         <div className="flex flex-col items-center gap-3">
           <div className="size-10 rounded-full border-2 border-[#ea580c] border-t-transparent animate-spin" />
           <p className="text-xs font-mono font-semibold tracking-wider text-stone-400 uppercase">
-            {!mounted || isLoading ? 'Initializing TriageNet Command Network...' : 'Redirecting to Clinical Staff Login...'}
+            Initializing TriageNet Command Network...
           </p>
         </div>
       </div>
@@ -698,10 +701,41 @@ export function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/80 to-[#ffffff] text-[#2c1b0e] font-sans">
-      <Sidebar active={view} onChange={setView} criticalCount={criticalCount} />
+    <div className="flex h-screen w-full overflow-hidden bg-gradient-to-br from-[#fdfbf7] via-[#f7f2ea]/80 to-[#ffffff] text-[#2c1b0e] font-sans flex-col">
+      {/* Top Warning Banner in Guest Sandbox Mode */}
+      {isGuest && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-b border-amber-500/30 text-amber-950 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="font-bold uppercase tracking-wider text-[#ea580c] bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300">
+              GUEST SANDBOX MODE
+            </span>
+            <span className="text-stone-700 font-medium hidden md:inline">
+              Viewing simulated Jharkhand emergency clinical operations. Live hospital bed mutations and official EHR records are locked.
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/control"
+              className="text-[#382416] hover:text-[#ea580c] font-bold underline underline-offset-2 flex items-center gap-1 transition-colors"
+            >
+              Director&apos;s Control Centre 🎮
+            </Link>
+            <Link
+              href="/login"
+              className="px-3 py-1 rounded-lg bg-[#382416] hover:bg-[#491205] text-[#ffedd7] font-bold text-[11px] transition-all shadow-xs flex items-center gap-1"
+            >
+              <span>Staff Sign In</span>
+              <ArrowRight className="size-3 text-[#ea580c]" />
+            </Link>
+          </div>
+        </div>
+      )}
 
-      <div className="flex min-w-0 flex-1 flex-col relative z-20">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
+        <Sidebar active={view} onChange={setView} criticalCount={criticalCount} />
+
+        <div className="flex min-w-0 flex-1 flex-col relative z-20">
         <TopBar
           hospitals={state.hospitals}
           patients={state.patients}
@@ -723,13 +757,15 @@ export function Dashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#382416] text-sm">{user?.name || 'Authorized Clinical Officer'}</span>
-                    <span className={cn('font-mono text-[9px] font-bold px-2 py-0.5 rounded border uppercase', roleConfig.color)}>
-                      [{roleConfig.badge}]
+                    <span className="font-bold text-[#382416] text-sm">
+                      {isGuest ? (user?.name || 'Guest Clinical Observer') : (user?.name || 'Authorized Clinical Officer')}
+                    </span>
+                    <span className={cn('font-mono text-[9px] font-bold px-2 py-0.5 rounded border uppercase', isGuest ? 'bg-amber-100 text-amber-800 border-amber-300' : roleConfig.color)}>
+                      [{isGuest ? 'GUEST SANDBOX' : roleConfig.badge}]
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    {user?.roleTitle || 'System Super Admin'} · {user?.districtName || 'Statewide Command'}
+                    {isGuest ? 'Simulated Sandbox Session · 24 Districts Active' : `${user?.roleTitle || 'System Super Admin'} · ${user?.districtName || 'Statewide Command'}`}
                   </p>
                 </div>
               </div>
@@ -933,6 +969,7 @@ export function Dashboard() {
             {(view as string) === 'comms' && <CommsView />}
           </div>
         </main>
+      </div>
       </div>
 
       <StaffApprovalModal

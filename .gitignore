@@ -117,4 +117,5 @@ video_production/audio/*.wav
 *.sha256
 /tmp/triagenet_backups/
 backups/db/
+release_artifacts/
 

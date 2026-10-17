@@ -51,7 +51,7 @@ export function TopBar({
   onSelectDistrict,
   onNavigateView,
 }: TopBarProps) {
-  const { user } = useAuth()
+  const { user, isGuest } = useAuth()
   const [hospOpen, setHospOpen] = useState(false)
   const [distOpen, setDistOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -268,10 +268,17 @@ export function TopBar({
 
       {/* Right: Clean Live Network Sync Badge & Clinician Profile Trigger */}
       <div className="flex items-center gap-2.5">
-        <div className="hidden sm:flex items-center gap-2 rounded-full border border-stone-200/80 bg-stone-50/80 px-3 py-1 text-xs font-medium text-stone-600">
-          <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>Live Network Synced</span>
-        </div>
+        {isGuest ? (
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-mono font-medium text-amber-800">
+            <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>Sandbox Simulation</span>
+          </div>
+        ) : (
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-stone-200/80 bg-stone-50/80 px-3 py-1 text-xs font-medium text-stone-600">
+            <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>Live Network Synced</span>
+          </div>
+        )}
 
         {/* Phase 13: Acoustic Siren & Sound Beacon Toggle */}
         <button

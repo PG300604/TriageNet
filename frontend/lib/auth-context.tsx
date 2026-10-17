@@ -202,12 +202,32 @@ export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
   },
 };
 
+export const GUEST_OBSERVER_PROFILE: UserProfile = {
+  id: 'guest-observer',
+  name: 'Guest Clinical Observer',
+  email: 'guest.observer@triagenet.gov.in',
+  role: 'SUPER_ADMIN',
+  roleTitle: 'Guest Clinical Evaluator',
+  districtName: 'Ranchi Command',
+  staffId: 'GUEST-OBSERVER',
+  registrationNumber: 'SANDBOX-EVAL-2026',
+  qualifications: 'Sandbox Mode · Evaluation Session',
+  department: 'State Emergency Command (Simulated)',
+  stationBay: 'Observer Console Bay-0',
+  shiftPreference: 'Sandbox Duty',
+  phoneExtension: 'Ext. 0000',
+  voipLine: 'SANDBOX-EVAL',
+  radioFrequency: '155.050 MHz',
+  signatureSealVerified: false,
+};
+
 import { ShiftLockModal } from '@/components/shift-lock-modal';
 
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isLoading: boolean;
   isShiftActive: boolean;
   isScreenLocked: boolean;
@@ -227,8 +247,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(GUEST_OBSERVER_PROFILE);
   const [token, setToken] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [isScreenLocked, setIsScreenLocked] = useState(false);
@@ -326,6 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             districtName: resp.districtName,
           };
           setUser(profile);
+          setIsGuest(false);
 
           // Check active shift status
           try {
@@ -343,11 +365,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Only load demo persona if user explicitly activated demo mode (e.g. from /login or /control)
+      // Guest Sandbox Mode:
+      setIsGuest(true);
       const isDemoActive = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') === 'true' : false;
-      if (isDemoActive) {
-        const demoRole = (typeof window !== 'undefined' ? (localStorage.getItem('triagenet_demo_role') as UserRole) : null) || 'SUPER_ADMIN';
-        const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
+      const demoRole = typeof window !== 'undefined' ? (localStorage.getItem('triagenet_demo_role') as UserRole) : null;
+      if (isDemoActive && demoRole && DEMO_PRESET_USERS[demoRole]) {
+        const defaultProfile = DEMO_PRESET_USERS[demoRole];
         let finalProfile = defaultProfile;
         if (typeof window !== 'undefined') {
           try {
@@ -358,12 +381,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch {}
         }
         setUser(finalProfile);
-        setIsLoading(false);
-        return;
+      } else {
+        setUser(GUEST_OBSERVER_PROFILE);
       }
-
-      // First-time or unauthenticated visitor: no session
-      setUser(null);
       setIsLoading(false);
     };
 
@@ -420,6 +440,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setToken(resp.token || null);
       setUser(profile);
+      setIsGuest(false);
       setIsShiftActive(!!resp.shiftActive);
       setIsScreenLocked(!!resp.isScreenLocked);
       if (typeof window !== 'undefined') {
@@ -550,6 +571,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setToken(null);
     setUser(profile);
+    setIsGuest(true);
     setIsShiftActive(true);
     setIsScreenLocked(false);
     localStorage.setItem('triagenet_demo_active', 'true');
@@ -577,7 +599,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('triagenet_demo_role');
     localStorage.removeItem('triagenet_session_active');
     setToken(null);
-    setUser(null);
+    setUser(GUEST_OBSERVER_PROFILE);
+    setIsGuest(true);
     setIsShiftActive(false);
     setIsScreenLocked(false);
     if (typeof window !== 'undefined') {
@@ -595,7 +618,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         token,
-        isAuthenticated: !!user,
+        isAuthenticated: !isGuest && !!user,
+        isGuest,
         isLoading,
         isShiftActive,
         isScreenLocked,

@@ -38,6 +38,8 @@ services:
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
         value: https://triagenet-frontend.onrender.com,http://localhost:3000
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
 
   # -------------------------------------------------------------------------
   # TriageNet Next.js 16.4.1 Frontend

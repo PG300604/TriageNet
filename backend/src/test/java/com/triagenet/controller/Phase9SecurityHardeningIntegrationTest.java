@@ -21,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
@@ -134,7 +133,7 @@ public class Phase9SecurityHardeningIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode refreshJson = objectMapper.readTree(refreshBody);
-        String secondRefreshToken = refreshJson.get("refreshToken").asText();
+        assertNotNull(refreshJson.get("refreshToken").asText());
 
         // 2. Replay attack defense: Reusing the first revoked refresh token must fail
         mockMvc.perform(post("/api/auth/refresh")

@@ -134,7 +134,7 @@ export default function CitizenPortalPage() {
             <div className="relative size-8 overflow-hidden rounded-lg shadow-sm border border-[#491205] bg-[#491205] group-hover:scale-105 transition-transform shrink-0">
               <Image
                 src="/triagenet-logo.png"
-                alt="TriageNet Logo"
+                alt="TriageNet Jharkhand Emergency Healthcare Logo"
                 width={32}
                 height={32}
                 className="object-cover w-full h-full"
@@ -493,7 +493,7 @@ export default function CitizenPortalPage() {
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="relative size-6 overflow-hidden rounded-md border border-[#491205] bg-[#491205]">
-              <Image src="/triagenet-logo.png" alt="TriageNet Logo" width={24} height={24} className="object-cover" />
+              <Image src="/triagenet-logo.png" alt="TriageNet Official Healthcare Crest Logo" width={24} height={24} className="object-cover" />
             </div>
             <span>TRIAGENET · MODELED FOR EMERGENCY HEALTHCARE IN JHARKHAND</span>
           </div>

@@ -11,14 +11,16 @@ Desktop.ini
 *~
 
 # ──── IDE / Editor ────
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.iml
 *.iws
 *.ipr
 .project
 .classpath
-.settings/
+.settings/*
+!backend/.settings/org.eclipse.jdt.core.prefs
 *.suo
 *.user
 *.userosscache
@@ -108,3 +110,11 @@ android-app/gen/
 # Video Production Caches & Large Reference Media
 video_production/*.mp4
 video_production/audio/*.wav
+
+# Git Restore Point Bundles & Local DB Dumps
+*.bundle
+*.sql.gz
+*.sha256
+/tmp/triagenet_backups/
+backups/db/
+

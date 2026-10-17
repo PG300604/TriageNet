@@ -1,0 +1,60 @@
+services:
+  # -------------------------------------------------------------------------
+  # TriageNet PostgreSQL Database (Managed)
+  # -------------------------------------------------------------------------
+  - type: postgres
+    name: triagenet-db
+    databaseName: triagenet
+    user: triagenet
+    plan: free
+    ipAllowList: []
+
+  # -------------------------------------------------------------------------
+  # TriageNet Spring Boot 3.3.13 Backend
+  # -------------------------------------------------------------------------
+  - type: web
+    name: triagenet-backend
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/dashboard/state-overview
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: triagenet-db
+          property: connectionString
+      - key: DB_USER
+        fromDatabase:
+          name: triagenet-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: triagenet-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://triagenet-frontend.onrender.com,http://localhost:3000
+
+  # -------------------------------------------------------------------------
+  # TriageNet Next.js 16.4.1 Frontend
+  # -------------------------------------------------------------------------
+  - type: web
+    name: triagenet-frontend
+    runtime: docker
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          type: web
+          name: triagenet-backend
+          property: host
+          transform: https://{{host}}/api
+      - key: NODE_ENV
+        value: production

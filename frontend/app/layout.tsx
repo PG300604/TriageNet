@@ -64,10 +64,10 @@ export const metadata: Metadata = {
       'Real-time emergency triage, hospital ICU surge capacity, and ambulance dispatch simulation modeled for emergency healthcare in Jharkhand.',
     images: [
       {
-        url: '/ember-waves.png',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'TriageNet Jharkhand Emergency Healthcare Network',
+        alt: 'TriageNet Jharkhand Emergency Healthcare Network — State Operations & 108 Dispatch',
       },
     ],
   },
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     title: 'TriageNet — Healthcare Resource Allocation Model (Jharkhand)',
     description:
       'Algorithmic healthcare resource allocation, dynamic ICU bed reservation, and spatial routing simulation.',
-    images: ['/ember-waves.png'],
+    images: ['/opengraph-image.png'],
     creator: '@TriageNet',
   },
   robots: {
@@ -92,11 +92,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/triagenet-logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       { url: '/icon.svg', type: 'image/svg+xml' },
     ],
-    shortcut: '/triagenet-logo.png',
-    apple: '/triagenet-logo.png',
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   manifest: '/manifest.webmanifest',
 }

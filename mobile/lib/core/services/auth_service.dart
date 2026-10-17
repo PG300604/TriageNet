@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http; // Added for HTTP requests
 import '../models/user_role.dart';
 
 class AuthService extends ChangeNotifier {
@@ -35,15 +36,52 @@ class AuthService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Simulate network handshake to Spring Boot / Next.js backend
-    await Future.delayed(const Duration(milliseconds: 650));
+    final prefs = await SharedPreferences.getInstance();
+    final String baseUrl = prefs.getString('triagenet_api_base_url') ?? 'http://localhost:8080';
 
-    // Role-based matching based on Staff ID conventions:
-    // JH-DSP-5001 -> Ambulance Dispatch
-    // JH-NUR-1002 -> Triage Nurse
-    // JH-MS-3001  -> Medical Superintendent
-    // JH-CMO-2001 -> District CMO
-    // JH-GOV-0001 -> Super Admin
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'staffId': staffId, 'password': password}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+        final user = data['user'];
+
+        _currentUser = UserSession(
+          staffId: user['staffId'],
+          fullName: user['fullName'],
+          email: user['email'],
+          role: UserRole.values.firstWhere((e) => e.toString() == user['role'], orElse: () => UserRole.ambulanceDispatch),
+          hospitalId: user['hospitalId'],
+          hospitalName: user['hospitalName'],
+          districtName: user['districtName'],
+          token: token,
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('triagenet_mobile_user', jsonEncode(_currentUser!.toJson()));
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Network error: $e');
+    }
+
+    // Fallback to offline mode for demo/presets
+    _fallbackToPresetIfNeeded(staffId);
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  void _fallbackToPresetIfNeeded(String staffId) {
     UserRole detectedRole = UserRole.ambulanceDispatch;
     String detectedName = 'Sanjay Tirkey (EMT-P)';
     String hospitalId = 'jh-rims-ranchi';
@@ -82,13 +120,10 @@ class AuthService extends ChangeNotifier {
     );
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('triagenet_mobile_user', jsonEncode(_currentUser!.toJson()));
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('triagenet_mobile_user', jsonEncode(_currentUser!.toJson()));
+      });
     } catch (_) {}
-
-    _isLoading = false;
-    notifyListeners();
-    return true;
   }
 
   Future<void> loginAsPresetRole(UserRole role) async {

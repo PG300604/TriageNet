@@ -263,3 +263,25 @@ CREATE INDEX idx_oxygen_hospital ON oxygen_telemetry (hospital_id);
 CREATE INDEX idx_oxygen_alert ON oxygen_telemetry (alert_triggered);
 ```
 
+---
+
+## 4. Row-Level Security (RLS) Policies for Multi-Tenancy
+
+To ensure strict tenant isolation where clinical staff only see patient data within their hospital jurisdiction, the database supports Row-Level Security (applied via `scripts/apply_rls.sql`):
+
+```sql
+-- Enable RLS on core patient and clinical tables
+ALTER TABLE patient ENABLE ROW LEVEL SECURITY;
+ALTER TABLE triage_queue_entry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE allocation_record ENABLE ROW LEVEL SECURITY;
+
+-- Hospital scope policy: restrict read/write to current tenant context
+CREATE POLICY hospital_patient_isolation ON patient
+    FOR ALL
+    USING (
+        hospital_id = NULLIF(current_setting('app.current_hospital_id', true), '')::uuid
+        OR current_setting('app.current_user_role', true) IN ('SUPER_ADMIN', 'STATE_HEALTH_DEPT')
+    );
+```
+
+

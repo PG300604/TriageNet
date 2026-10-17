@@ -87,8 +87,9 @@ public class ResourceController {
     public ResponseEntity<List<AssignmentResultDto>> assignResources(@PathVariable UUID hospitalId) {
         hospitalAuthService.assertCanAccessHospital(hospitalId);
 
-        Hospital hospital = hospitalRepository.findById(hospitalId)
-                .orElseThrow(() -> new IllegalArgumentException("Hospital not found: " + hospitalId));
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new IllegalArgumentException("Hospital not found: " + hospitalId);
+        }
 
         List<Patient> waitingPatients = patientRepository.findByHospitalId(hospitalId).stream()
                 .filter(p -> p.getStatus() == PatientStatus.WAITING)

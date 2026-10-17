@@ -43,6 +43,5 @@ public class RegisterRequest {
      * created as HOSPITAL_STAFF and roles are granted only via an admin flow.
      * Kept solely for request-compatibility; scheduled for removal in the API v2.
      */
-    @Deprecated
     private RoleName role;
 }

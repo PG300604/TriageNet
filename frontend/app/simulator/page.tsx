@@ -102,7 +102,7 @@ export default function PCMobileSimulatorPage() {
         <div className="mx-auto max-w-7xl flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="relative size-8 overflow-hidden rounded-lg shadow-sm border border-[#491205] bg-[#491205] group-hover:scale-105 transition-transform shrink-0">
-              <Image src="/triagenet-logo.png" alt="TriageNet Logo" width={32} height={32} className="object-cover" priority />
+              <Image src="/triagenet-logo.png" alt="TriageNet Mobile Companion Simulator Crest" width={32} height={32} className="object-cover" priority />
             </div>
             <div>
               <span className="text-xs md:text-sm font-bold uppercase text-[#ffedd7] tracking-wider font-mono">

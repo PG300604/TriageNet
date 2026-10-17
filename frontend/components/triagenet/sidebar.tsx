@@ -147,7 +147,7 @@ export function Sidebar({
           <div className="relative size-10 overflow-hidden rounded-xl shadow-xs border border-[#382416]/10 bg-[#382416] shrink-0 flex items-center justify-center">
             <Image
               src="/triagenet-logo.png"
-              alt="TriageNet"
+              alt="TriageNet State Health Command Operations Logo"
               width={40}
               height={40}
               className="object-cover size-full"

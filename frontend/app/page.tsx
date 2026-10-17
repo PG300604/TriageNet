@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url: '/',
     images: [
       {
-        url: '/ember-waves.png',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
         alt: 'TriageNet Jharkhand Emergency Healthcare Network',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     title: 'TriageNet — Intelligent Healthcare Resource & Emergency Dispatch Platform',
     description:
       'Algorithmic healthcare resource allocation platform for hospital surge capacity and Dijkstra 108 ambulance regional routing across Jharkhand.',
-    images: ['/ember-waves.png'],
+    images: ['/opengraph-image.png'],
     site: '@TriageNetJH',
     creator: '@TriageNetJH',
   },

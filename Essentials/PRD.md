@@ -200,6 +200,16 @@ Without automated state-wide coordination:
 - **Police Interceptor & PCR Wireless Dispatch**: Automatically notifies the Ranchi Traffic Police Control Room and stations highway patrol PCR interceptors at key junctions for hands-on intersection clearance.
 - **Real-Time Paramedic Radar HUD**: Dedicated live corridor radar feed embedded in `/ambulance` with real-time ETA countdowns, distance meters, and signal lock statuses.
 
+### Module F26 — Phase 15: Production Hardening, System Resilience & Compliance
+- **Sliding-Window IP Rate Limiter**: 150 req/min per IP threshold implemented via `RateLimitingFilter.java` returning HTTP 429 Too Many Requests with standard `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers to mitigate DDoS and brute-force abuse.
+- **Automated Disaster Recovery Backups**: Automated PostgreSQL dump and gzip compression script (`scripts/backup_db.sh`) with SHA-256 verification and 7-day retention cleanup.
+- **Multi-Tenant Row-Level Security (RLS)**: PostgreSQL schema security policies (`scripts/apply_rls.sql`) restricting clinician visibility strictly to their hospital's patient records.
+- **Render Cloud Deployment Manifest**: Infrastructure-as-code specification (`render.yaml`) defining web services, environment configurations, and managed database provisioning.
+- **Automated Keep-Alive Infrastructure**: GitHub Actions scheduled workflow (`.github/workflows/keep-alive.yml`) and healthcheck pinger (`scripts/keep_alive.py`) preventing cold starts on Render free tier.
+- **Clinical Frontend Error Boundaries & Custom 404**: Healthcare-specific fallback UI (`frontend/app/error.tsx`) with crash report generation and triage redirect 404 handler (`frontend/app/not-found.tsx`).
+- **Healthcare Legal & Compliance Portals**: DISHA & ABDM aligned privacy policy (`/privacy`) and clinical decision-support terms of service (`/terms`).
+- **Mobile OTA Version Manifest Engine**: Server-driven version manifest endpoint (`/api/app/version`) returning version v1.3.0, release notes, and direct APK download URL.
+
 ---
 
 ## 5. Success Metrics
@@ -207,7 +217,7 @@ Without automated state-wide coordination:
 1. **Algorithmic Correctness**: 100% adherence of queue ordering to priority equations; zero invalid resource assignments (hard constraints strictly respected).
 2. **Sub-Second Execution**: Hungarian assignment and Dijkstra routing execution under **50 ms** for state-wide facility queries.
 3. **Explainability**: 100% of triage scores and transfer routing suggestions provide detailed contributing factor breakdowns.
-4. **State-Wide Coverage**: Complete 24-district representation of Jharkhand healthcare infrastructure.
+4. **State-Wide Coverage**: Complete 24-district representation of Jharkhand healthcare infrastructure (111 seeded facilities).
 
 ---
 
@@ -215,10 +225,11 @@ Without automated state-wide coordination:
 
 | Risk | Mitigation |
 |---|---|
-| OpenRouteService network latency | Precompute distance matrices for 79 Jharkhand facilities into local database cache; use ORS API for fallback recalculations. |
+| OpenRouteService network latency | Precompute distance matrices for 111 Jharkhand facilities into local database cache; use ORS API for fallback recalculations. |
 | Queue starvation for moderate patients | Enforce wait-time decay parameter $\lambda = 0.5$ pts/min so long-waiting patients reliably elevate. |
 | Incompatible resource matching | Hard-code high penalty matrix costs ($+10,000$) for resource mismatch in Hungarian matcher. |
 | User interface clutter across 6 roles | Enforce RBAC navigation filtering (`AuthContext`), showing only role-relevant tools and views. |
+| IDE Java compiler version mismatches | Explicitly map Eclipse JDT LS to Temurin JDK 17 in `.vscode/settings.json` and `backend/.settings/` to eliminate ECJ syntax false positives. |
 
 ---
 
@@ -226,5 +237,6 @@ Without automated state-wide coordination:
 
 - **Promotional Artifacts**: Master 4K 60FPS Apple Keynote Explainer Video (`video_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4`, 3840x2160 @ 60 FPS, 113.00s) verified and ready for public showcase.
 - **Production DevOps Target**: Multi-tier Docker Compose containerization across Spring Boot 3.3 (Java 17), Next.js 16, PostgreSQL 16, Redis 7, and Nginx reverse proxy.
-- **Phases 1-14 Complete**: Core algorithms, 108 CAD, Motion Graphics, PSA Oxygen IoT, Sound Beacon, and ABDM verified with 81/81 backend tests passing and 0 frontend errors.
+- **Phases 1-15 Complete**: Core algorithms, 108 CAD, Motion Graphics, PSA Oxygen IoT, Sound Beacon, ABDM, Municipal ITMS, and Production Resilience verified with 86/86 backend tests passing and 22/22 frontend routes cleanly compiled.
+
 

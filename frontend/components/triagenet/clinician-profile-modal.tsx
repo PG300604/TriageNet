@@ -20,9 +20,11 @@ import {
   Hash,
   AlertCircle,
   LogOut,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth, type UserProfile, type UserRole } from '@/lib/auth-context'
+import { userConfigManager } from '@/lib/user-config'
 
 export interface ClinicianProfileData {
   id: string
@@ -88,6 +90,8 @@ export function ClinicianProfileModal({
   const [phoneExtension, setPhoneExtension] = useState('')
   const [voipLine, setVoipLine] = useState('')
   const [radioFrequency, setRadioFrequency] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -558,25 +562,36 @@ export function ClinicianProfileModal({
             )}
 
             {/* Bottom Actions */}
-            <div className="border-t border-stone-800 pt-4 flex items-center justify-between gap-3">
+            <div className="border-t border-stone-800 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               {isSelf ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose()
-                      logout()
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-950/50 hover:bg-red-900/60 text-red-300 px-4 py-2 text-xs font-bold cursor-pointer transition-colors shadow-xs"
-                    title="Sign out and return to login screen"
-                  >
-                    <LogOut className="size-3.5" />
-                    <span>Sign Out / Switch Clinician</span>
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        logout()
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-stone-700 bg-stone-900 hover:bg-stone-800 text-stone-300 px-3.5 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                      title="Sign out and return to login screen"
+                    >
+                      <LogOut className="size-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/40 bg-red-950/40 hover:bg-red-900/60 text-red-400 px-3 py-2 text-xs font-bold cursor-pointer transition-colors"
+                      title="Delete account, clear custom API keys and purge clinical cache"
+                    >
+                      <Trash2 className="size-3.5 text-red-400" />
+                      <span>Delete Account / Purge Cache</span>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
+                    className="w-full sm:w-auto rounded-xl border border-stone-700 bg-stone-800/80 hover:bg-stone-700 text-stone-200 px-4 py-2 text-xs font-semibold cursor-pointer transition-colors"
                   >
                     Done
                   </button>
@@ -606,6 +621,51 @@ export function ClinicianProfileModal({
                 </>
               )}
             </div>
+
+            {/* Delete Account Confirmation Dialog */}
+            {showDeleteConfirm && (
+              <div className="absolute inset-0 z-50 rounded-3xl bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
+                <div className="max-w-sm w-full bg-[#1c1917] border border-red-800/50 rounded-2xl p-5 text-center space-y-4 shadow-2xl">
+                  <div className="size-12 mx-auto rounded-full bg-red-950/60 border border-red-800/60 flex items-center justify-center text-red-400">
+                    <Trash2 className="size-6 animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-white">Permanently Delete Account?</h4>
+                    <p className="text-[11px] text-stone-400 leading-relaxed">
+                      This will revoke your active clinician session, delete custom facility API keys, and purge all local trauma triage caches. This action is irreversible.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 rounded-xl border border-stone-700 bg-stone-800 py-2 text-xs font-semibold text-stone-300 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => {
+                        setIsDeleting(true)
+                        setTimeout(() => {
+                          userConfigManager.wipeAllUserData()
+                          logout()
+                          onClose()
+                          if (typeof window !== 'undefined') {
+                            window.location.href = '/login'
+                          }
+                        }, 600)
+                      }}
+                      className="flex-1 rounded-xl bg-red-700 hover:bg-red-600 text-white py-2 text-xs font-bold transition-colors shadow-md"
+                    >
+                      {isDeleting ? 'Wiping Data...' : 'Yes, Delete'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

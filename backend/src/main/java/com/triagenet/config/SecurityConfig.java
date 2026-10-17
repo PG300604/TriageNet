@@ -29,13 +29,27 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CsrfGuardFilter csrfGuardFilter;
+    private final RateLimitingFilter rateLimitingFilter;
     private final CustomUserDetailsService userDetailsService;
     private final Environment environment;
+
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthFilter,
+            CsrfGuardFilter csrfGuardFilter,
+            RateLimitingFilter rateLimitingFilter,
+            CustomUserDetailsService userDetailsService,
+            Environment environment
+    ) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.csrfGuardFilter = csrfGuardFilter;
+        this.rateLimitingFilter = rateLimitingFilter;
+        this.userDetailsService = userDetailsService;
+        this.environment = environment;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -118,6 +132,7 @@ public class SecurityConfig {
                 ));
             })
             .authenticationProvider(authenticationProvider())
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(csrfGuardFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> {
@@ -125,12 +140,15 @@ public class SecurityConfig {
                     auth.requestMatchers("/h2-console/**").permitAll();
                 }
                 auth.requestMatchers(
+                    "/actuator/**",
+                    "/api/actuator/**",
                     "/api/auth/**",
                     "/api/patients/score-vitals",
                     "/api/dashboard/**",
                     "/api/hospitals",
                     "/api/hospitals/**",
                     "/api/routing/optimal",
+                    "/api/iot/oxygen-telemetry",
                     "/api/iot/oxygen-telemetry/**",
                     "/api/abdm/**",
                     "/api/traffic/**",

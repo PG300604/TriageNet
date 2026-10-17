@@ -3,7 +3,6 @@ package com.triagenet.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.triagenet.dto.LoginRequest;
 import com.triagenet.dto.LoginResponse;
-import com.triagenet.dto.RegisterRequest;
 import com.triagenet.dto.ReferralRequest;
 import com.triagenet.dto.ReferralStatusUpdate;
 import com.triagenet.entity.ReferralStatus;
@@ -460,11 +459,6 @@ public class ReferralControllerTest {
                 .role(role)
                 .hospitalId(hospitalId)
                 .build());
-    }
-
-    private void registerUserWithRole(String name, String email, String password,
-                                      RoleName roleName) throws Exception {
-        registerUserWithRole(name, email, password, roleName, null);
     }
 
     @org.junit.jupiter.api.AfterEach

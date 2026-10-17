@@ -33,8 +33,6 @@ public class ShiftAuthDto {
 
     @Getter
     @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class TwoFactorVerifyRequest {
         @NotBlank(message = "Challenge token is required")
         private String challengeToken;
@@ -42,10 +40,29 @@ public class ShiftAuthDto {
         @NotBlank(message = "Code is required")
         private String code;
 
-        private int shiftDurationHours = 8;
+        private int shiftDurationHours;
 
         @Pattern(regexp = "^\\d{4}$", message = "Shift PIN must be exactly 4 digits")
-        private String shiftPin = "1234";
+        private String shiftPin;
+
+        public TwoFactorVerifyRequest() {
+            this.shiftDurationHours = 8;
+            this.shiftPin = "1234";
+        }
+
+        public TwoFactorVerifyRequest(String challengeToken, String code) {
+            this.challengeToken = challengeToken;
+            this.code = code;
+            this.shiftDurationHours = 8;
+            this.shiftPin = "1234";
+        }
+
+        public TwoFactorVerifyRequest(String challengeToken, String code, int shiftDurationHours, String shiftPin) {
+            this.challengeToken = challengeToken;
+            this.code = code;
+            this.shiftDurationHours = shiftDurationHours > 0 ? shiftDurationHours : 8;
+            this.shiftPin = (shiftPin != null && !shiftPin.isBlank()) ? shiftPin : "1234";
+        }
     }
 
     @Getter

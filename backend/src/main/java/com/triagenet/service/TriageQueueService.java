@@ -6,7 +6,6 @@ import com.triagenet.entity.Patient;
 import com.triagenet.entity.PatientStatus;
 import com.triagenet.entity.TriageQueueEntry;
 import com.triagenet.repository.PatientRepository;
-import com.triagenet.repository.TriageQueueEntryRepository;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TriageQueueService {
 
-    private final TriageQueueEntryRepository queueRepository;
     private final PatientRepository patientRepository;
     private final SeverityScorer severityScorer;
     private final HungarianMatcher hungarianMatcher;

@@ -1,0 +1,16 @@
+# TriageNet Robots Exclusion Standard
+User-agent: *
+Allow: /
+Allow: /portal
+Allow: /downloads
+Allow: /ambulance
+Allow: /simulator
+Allow: /onboarding
+Allow: /privacy
+Allow: /terms
+Allow: /recovery
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /control
+
+Sitemap: https://triagenet.gov.in/sitemap.xml

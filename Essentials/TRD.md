@@ -317,5 +317,57 @@
 - **Frontline Intake Console**:
   - Embedded in `frontend/components/triagenet/triage-queue-view.tsx` with 14-digit ABHA input, Birsa Munda 1-click test button, and automated clinical prefill of demographics, blood group, and medical history into the intake vitals form.
 
+---
+
+## 16. Phase 12: Municipal ITMS & Police Interceptor Road Preemption Architecture
+
+- **Standards Conformance**: Conforms to NTCIP 1202 and SCATS Emergency Vehicle Preemption (EVP) protocols.
+- **Service Layer**: `TrafficControlGatewayService.java`
+  - In-memory concurrent registry tracking active corridor states, signal phase overrides, and police unit allocations.
+  - Signal overriding: Conflicting movements locked to `ALL_RED_HOLD`, priority transit street locked to `SOLID_GREEN`.
+  - Corridor segments: Ranchi NH-33 Ormanjhi (`SIG-RN-01`), Mesra Ring Road (`SIG-RN-02`), Booty More (`SIG-RN-03`), Kanta Toli Flyover (`SIG-RN-04`), Bariatu Road (`SIG-RN-05`), RIMS Trauma Bay (`SIG-RN-06`).
+- **REST Endpoints (`TrafficControlController.java`)**:
+  - `POST /api/traffic/preemption/activate`: Activates preemption corridor for an emergency ambulance.
+  - `POST /api/traffic/preemption/telemetry`: Streams live speed and GPS telemetry from field vehicle.
+  - `GET /api/traffic/preemption/corridor/{ambulanceNumber}`: Queries current signal states and police presence.
+  - `GET /api/traffic/preemption/corridors`: Lists all active state corridors.
+  - `POST /api/traffic/preemption/{ambulanceNumber}/release`: Deactivates preemption and returns signals to normal cycle.
+  - `GET /api/traffic/itms/status`: ITMS gateway heartbeat and latency diagnostics.
+- **Frontend Live Radar Feed**: Integrated in `frontend/app/ambulance/page.tsx` with real-time signal countdowns, distance meters, and green wave preemption toggles.
+
+---
+
+## 17. Phase 15: Production Hardening, System Resilience & Compliance Architecture
+
+- **Sliding-Window IP Rate Limiter (`RateLimitingFilter.java`)**:
+  - Implements an in-memory sliding-window bucket algorithm tracking requests per IP over a 60-second window.
+  - Threshold: 150 requests/minute.
+  - Throttled response: HTTP 429 Too Many Requests with headers:
+    - `Retry-After: <seconds_remaining>`
+    - `X-RateLimit-Limit: 150`
+    - `X-RateLimit-Remaining: 0`
+  - Test profile bypass: `shouldNotFilter(HttpServletRequest)` conditionally bypasses throttling when active Spring profiles contain `test`, allowing MockMvc test suites to run unhindered while maintaining constructor injection in `SecurityConfig.java`.
+- **Automated Database Backups (`scripts/backup_db.sh`)**:
+  - Auto-detects running PostgreSQL container (`triagenet-db` or native `pg_dump`).
+  - Generates gzip-compressed SQL dumps (`triagenet_db_YYYYMMDD_HHMMSS.sql.gz`).
+  - Generates SHA-256 integrity checksum files (`.sql.gz.sha256`).
+  - Automatically sweeps and purges backup archives older than 7 days.
+- **Multi-Tenant Row-Level Security (`scripts/apply_rls.sql`)**:
+  - PostgreSQL RLS policies on `patients`, `triage_queue_entries`, and `allocation_records` binding access to `current_setting('app.current_hospital_id')`.
+- **Render Cloud Infrastructure Blueprint (`render.yaml`)**:
+  - Web service definition for containerized Spring Boot backend (`env: docker`, `healthCheckPath: /healthz`).
+  - Managed PostgreSQL 16 database provisioning (`plan: free`).
+- **Cold-Start Keep-Alive Engine (`.github/workflows/keep-alive.yml` & `scripts/keep_alive.py`)**:
+  - Scheduled GitHub Actions cron (`*/14 * * * *`) pinging `/healthz` to prevent free-tier container sleep.
+- **Client Resilience & Error Handling**:
+  - Next.js Error Boundary (`frontend/app/error.tsx`) with recovery CTA and clinical incident error logging.
+  - Custom 404 Handler (`frontend/app/not-found.tsx`) with 24-district helpline numbers and 1-click return to dashboard.
+  - Client Validation (`frontend/lib/validation.ts`): Strict regex validation for ABHA ID (14 digits), phone numbers (Indian 10-digit), passwords, and clinical vitals ranges.
+  - Privacy & Legal Compliance: DISHA / ABDM Privacy Policy (`frontend/app/privacy/page.tsx`) and Terms of Service (`frontend/app/terms/page.tsx`).
+  - Account Deletion & Right-to-be-Forgotten: Integrated in `ClinicianProfileModal` for GDPR/DISHA compliance.
+- **Mobile OTA Version Manifest (`frontend/app/api/app/version/route.ts`)**:
+  - REST endpoint returning semantic version `1.3.0`, build `130`, release notes, mandatory update flag, and direct APK download URL for field companion tablets.
+
+
 
 

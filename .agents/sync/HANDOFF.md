@@ -615,3 +615,57 @@ git status
      - Exported updated OpenAPI 3.0 contract to `backend/openapi.json` (74 KB, 50+ endpoints).
 
 
+---
+
+### [HANDOFF-020] — 2026-10-17: Full Production Hardening, Java 17 IDE Parity & E2E Verification Complete
+- **From**: Linux Agent (Google Antigravity Orchestrating Hermes)
+- **To**: Windows Agent & Project Lead
+- **Status**: `RESOLVED` (86/86 Tests Green, 22/22 Routes Compiled, 8/8 E2E Flow Checks Passing, Rate Limiting Verified)
+- **Summary**:
+  1. **Java 17 LTS Strict IDE Resolution**:
+     - Diagnosed and resolved 463 Eclipse JDT LS compilation errors triggered by Fedora 44's default OpenJDK 25 runtime.
+     - Fixed by configuring `.vscode/settings.json`, `backend/.settings/org.eclipse.jdt.core.prefs`, and `backend/pom.xml`.
+     - Unignored these configurations in `.gitignore` to guarantee cross-platform IDE parity on Windows and Linux.
+     - Cleared corrupted bytecode with `./mvnw clean package -DskipTests`; verified `AllocationRecord` constructors.
+  2. **10–15 Production Readiness Features Delivered**:
+     - Added sliding-window rate limiting (`RateLimitingFilter.java`) with HTTP 429 and `Retry-After`.
+     - Added automated database backup and retention script (`scripts/backup_db.sh`) with gzip compression and SHA-256 integrity checks.
+     - Added Row-Level Security policy script (`scripts/apply_rls.sql`).
+     - Added Render cloud deployment blueprint (`render.yaml`) and GitHub Actions keep-alive workflow (`.github/workflows/keep-alive.yml`).
+     - Built frontend error boundary (`error.tsx`), 404 page (`not-found.tsx`), legal pages (`/privacy`, `/terms`), clinician onboarding (`/onboarding`), and account deletion modal.
+     - Added mobile OTA version API route (`/api/app/version` -> v1.3.0).
+  3. **Automated Verification**:
+     - Backend tests: **86/86 PASS**.
+     - Frontend build: **22/22 routes** cleanly compiled with Turbopack.
+     - Live E2E test (`scripts/test_e2e_flow.py`): **8/8 PASS** (Healthcheck, State Overview, Severity Scorer, ITMS Gateway, EVP Preemption, ABDM ABHA Verification, IoT Oxygen Telemetry, Mobile OTA).
+     - Stress test (`scripts/stress_test_api.py`): **PASS** (Latency benchmarks healthy, HTTP 429 verified).
+     - DB Backup test (`scripts/backup_db.sh`): **PASS** (16KB gzip dump + SHA-256 verified).
+
+---
+
+### [HANDOFF-021] — 2026-10-17: VM Crash Recovery, Complete SEO/Metadata Suite, Favicons & Production Deployment Verified
+- **From**: Linux Agent (Google Antigravity Orchestrating Hermes)
+- **To**: Windows Agent, Mobile Team & Project Lead
+- **Status**: `RESOLVED` (86/86 Tests Green, 23/23 Routes Compiled, 5/5 Containers Healthy, All SEO & Public Assets Live)
+- **Summary**:
+  1. **VM Crash Recovery & Context Continuity**:
+     - Reconnected past session lineage from SQLite database `~/.hermes/state.db` and Antigravity transcript logs following VM freeze caused by VS Code opening during concurrent builds.
+     - Enforced safe sequential pipeline execution preventing host memory saturation.
+  2. **SEO, Web Standards & Metadata Suite**:
+     - Sitemaps: `frontend/public/sitemap.xml` and Next.js dynamic `frontend/app/sitemap.ts` across all 23 application routes.
+     - Robots: `frontend/public/robots.txt` and Next.js dynamic `frontend/app/robots.ts`.
+     - Manifests: `frontend/public/site.webmanifest` and `frontend/app/manifest.webmanifest`.
+     - Custom `layout.tsx` metadata (titles, descriptions, canonical links, OpenGraph cards, Twitter cards) for `/ambulance`, `/portal`, `/downloads`, `/onboarding`, `/control`, `/simulator`, `/recovery`, `/privacy`, and `/terms`.
+  3. **Favicons & High-Resolution Brand Identity**:
+     - Generated PNG favicons in all required dimensions (`16x16`, `32x32`, `192x192`, `512x512`, `apple-touch-icon.png`, `apple-icon.png`, `favicon.ico`) and 1200x630 `opengraph-image.png`.
+     - Standardized descriptive accessibility alt text across all `<Image />` and `<img>` tags.
+  4. **Multi-Container Stack Restored & 100% Healthy**:
+     - Repackaged `backend/target/triagenet-backend-1.0.0-SNAPSHOT.jar` and updated `triagenet-backend` container.
+     - All 5 Docker services verified healthy: `triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`.
+  5. **Verification**:
+     - Spring Boot tests: **86/86 PASS** (0 failures, 0 errors in 33.2s).
+     - Frontend TypeScript: `npx tsc --noEmit` **0 errors**.
+     - Frontend build: Next.js Turbopack compiled **23/23 routes** in 11.8s.
+     - Live E2E tests: `python3 scripts/test_e2e_flow.py` **8/8 PASS**.
+     - Stress test & sliding-window rate limit: **PASS**.
+

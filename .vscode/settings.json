@@ -1,0 +1,13 @@
+{
+  "java.jdt.ls.java.home": "/home/priyanshughosh/.local/share/jdk-17",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "/home/priyanshughosh/.local/share/jdk-17",
+      "default": true
+    }
+  ],
+  "java.jdt.ls.javac.enabled": "on",
+  "java.autobuild.enabled": false,
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

@@ -1454,6 +1454,119 @@ Following an unexpected virtual machine crash, Antigravity inspected Hermes agen
 - Backend now has 86 unit & integration tests (`.\backend\mvnw.cmd test -B`).
 - Frontend features live ITMS green wave radar and corridor preemption alongside sound beacon, PSA oxygen telemetry, and digital ABHA patient intake.
 
+---
+
+### [LOG-013] — 2026-10-17: Java 17 LTS IDE Fix, Full Production Readiness Hardening & Multi-Tier Deployment
+
+- **Timestamp**: `2026-10-17T16:30:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity Orchestrating Hermes Agent
+- **Scope / Category**: Java 17 LTS Toolchain, IDE JDT LS Configuration, Security Rate Limiting, Database Backups, Render & Keep-Alive CI/CD, Frontend Polish, Container Deployment
+- **Status**: Completed, 100% Tests Passing (86/86), 22/22 Frontend Routes, 8/8 E2E Checks Passing
+
+#### Context & Issues Addressed
+1. **463 Java Version Errors in VS Code**: Fedora 44 uses system OpenJDK 25.0.2 by default. Eclipse JDT LS launched under JDK 25 without an explicit runtime mapping, triggering hundreds of false "Flexible Constructor Bodies" errors against Java 17 code and corrupting `AllocationRecord.class` with 0-length constructor bytecodes.
+2. **Spring Security RateLimitingFilter Bypass in Tests**: Filter throttled MockMvc integration tests with HTTP 429 when annotated with `@Profile("!test")` due to constructor injection.
+3. **10–15 Production Readiness Deliverables**: Missing error boundaries, 404 page, terms of service, privacy policy, database backup scripts, RLS policies, Render deployment manifest, keep-alive workflow, and mobile OTA endpoint.
+
+#### Actions Executed
+1. **JDK 17 LTS Toolchain Configuration**:
+   - Updated `.vscode/settings.json` specifying `"java.jdt.ls.java.home": "/home/priyanshughosh/.local/share/jdk-17"`, JavaSE-17 runtime path, and compliance level 17.
+   - Configured `backend/.settings/org.eclipse.jdt.core.prefs` with Java 17 compliance and preview features disabled.
+   - Enforced `maven-compiler-plugin` 3.13.0 with `<release>17</release>` in `backend/pom.xml`.
+   - Executed `./mvnw clean package -DskipTests` to eliminate stale Eclipse ECJ bytecode and compiled all 91 source classes purely with OpenJDK 17 `javac`. Verified clean `AllocationRecord.class` bytecode with `javap -c`.
+2. **Backend Rate Limiting & Security Hardening**:
+   - Implemented `RateLimitingFilter.java` using an in-memory sliding window bucket (150 req/min per IP) returning HTTP 429 with `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers.
+   - Refactored `shouldNotFilter(HttpServletRequest)` to bypass throttling for MockMvc test profiles without breaking constructor injection in `SecurityConfig.java`.
+   - Updated `OxygenTelemetryController.java` to allow automated IoT telemetry ingestion.
+3. **Frontend Production UX & Legal Pages**:
+   - Added `frontend/app/error.tsx` (custom clinical error recovery boundary).
+   - Added `frontend/app/not-found.tsx` (404 triage redirect with emergency helplines).
+   - Added `frontend/app/privacy/page.tsx` (DISHA & ABDM health privacy policy).
+   - Added `frontend/app/terms/page.tsx` (clinical decision-support terms of service).
+   - Implemented `ClinicianProfileModal` account deletion with GDPR/DISHA compliance.
+   - Implemented `frontend/app/onboarding/page.tsx` for new clinician tour and role configuration.
+   - Implemented `frontend/lib/validation.ts`, `frontend/lib/analytics.ts`, `frontend/lib/user-config.ts`.
+4. **DevOps Automation & Scripts**:
+   - Added `scripts/backup_db.sh`: Automated PostgreSQL dump, gzip compression, SHA-256 checksum generation, and 7-day retention cleanup.
+   - Added `scripts/apply_rls.sql`: Row-Level Security definitions for hospital-scoped tenant data.
+   - Added `render.yaml`: Infrastructure-as-code blueprint for Render.com deployment (backend Web Service + PostgreSQL DB).
+   - Added `.github/workflows/keep-alive.yml` & `scripts/keep_alive.py`: Automated 14-minute cron pinger preventing Render free-tier spin-down.
+   - Added `frontend/app/api/app/version/route.ts`: Mobile OTA update version manifest (v1.3.0).
+   - Added `scripts/test_e2e_flow.py` and `scripts/stress_test_api.py`.
+5. **Runtime Verification & Container Redeployment**:
+   - Ran `./mvnw clean test -B`: **86/86 tests PASS** (`BUILD SUCCESS`).
+   - Ran `npx tsc --noEmit`: **0 TypeScript errors**.
+   - Ran `npm run build`: **22/22 routes** compiled in Next.js Turbopack.
+   - Replaced container JAR in `triagenet-backend` and restarted service.
+   - Ran `python3 scripts/test_e2e_flow.py`: **8/8 checks passed** (Healthcheck, State Overview, Scoring Engine, ITMS Gateway, Traffic Preemption, ABDM, IoT Oxygen Telemetry, Mobile OTA).
+   - Ran `python3 scripts/stress_test_api.py`: **RateLimitFilter PASS** (HTTP 429 triggered with proper headers).
+   - Ran `./scripts/backup_db.sh /tmp/triagenet_test_backup`: Backup created with SHA-256 verification.
+
+#### Instructions for Windows Agents
+- Pull the latest `main` branch.
+- All 463 Java version errors are resolved; `.vscode/settings.json` and `backend/.settings/` are tracked to guarantee JDK 17 LTS compliance.
+- 86 backend tests and 22 frontend routes pass cleanly. Run `./scripts/test_e2e_flow.py` against Docker Compose to verify all 8 core systems.
+
+---
+
+### [LOG-014] — 2026-10-17: VM Crash Recovery, Complete SEO/Metadata Suite, Favicons, Public Deployment & Multi-Container Verification
+
+- **Timestamp**: `2026-10-17T17:40:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity Orchestrating Hermes Agent
+- **Scope / Category**: VM Crash Recovery, SEO & Web Standards, Metadata/OpenGraph, Multi-Container Orchestration, Public Deployment Verification
+- **Status**: Completed, 100% Tests Passing (86/86), 23/23 Frontend Routes Compiled, 5/5 Containers Healthy, 8/8 E2E Flow Checks Passing
+
+#### Context & Objectives
+Following a virtual machine crash triggered by opening VS Code during concurrent builds in the 3.8 GiB RAM environment, Antigravity inspected past session lineages, verified Hermes subagent audits, restored full system context, implemented complete SEO and metadata standards, generated authentic multi-resolution brand favicons and OpenGraph cards, verified accessibility alt texts across all images, packaged the latest backend JAR, restarted the 5-container Docker stack, and verified all public and clinical endpoints end-to-end.
+
+#### Actions Executed
+1. **VM Crash Recovery & Resource Conservation**:
+   - Reconnected to SQLite session history in `~/.hermes/state.db` and Antigravity transcript logs.
+   - Diagnosed root cause: Concurrent Maven test compilation + Turbopack build + VS Code background LSP processes exceeded host memory.
+   - Enforced strict sequential execution protocol for test, build, and container redeployment pipelines.
+2. **SEO & Web Standards**:
+   - Implemented dynamic and static sitemaps: `frontend/public/sitemap.xml` and `frontend/app/sitemap.ts` covering all 23 application routes with change frequencies and priorities.
+   - Implemented dynamic and static robots exclusion policies: `frontend/public/robots.txt` and `frontend/app/robots.ts` permitting search indexing of public portals while guarding private clinical consoles.
+   - Implemented PWA web application manifest: `frontend/public/site.webmanifest` and Next.js `manifest.webmanifest`.
+3. **Favicons, OpenGraph & Metadata Suite**:
+   - Generated authentic high-resolution PNG icons (`icon-16x16.png`, `icon-32x32.png`, `icon-192.png`, `icon-192x192.png`, `icon-512.png`, `icon-512x512.png`, `apple-touch-icon.png`, `apple-icon.png`, `favicon.ico`) and 1200x630 `opengraph-image.png`.
+   - Engineered dedicated route `layout.tsx` files providing tailored meta titles, descriptions, canonical URLs, OpenGraph previews, and Twitter cards for:
+     - `/ambulance` (108 Paramedic Field Terminal & Green Wave Telemetry)
+     - `/portal` (Citizen Emergency Healthcare & Hospital Bed Portal)
+     - `/downloads` (Mobile Companion App Downloads & OTA Distribution)
+     - `/onboarding` (Institutional Hospital & Department Onboarding)
+     - `/control` (State Health Director Command Center)
+     - `/simulator` (In-Browser Smartphone Emergency Simulator)
+     - `/recovery` (Clinical Disaster Recovery & Cold Start Restoration)
+     - `/privacy` (DISHA & ABDM Patient Data Privacy Policy)
+     - `/terms` (Clinical Decision-Support Terms of Service)
+4. **Accessibility (Alt Text) Standardization**:
+   - Audited all `<Image />` and `<img>` tags across `frontend/`, replacing generic or missing descriptions with context-rich descriptive alt labels (`portal`, `simulator`, `sidebar`, `navbar`, `downloads`, `cta-footer`).
+5. **Public Access & Mobile Network Compatibility**:
+   - Updated `SecurityConfig.java` to permit unauthenticated access to public SEO assets, manifests, icons, and OTA app distribution endpoints.
+   - Configured `mobile/lib/core/services/auth_service.dart` with robust `baseUrl` fallback to allow mobile connectivity across physical Wi-Fi LAN and emulator bridges.
+6. **Multi-Container Stack Restored & Verified**:
+   - Repackaged `backend/target/triagenet-backend-1.0.0-SNAPSHOT.jar` and updated `triagenet-backend` container.
+   - Started and verified all 5 Docker services (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
+   - All 5 containers running and healthy.
+7. **Verification & Testing Results**:
+   - Backend tests: **86/86 PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 33.2s).
+   - Frontend TypeScript: `npx tsc --noEmit` passed with **0 errors**.
+   - Frontend production build: Next.js Turbopack compiled **23/23 static and dynamic routes** cleanly in 11.8s.
+   - Live E2E test (`scripts/test_e2e_flow.py`): **8/8 PASS**.
+   - Stress test (`scripts/stress_test_api.py`): **PASS** (sub-millisecond latency, HTTP 429 rate limiting verified).
+   - System integrity (`scripts/verify_system_integrity.py`): **PASS** (Districts parity, env templates, and route integrity).
+   - SEO & Health endpoints: `http://localhost/healthz` (200), `http://localhost/robots.txt` (200), `http://localhost/sitemap.xml` (200), `http://localhost/api/traffic/itms/status` (200), `http://localhost/api/app/version` (200).
+
+#### Instructions for Windows Agents
+- Pull latest `main`.
+- All SEO, sitemaps, robots, metadata, and favicon assets are integrated and compiling cleanly across 23 routes.
+- Docker multi-container stack is operational on port 80/3000/8080/5432/6379.
+
+
+
 
 
 

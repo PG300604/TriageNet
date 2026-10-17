@@ -117,7 +117,7 @@ TriageNet/
 │   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz, /v3/api-docs, /swagger-ui
 ├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 86/86 tests)
 │   └── src/main/java/com/triagenet/
-│       ├── config/           # SecurityConfig, JwtAuthenticationFilter, OpenApiConfig, CustomUserDetails
+│       ├── config/           # SecurityConfig, JwtAuthenticationFilter, RateLimitingFilter, OpenApiConfig, CustomUserDetails
 │       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, OxygenTelemetry, Abdm, TrafficControl, Dashboard, Admin
 │       ├── dto/              # Login, Register, User, Response, Referral, Shortage, OxygenTelemetry, AbdmProfile, TrafficPreemption DTOs
 │       ├── engine/           # SeverityScorer, HungarianMatcher, DijkstraRouter
@@ -125,13 +125,13 @@ TriageNet/
 │       ├── repository/       # Spring Data JPA Repositories (including OxygenTelemetryRepository)
 │       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, OxygenTelemetry, AbdmIntegration, TrafficControlGateway, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
 ├── frontend/                 # React 19 + Next.js 16.4.1 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
-│   ├── app/                  # 20 routes (/ambulance, /portal, /simulator, /downloads, /onboarding, /control, /dashboard, etc.)
-│   ├── components/triagenet/ # Capacity (PSA Oxygen IoT Monitor), Queue (ABHA Console), Regional Network, Doctors Roster, Supplies Governance, Modals
-│   └── lib/                  # api-client, auth-context, sound-beacon (Web Audio API), director-bridge, jharkhand-data, predictive-supply-engine, triage-data
+│   ├── app/                  # 22 routes (/ambulance, /portal, /simulator, /downloads, /onboarding, /control, /dashboard, /privacy, /terms, error.tsx, not-found.tsx, etc.)
+│   ├── components/triagenet/ # Capacity (PSA Oxygen IoT Monitor), Queue (ABHA Console), Regional Network, Doctors Roster, Supplies Governance, Modals, Empty State, Skeletons
+│   └── lib/                  # api-client, auth-context, sound-beacon (Web Audio API), director-bridge, jharkhand-data, predictive-supply-engine, triage-data, validation, analytics, user-config
 ├── mobile/                   # (Phase 3) Flutter monorepo (108 Ambulance, Bedside Nurse, Command Monitor)
 ├── android-app/              # Native Android companion wrapper with build-apk.ps1
 ├── ml/                       # Python ML training & 4-dataset benchmarking scripts
-└── scripts/                  # deploy.sh, verify_system_integrity.py, scraping pipeline & Jharkhand builders
+└── scripts/                  # deploy.sh, backup_db.sh, keep_alive.py, test_e2e_flow.py, stress_test_api.py, verify_system_integrity.py, scraping pipeline & Jharkhand builders
 ```
 
 ---
@@ -142,6 +142,7 @@ TriageNet/
 - The 111 authentic Jharkhand facilities across 24 districts.
 - The 6 RBAC user roles and their security permission model.
 - The Panacea SaaS design aesthetic and `#491205` brand palette.
+- Strict adherence to Java 17 LTS (configured via `.vscode/settings.json`, `backend/.settings/org.eclipse.jdt.core.prefs`, and `backend/pom.xml`).
 
 ---
 
@@ -154,9 +155,15 @@ TriageNet/
   - Phase 12: Municipal ITMS & Police Interceptor Telemetry Clearance System (NTCIP 1202 / SCATS Emergency Vehicle Preemption, Highway corridor signal overriding, dynamic VMS alerts, Police PCR dispatch coordination).
   - Phase 13: Acoustic Siren & Sound Beacon (Native Web Audio API synthesizer: 108 emergency sirens, critical vitals chimes, Hungarian chords).
   - Phase 14: Ayushman Bharat Digital Mission (ABDM / ABHA Patient Intake Integration with 14-digit verification & clinical prefill).
+  - Phase 15: Production Hardening & Resilience (Sliding-window IP rate limiting with `Retry-After`, automated DB backups with SHA-256 and 7-day retention, RLS policies, Render infrastructure manifest `render.yaml`, GitHub Actions keep-alive cron, clinical error boundaries `error.tsx`, 404 handler `not-found.tsx`, healthcare privacy/terms pages, mobile OTA manifest v1.3.0, and 8/8 automated E2E sanity checks).
+  - Phase 16: Complete SEO Suite, Favicons, Public Deployment & Crash Recovery (Dynamic and static `sitemap.xml`, `robots.txt`, `site.webmanifest`, full favicon suite `16x16` to `512x512` + `apple-touch-icon`, `opengraph-image.png`, route-specific `layout.tsx` metadata across 23 routes, descriptive image alt text standardization, and mobile OTA endpoint permissions).
 - **Quality & Test Gates**:
-  - Backend: **86 / 86 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors).
-  - Frontend: 0 TypeScript errors, 20/20 routes compile cleanly with Turbopack.
+  - Backend: **86 / 86 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 33.2s).
+  - Frontend: 0 TypeScript errors, **23/23 routes** compile cleanly with Turbopack in 11.8s.
   - Containerization: 5/5 containers running and healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
   - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 50+ REST endpoints.
+  - E2E Sanity Flow (`scripts/test_e2e_flow.py`): **8/8 checks PASS** (Healthcheck, State Overview, Severity Scorer, ITMS Gateway, Traffic Preemption, ABDM, IoT Oxygen Telemetry, Mobile OTA).
+  - Rate Limiting (`scripts/stress_test_api.py`): **PASS** (HTTP 429 verified with `Retry-After` header).
+
+
 

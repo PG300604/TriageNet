@@ -4,7 +4,6 @@ import com.triagenet.entity.District;
 import com.triagenet.entity.Hospital;
 import com.triagenet.repository.DistrictRepository;
 import com.triagenet.repository.HospitalRepository;
-import com.triagenet.repository.PatientRepository;
 import com.triagenet.service.HospitalAuthorizationService;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +21,6 @@ public class DashboardController {
 
     private final HospitalRepository hospitalRepository;
     private final DistrictRepository districtRepository;
-    private final PatientRepository patientRepository;
     private final HospitalAuthorizationService hospitalAuthService;
 
     @Data

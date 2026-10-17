@@ -615,7 +615,6 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse refreshToken(String rawRefreshToken, jakarta.servlet.http.HttpServletRequest httpRequest) {
-        String clientIp = clientIpOf(httpRequest);
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new org.springframework.security.authentication.BadCredentialsException("Refresh token is required");
         }

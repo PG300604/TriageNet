@@ -31,6 +31,8 @@ import {
   KeyRound,
 } from 'lucide-react'
 import { JHARKHAND_24_DISTRICTS } from '@/lib/jharkhand-data'
+import { userConfigManager } from '@/lib/user-config'
+import { analytics } from '@/lib/analytics'
 
 interface FacilityOnboardingData {
   // Step 1: Identification & Location
@@ -137,6 +139,29 @@ export default function OnboardingPage() {
         storedFacilities.push({ ...formData, facilityToken: token, onboardedAt: new Date().toISOString() })
         localStorage.setItem('triagenet_onboarded_facilities', JSON.stringify(storedFacilities))
         localStorage.setItem('triagenet_active_facility_token', token)
+
+        // Dynamically update active clinical configuration
+        userConfigManager.updateConfig({
+          facilityName: formData.facilityName,
+          hospitalId: formData.institutionalCode,
+          districtName: formData.districtName,
+          facilityTier: formData.tier,
+          lat: formData.latitude,
+          lng: formData.longitude,
+          totalGeneralBeds: formData.generalWardBeds,
+          totalIcuBeds: formData.icuTotalBeds,
+          totalVentilators: formData.icuStaffedVentilators,
+          superintendentName: formData.superintendentName,
+          superintendentContact: formData.superintendentPhone,
+          onboardingCompleted: true,
+        })
+
+        analytics.trackEvent('FACILITY_ONBOARDED', {
+          facilityName: formData.facilityName,
+          district: formData.districtName,
+          tier: formData.tier,
+          icuBeds: formData.icuTotalBeds,
+        })
       }
 
       setIsSubmitting(false)

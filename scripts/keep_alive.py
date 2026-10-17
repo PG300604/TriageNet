@@ -17,7 +17,7 @@ DEFAULT_URLS = [
     "http://localhost/healthz",
     "http://localhost/api/traffic/itms/status",
 ]
-TIMEOUT = int(os.getenv("PING_TIMEOUT", "10"))
+TIMEOUT = int(os.getenv("PING_TIMEOUT", "60"))
 RETRIES = int(os.getenv("PING_RETRIES", "3"))
 
 
@@ -31,12 +31,30 @@ def ping(url: str, timeout: int, retries: int) -> tuple[int, float]:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 latency = (time.perf_counter() - start) * 1000
                 return resp.status, latency
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            latency = (time.perf_counter() - start) * 1000
+            print(f"[{url}] attempt {attempt}/{retries} returned HTTP {exc.code} (latency {latency:.2f}ms)")
+            if exc.code == 404 and url.rstrip("/").endswith("/healthz"):
+                base_url = url.rstrip("/")[:-len("/healthz")].rstrip("/")
+                fallback_url = (base_url if base_url else "") + "/"
+                try:
+                    f_req = urllib.request.Request(fallback_url, method="GET")
+                    f_req.add_header("User-Agent", "TriageNet-keep-alive/1.0")
+                    with urllib.request.urlopen(f_req, timeout=timeout) as f_resp:
+                        f_latency = (time.perf_counter() - start) * 1000
+                        print(f"[{url}] fallback to root {fallback_url} succeeded with HTTP {f_resp.status} ({f_latency:.2f}ms)")
+                        return f_resp.status, f_latency
+                except Exception as f_exc:
+                    print(f"[{url}] fallback attempt to {fallback_url} failed: {f_exc}")
+            if attempt < retries:
+                time.sleep(3)
         except Exception as exc:
             last_exc = exc
             latency = (time.perf_counter() - start) * 1000
             print(f"[{url}] attempt {attempt}/{retries} failed: {exc} (latency {latency:.2f}ms)")
             if attempt < retries:
-                time.sleep(1)
+                time.sleep(3)
     raise last_exc
 
 

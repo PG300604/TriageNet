@@ -20,7 +20,7 @@ jobs:
 
       - name: Run keep_alive.py
         env:
-          TARGET_URL: ${{ vars.TARGET_URL || 'http://localhost/healthz,http://localhost/api/traffic/itms/status' }}
-          PING_TIMEOUT: ${{ vars.PING_TIMEOUT || '10' }}
+          TARGET_URL: ${{ vars.TARGET_URL || 'https://triagenet-frontend.onrender.com,https://triagenet-backend.onrender.com/api/traffic/itms/status' }}
+          PING_TIMEOUT: ${{ vars.PING_TIMEOUT || '60' }}
           PING_RETRIES: ${{ vars.PING_RETRIES || '3' }}
         run: python scripts/keep_alive.py

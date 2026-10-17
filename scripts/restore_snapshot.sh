@@ -16,13 +16,9 @@ echo "Target: $TARGET_TAG"
 echo "================================================================="
 
 if [[ "$TARGET_TAG" == "latest" ]]; then
-    TARGET_TAG=$(git tag -l "snapshot-*" --sort=-creatordate | head -n 1 || true)
-    if [[ -z "$TARGET_TAG" ]]; then
-        TARGET_TAG=$(git tag -l "*restore-point*" --sort=-creatordate | head -n 1 || true)
-    fi
-fi
-
-if [[ -n "$TARGET_TAG" ]]; then
+    echo "Restoring to latest branch state (main)..."
+    git checkout main --quiet 2>/dev/null || true
+elif [[ -n "$TARGET_TAG" ]]; then
     echo "Found recovery checkpoint: $TARGET_TAG"
     git checkout "$TARGET_TAG" --quiet 2>/dev/null || git checkout main --quiet
 else
@@ -33,7 +29,13 @@ echo "1. Restarting Docker Compose services..."
 docker compose up -d
 
 echo "2. Waiting for database and services to reach healthy state..."
-sleep 5
+for i in {1..30}; do
+    if curl -s -f http://localhost/api/traffic/itms/status >/dev/null 2>&1; then
+        echo "Backend services are ready (after ${i}s)"
+        break
+    fi
+    sleep 1
+done
 
 docker compose ps
 

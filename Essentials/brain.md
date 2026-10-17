@@ -165,9 +165,10 @@ TriageNet/
     - GitHub Release `v1.3.0` published with mobile companion APK, IPA, standalone Spring Boot JAR, and full Flutter source package.
 - **Quality & Test Gates**:
   - Backend: **89 / 89 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 35.9s).
-  - Frontend: 0 TypeScript errors (`npx tsc --noEmit`), **23/23 routes** compile cleanly with Turbopack in 9.4s.
+  - Frontend: 0 TypeScript errors (`npx tsc --noEmit`), **23/23 routes** compile cleanly with Turbopack in 9.4s (including dynamic `ƒ /healthz`).
   - Containerization: 5/5 containers running and healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
   - Production Deployment: **LIVE ON RENDER** (`https://triagenet-frontend.onrender.com` & `https://triagenet-backend.onrender.com`).
+  - 24/7 Keep-Alive Automation: GitHub Actions `keep-alive.yml` pinging frontend & backend every 14 min (60s timeout, automatic `/healthz` -> `/` fallback, verified **100% Green**).
   - Official GitHub Release: **v1.3.0 Published** (`https://github.com/PG300604/TriageNet/releases/tag/v1.3.0`).
   - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 50+ REST endpoints.
   - E2E Sanity Flow (`scripts/test_e2e_flow.py`): **8/8 checks PASS** (Healthcheck, State Overview, Severity Scorer, ITMS Gateway, Traffic Preemption, ABDM, IoT Oxygen Telemetry, Mobile OTA).

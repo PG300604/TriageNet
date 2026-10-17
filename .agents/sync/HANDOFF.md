@@ -740,3 +740,19 @@ git status
      - Synchronized all 5 core documents in `Essentials/` (`brain.md`, `PRD.md`, `TRD.md`, `ERD.md`, `instructions.md`) and `.agents/sync/` (`DECISIONS.md`, `DEVOPS_LOG.md`, `HANDOFF.md`).
      - Verified with 89/89 backend tests, 23/23 frontend routes, and clean git snapshot.
 
+---
+
+### [HANDOFF-025] — 2026-10-18: Keep-Alive Anti-Sleep GitHub Actions Fix & Snapshot Script Hardened
+- **From**: Linux Agent (Google Antigravity) & User
+- **To**: Windows Agent & All Peer Agents
+- **Status**: `RESOLVED` (Actions 100% Green, Local & Remote Verified)
+- **Summary**:
+  1. **Fixed GitHub Actions `keep-alive.yml` Failure**:
+     - Root cause 1: `triagenet-frontend.onrender.com/healthz` returned 404 because Next.js had no `/healthz` route handler.
+     - Root cause 2: Render free instances spin down after 15m; waking up takes 35-50s. `keep_alive.py` was aborting after 3x10s attempts (30s total).
+     - Fix 1: Added `frontend/app/healthz/route.ts` returning `200 OK "healthy\n"`.
+     - Fix 2: Updated `scripts/keep_alive.py` with 60s timeout, automatic fallback from `/healthz` to root `/`, and 3s retry backoff.
+     - Fix 3: Configured GitHub Actions repository variables `TARGET_URL`, `PING_TIMEOUT: 60`, `PING_RETRIES: 3`. Workflow run `390614...` verified passing (14s, 100% Green).
+  2. **Hardened `scripts/restore_snapshot.sh`**:
+     - Replaced static `sleep 5` with dynamic poll loop on `/api/traffic/itms/status` (up to 30s) so backend initialization finishes reliably before running `test_e2e_flow.py`.
+     - Prevented detached HEAD on `latest` target by checking out `main`.

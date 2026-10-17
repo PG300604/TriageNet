@@ -1691,6 +1691,45 @@ TriageNet was deployed to Render.com using Infrastructure-as-Code Blueprint (`re
 - Unauthenticated visitors will enter Guest Sandbox Mode with top amber warning banner.
 - Active staff credentials (`JH-SYS-0001`, `JH-CMO-2001`, etc.) will authenticate through `/login` and operate in live PostgreSQL mode without the guest banner.
 
+---
+
+### [LOG-018] — 2026-10-18: Keep-Alive Anti-Sleep GitHub Actions Fix & Frontend Healthz Endpoint
+
+- **Timestamp**: `2026-10-18T00:43:00+05:30`
+- **Environment**: GitHub Actions CI/CD & Linux Fedora 44 Workspace
+- **Operator / Agent**: Google Antigravity & User Pair Development
+- **Scope / Category**: CI/CD Automation, Keep-Alive Anti-Sleep, Route Resilience, Snapshot Recovery
+- **Status**: Completed & 100% Passing (Green)
+
+#### Context & Root Cause
+In GitHub Actions workflow `Keep-Alive Health Ping` (`keep-alive.yml`), scheduled runs failed with exit code 1. Investigation surfaced two root causes:
+1. **Frontend 404 on `/healthz`**: The GitHub Actions runner targeted `https://triagenet-frontend.onrender.com/healthz`, but Next.js App Router did not have a `/healthz` route handler, returning HTTP 404 (only Nginx locally handled `/healthz`).
+2. **Cold-Start Timeout**: Free-tier cloud instances on Render spin down after 15 minutes. When woken by an anti-sleep ping, container spin-up takes 35-50 seconds. The keep-alive script defaulted to a 10s timeout with 3 rapid 1s retries (aborting at 30s), terminating before Render could return HTTP 200.
+3. **Snapshot Recovery Backend Readiness**: In `./scripts/restore_snapshot.sh`, a static `sleep 5` was insufficient during cold container starts, causing E2E tests to fail if run immediately after container launch. Additionally, `TARGET_TAG="latest"` checked out the tag directly, creating a detached HEAD state.
+
+#### Actions Executed
+1. **Added Next.js Route Handler**:
+   - Created `frontend/app/healthz/route.ts` returning `200 OK "healthy\n"` with dynamic rendering and `Cache-Control: no-store`.
+   - Verified clean compilation with `npm run build` (Turbopack, route `ƒ /healthz` generated).
+2. **Hardened Keep-Alive Script (`scripts/keep_alive.py`)**:
+   - Defaulted `PING_TIMEOUT` to 60s (allowing cloud instances to boot cleanly).
+   - Added automatic fallback: If `/healthz` returns 404 on an undeployed frontend, it tests the host's root (`/`) to confirm host health and reports `[FALLBACK OK]`.
+   - Increased retry delay to 3s with backoff.
+3. **Updated GitHub Actions Workflow & Variables**:
+   - Updated `.github/workflows/keep-alive.yml` defaults to 60s timeout and cloud production URLs.
+   - Updated GitHub repository variables via `gh variable set`: `TARGET_URL` (points to frontend and backend ITMS gateway), `PING_TIMEOUT: 60`, `PING_RETRIES: 3`.
+4. **Hardened Snapshot Recovery Script (`scripts/restore_snapshot.sh`)**:
+   - Replaced fixed `sleep 5` with health poll loop (up to 30s) testing `/api/traffic/itms/status`.
+   - Fixed `TARGET_TAG="latest"` to checkout `main` rather than detaching HEAD to tag.
+5. **Live Verification**:
+   - Local: `./scripts/restore_snapshot.sh` executed cleanly with 8/8 tests PASS.
+   - Remote: Triggered GitHub Action `keep-alive.yml` via `gh workflow run`. Run `390614...` completed with **100% GREEN (Success in 14s)**.
+
+#### Instructions for Windows & Peer Agents
+- Pull latest `main`.
+- `keep-alive.yml` runs every 14 minutes on GitHub Actions to keep Render cloud services warm without failing on cold starts.
+
+
 
 
 

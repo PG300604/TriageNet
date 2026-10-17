@@ -1961,3 +1961,24 @@ Per user directives:
    - Wrote launch_package/LINKEDIN_VIDEO_POST_CAPTION.md.
 3. **Humanizer Validation**:
    - Verified 0 en-dashes (–) and 0 em-dashes (—) in the LinkedIn post caption.
+
+---
+
+### Entry: 2026-10-18 - Google Drive Link Integration & Launch Package Directory Purge
+- **Timestamp**: 2026-10-18T02:48:00+05:30
+- **Environment**: Windows 11 (P:\\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Public Launch, Repository Cleanliness, Social Assets
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+1. Integrate user's official Google Drive folder link (https://drive.google.com/drive/folders/12PV8TJ6UIIbsGM8zcRDhRcVV_E10siGy?usp=sharing) containing video, PDF, and screenshots directly into the LinkedIn post caption.
+2. Remove redundant launch_package/ directory from the Git repository and disk to maintain repository cleanliness and lightness.
+
+#### Actions Executed
+1. **Purged launch_package/ & docs/qr_temp/**:
+   - Executed git rm -r launch_package and git rm -r docs/qr_temp.
+   - Updated scripts/generate_linkedin_pdf.py to auto-purge temporary QR code images after PDF rendering.
+2. **Updated LinkedIn Video Caption**:
+   - Replaced local file references with the official Google Drive URL.
+   - Verified character count strictly under 3,000 (2,839 characters for Option 1, 2,421 characters for Option 2) with zero en-dashes/em-dashes.

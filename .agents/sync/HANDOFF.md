@@ -859,3 +859,16 @@ ender.yaml.
      - Assembled complete folder containing the PDF, 8 slide images (slides/), 11 labeled screenshots (screenshots/), and the copy-paste ready LinkedIn caption (LINKEDIN_VIDEO_POST_CAPTION.md).
   3. **Humanized Video Caption**:
      - Verified zero en-dashes (–) and zero em-dashes (—). Highlighted months of work, the Golden Hour trauma crisis, zero-blackbox Java 17 algorithms, and real benchmark numbers.
+
+---
+
+### [HANDOFF-032] — 2026-10-18: Google Drive Official Asset Link Integrated & Repo Decluttered
+- **From**: Windows Agent (Google Antigravity) & User
+- **To**: Linux Agent & All Peer Agents
+- **Status**: RESOLVED (Drive Link Integrated, Launch Package Removed, Repo Clean)
+- **Summary**:
+  1. **Google Drive Link**:
+     - Official asset folder: https://drive.google.com/drive/folders/12PV8TJ6UIIbsGM8zcRDhRcVV_E10siGy?usp=sharing integrated into LinkedIn captions.
+  2. **Repo Decluttering**:
+     - Removed launch_package/ and docs/qr_temp/ from repository.
+     - docs/TriageNet_Executive_Whitepaper.pdf remains intact as the official canonical whitepaper.

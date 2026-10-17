@@ -1023,6 +1023,10 @@ def build_pdf(output_path):
     doc.build(story, canvasmaker=NumberedCanvas, onFirstPage=draw_page_background, onLaterPages=draw_page_background)
     print(f"Successfully generated DJI-styled executive whitepaper PDF: {output_path}")
 
+    # Clean up temporary QR files
+    import shutil
+    shutil.rmtree(qr_dir, ignore_errors=True)
+
     # Export Preview PNGs
     preview_dir = os.path.join(os.path.dirname(output_path), 'pdf_previews')
     os.makedirs(preview_dir, exist_ok=True)

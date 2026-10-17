@@ -211,6 +211,15 @@ erDiagram
 - Links a patient to an allocated resource.
 - `algorithm_run_id`: Groups all allocations executed in a single Hungarian algorithm invocation for auditability.
 
+### 2.6 `TRANSFER_REQUEST`
+- Represents inter-facility patient transfer and 108 ambulance dispatch requests across the 24 districts.
+- `patient_id`: Associated patient awaiting specialized care or tertiary elevation.
+- `from_hospital_id` & `to_hospital_id`: Origin and receiving hospital facilities.
+- `routing_algorithm`: `DIJKSTRA` or `MCMF`.
+- `computed_cost`: Distance (km) or travel time estimate incorporating dynamic road congestion.
+- `status`: Lifecycle transitions (`PROPOSED` -> `APPROVED` -> `IN_TRANSIT` -> `COMPLETED` or `REJECTED`).
+- Governed by auto-release TTL (45 mins) to automatically reclaim unfulfilled bed holds.
+
 ### 2.7 `LOGIN_ATTEMPT`
 - Tracks failed login attempts and account lockout expiration for brute-force prevention.
 - `email`: Normalized email string (UK).

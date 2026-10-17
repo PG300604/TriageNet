@@ -207,8 +207,19 @@ Without automated state-wide coordination:
 - **Render Cloud Deployment Manifest**: Infrastructure-as-code specification (`render.yaml`) defining web services, environment configurations, and managed database provisioning.
 - **Automated Keep-Alive Infrastructure**: GitHub Actions scheduled workflow (`.github/workflows/keep-alive.yml`) and healthcheck pinger (`scripts/keep_alive.py`) preventing cold starts on Render free tier.
 - **Clinical Frontend Error Boundaries & Custom 404**: Healthcare-specific fallback UI (`frontend/app/error.tsx`) with crash report generation and triage redirect 404 handler (`frontend/app/not-found.tsx`).
-- **Healthcare Legal & Compliance Portals**: DISHA & ABDM aligned privacy policy (`/privacy`) and clinical decision-support terms of service (`/terms`).
-- **Mobile OTA Version Manifest Engine**: Server-driven version manifest endpoint (`/api/app/version`) returning version v1.3.0, release notes, and direct APK download URL.
+### Module F27 — Phase 18: Dual-Mode Architecture (Guest Sandbox vs Active Clinical Operations) & Release v1.3.0
+- **Guest Sandbox Mode**:
+  - Instant unauthenticated onboarding for clinical evaluators, public health researchers, and guest users.
+  - Interactive exploration across all 24 Jharkhand districts, capacity radar, dynamic triage heap queue, and referral simulator.
+  - Sandbox-safe simulation mode with live bed mutations and official patient records locked.
+  - Prominent amber warning banner at the top of the workspace clearly designating sandbox mode, with direct one-click links to the Director's Control Centre (`/control`) and Staff Sign In (`/login`).
+- **Interactive Director's Control Centre (`/control`)**:
+  - Comprehensive control panel allowing guests and evaluators to switch between all 6 institutional personas, trigger mass casualty and surge scenarios, and test algorithmic dispatch responses in real time.
+- **Active Clinical Operations Mode**:
+  - Official staff sign-in supporting the 6 RBAC user roles with dual-transport security (HttpOnly SameSite cookies + Bearer authorization headers).
+  - Direct live synchronization with the cloud PostgreSQL production database.
+- **Official GitHub Release v1.3.0**:
+  - Published public release on GitHub bundling the Android Mobile Companion APK, iOS package, executable standalone Spring Boot 3.3.13 JAR, and complete Flutter mobile source archive with SHA-256 integrity hashes.
 
 ---
 
@@ -218,6 +229,7 @@ Without automated state-wide coordination:
 2. **Sub-Second Execution**: Hungarian assignment and Dijkstra routing execution under **50 ms** for state-wide facility queries.
 3. **Explainability**: 100% of triage scores and transfer routing suggestions provide detailed contributing factor breakdowns.
 4. **State-Wide Coverage**: Complete 24-district representation of Jharkhand healthcare infrastructure (111 seeded facilities).
+5. **Evaluator Accessibility**: Zero friction guest exploration via Guest Sandbox Mode paired with strict clinical data protection.
 
 ---
 
@@ -230,13 +242,16 @@ Without automated state-wide coordination:
 | Incompatible resource matching | Hard-code high penalty matrix costs ($+10,000$) for resource mismatch in Hungarian matcher. |
 | User interface clutter across 6 roles | Enforce RBAC navigation filtering (`AuthContext`), showing only role-relevant tools and views. |
 | IDE Java compiler version mismatches | Explicitly map Eclipse JDT LS to Temurin JDK 17 in `.vscode/settings.json` and `backend/.settings/` to eliminate ECJ syntax false positives. |
+| Cross-site cookie blocking on cloud subdomains | Implement dual-transport auth in `ApiClient`: HttpOnly Cookie + `Authorization: Bearer <token>` in `localStorage`. |
 
 ---
 
 ## 9. Launch & Shipping Readiness Status
 
+- **Live Production Deployment**: 100% operational on Render.com (`https://triagenet-frontend.onrender.com` & `https://triagenet-backend.onrender.com`).
+- **Official GitHub Release**: `v1.3.0` published with companion packages (`triagenet-companion-v1.3.0.apk`, `triagenet-companion-v1.3.0.ipa`, `triagenet-backend-v1.3.0.jar`, `triagenet-mobile-companion-src-v1.3.0.zip`).
 - **Promotional Artifacts**: Master 4K 60FPS Apple Keynote Explainer Video (`video_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4`, 3840x2160 @ 60 FPS, 113.00s) verified and ready for public showcase.
-- **Production DevOps Target**: Multi-tier Docker Compose containerization across Spring Boot 3.3 (Java 17), Next.js 16, PostgreSQL 16, Redis 7, and Nginx reverse proxy.
-- **Phases 1-15 Complete**: Core algorithms, 108 CAD, Motion Graphics, PSA Oxygen IoT, Sound Beacon, ABDM, Municipal ITMS, and Production Resilience verified with 86/86 backend tests passing and 22/22 frontend routes cleanly compiled.
+- **Quality & Test Gates**: 89/89 backend unit tests passing (100% success), 23/23 Next.js routes cleanly compiled with Turbopack, and 0 TypeScript errors.
+
 
 

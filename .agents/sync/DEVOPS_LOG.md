@@ -1647,6 +1647,51 @@ TriageNet was deployed to Render.com using Infrastructure-as-Code Blueprint (`re
 - Unauthenticated users will now be routed directly to `/login`.
 - Demo personas can still be selected directly on the `/login` portal or through the `/control` panel when needed.
 
+---
+
+### [LOG-017] — 2026-10-17: Guest Sandbox Experience with Warning Banner & GitHub Release v1.3.0
+
+- **Timestamp**: `2026-10-17T18:55:00+05:30`
+- **Environment**: Cloud Production (Render.com) & Linux Fedora 44 Workspace
+- **Operator / Agent**: Google Antigravity & User Pair Development
+- **Scope / Category**: Guest Sandbox Mode, Banner Alert, Simulation Pinning, GitHub Release Packages, Document Synchronization
+- **Status**: Completed & 100% Live
+
+#### Context & Objectives
+1. **User Requirement**: Unauthenticated guest visitors should not be blocked by forced redirects. Instead, they should be able to explore the emergency dashboard and hardcoded/simulated Jharkhand data, have full access to the Director's Control Centre (`/control`) to test scenarios, and see a prominent warning banner at the top of the dashboard prompting active users to sign in.
+2. **Release Package Requirement**: Publish an official GitHub release with companion apps attached as release packages (Android APK, iOS package, standalone backend JAR, and Flutter/mobile source zip).
+3. **Documentation Requirement**: Keep all source-of-truth documents in sync across `Essentials/` and `.agents/sync/`.
+
+#### Actions Executed
+1. **Dual-Mode Guest Sandbox Architecture**:
+   - In `frontend/lib/auth-context.tsx`, introduced `isGuest: boolean` and initialized unauthenticated visitors as `"Guest Clinical Observer"` (`GUEST_OBSERVER_PROFILE`, Bay-0, Ranchi Command) with `isGuest: true`.
+   - Prevented forced redirects away from `/dashboard` for guests.
+   - Pinned guest sessions strictly to in-memory `mode: 'simulated'` via `useBackendConnection(isGuest)`, preventing any mock data mutations to the production database.
+2. **Top Warning Banner**:
+   - Mounted high-visibility amber warning banner across the top of `/dashboard` for guest sessions:
+     - Message: `GUEST SANDBOX MODE — Viewing simulated Jharkhand emergency clinical operations. Live hospital bed mutations and official EHR records are locked.`
+     - Direct CTA links to Director's Control Centre (`/control`) and Staff Sign In (`/login`).
+   - Added `[GUEST SANDBOX]` tag in RBAC pill and TopBar status pill.
+3. **Official GitHub Release v1.3.0 Published**:
+   - Created Git tag `v1.3.0` and published release on GitHub: `https://github.com/PG300604/TriageNet/releases/tag/v1.3.0`.
+   - Built and uploaded release package binaries:
+     - `triagenet-companion-v1.3.0.apk` (Android APK)
+     - `triagenet-companion-v1.3.0.ipa` (iOS package)
+     - `triagenet-backend-v1.3.0.jar` (56.85 MiB standalone Spring Boot 3.3.13 executable)
+     - `triagenet-mobile-companion-src-v1.3.0.zip` (Complete mobile Flutter & Android companion source code)
+     - `checksums.txt` (SHA256 hashes)
+4. **Documentation Synchronization**:
+   - Updated `Essentials/brain.md`, `Essentials/PRD.md`, `Essentials/TRD.md`, `Essentials/ERD.md`, `Essentials/instructions.md`, `.agents/sync/DECISIONS.md`, and `.agents/sync/HANDOFF.md`.
+5. **Verification**:
+   - Backend: 89/89 tests passing (`BUILD SUCCESS`).
+   - Frontend: 0 TypeScript errors (`npx tsc --noEmit`), 23/23 routes compiled cleanly.
+
+#### Instructions for Windows & Peer Agents
+- Pull latest `main`.
+- Unauthenticated visitors will enter Guest Sandbox Mode with top amber warning banner.
+- Active staff credentials (`JH-SYS-0001`, `JH-CMO-2001`, etc.) will authenticate through `/login` and operate in live PostgreSQL mode without the guest banner.
+
+
 
 
 

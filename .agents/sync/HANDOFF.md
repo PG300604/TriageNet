@@ -712,3 +712,31 @@ git status
      - Backend tests: **89/89 PASS**.
      - Frontend TypeScript: **0 errors**.
      - Frontend production build: **23/23 routes compiled cleanly**.
+
+---
+
+### [HANDOFF-024] — 2026-10-17: Guest Sandbox Mode with Top Banner & GitHub Release v1.3.0 Complete
+- **From**: Linux Agent (Google Antigravity) & User
+- **To**: Windows Agent, Mobile Team & All Peer Agents
+- **Status**: `RESOLVED` (Production Live, Release Published, Docs Synced)
+- **Summary**:
+  1. **Guest Sandbox Architecture**:
+     - First-time and guest visitors are initialized with `isGuest: true` and persona `"Guest Clinical Observer"` (Observer Console Bay-0, Ranchi Command).
+     - No forced login redirects for guests; guests can freely navigate the simulated Jharkhand hospital matrix and queue.
+     - Top amber warning banner mounted on `/dashboard`: `GUEST SANDBOX MODE — Viewing simulated Jharkhand emergency clinical operations. Live hospital bed mutations and official EHR records are locked.` with quick links to Director's Control Centre (`/control`) and Staff Sign In (`/login`).
+     - Guest session is pinned strictly to in-memory `mode: 'simulated'` via `useBackendConnection(isGuest)`, preventing any mock data pollution to the PostgreSQL database.
+     - Full unrestricted access to Director's Control Centre (`/control`) to trigger mass-casualty scenarios, time stepping, and role evaluations.
+  2. **Active Staff Login Path**:
+     - Logging in via `/login` authenticates against PostgreSQL and sets `isGuest: false`, granting access to live database queries, mutations, and removing the guest warning banner.
+  3. **Official GitHub Release v1.3.0 Live**:
+     - Release URL: `https://github.com/PG300604/TriageNet/releases/tag/v1.3.0`
+     - Released packages attached:
+       - `triagenet-companion-v1.3.0.apk` (Android APK)
+       - `triagenet-companion-v1.3.0.ipa` (iOS package)
+       - `triagenet-backend-v1.3.0.jar` (Executable Spring Boot 3.3.13 standalone JAR, 56.85 MiB)
+       - `triagenet-mobile-companion-src-v1.3.0.zip` (Flutter + native Android source bundle)
+       - `checksums.txt` (SHA256 hashes)
+  4. **Documentation & Snapshots**:
+     - Synchronized all 5 core documents in `Essentials/` (`brain.md`, `PRD.md`, `TRD.md`, `ERD.md`, `instructions.md`) and `.agents/sync/` (`DECISIONS.md`, `DEVOPS_LOG.md`, `HANDOFF.md`).
+     - Verified with 89/89 backend tests, 23/23 frontend routes, and clean git snapshot.
+

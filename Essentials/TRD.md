@@ -368,6 +368,28 @@
 - **Mobile OTA Version Manifest (`frontend/app/api/app/version/route.ts`)**:
   - REST endpoint returning semantic version `1.3.0`, build `130`, release notes, mandatory update flag, and direct APK download URL for field companion tablets.
 
+---
+
+## 18. Phase 18: Dual-Mode Architecture (Guest Sandbox vs Authenticated Operations) & Cloud Cross-Origin Auth
+
+- **Dual-Mode User State Architecture (`frontend/lib/auth-context.tsx`)**:
+  - `isGuest: boolean` flag exposed across entire frontend component tree.
+  - Initial state evaluates active sessions (`triagenet_session_active`). If unauthenticated, `user` resolves to `GUEST_OBSERVER_PROFILE` with `isGuest: true`, completely bypassing auto-mock logins.
+  - Active staff login toggles `isGuest: false`, granting access to live PostgreSQL mutations.
+- **Guest Sandbox Mode Top Warning Banner (`frontend/components/triagenet/dashboard.tsx`)**:
+  - Prominent amber alert banner mounted atop the layout in guest mode.
+  - Direct links to `/control` (Director's Control Centre) and `/login` (Staff Sign In).
+  - Isolates data pipeline to `mode: 'simulated'` via `useBackendConnection(isGuest)`, preventing mock data leaks into production database.
+- **Cloud Cross-Origin Authentication Architecture**:
+  - **Dynamic Spring Security CORS (`SecurityConfig.java`)**: Reads `CORS_ALLOWED_ORIGINS` / `cors.allowed-origins` dynamically, with fallback whitelist containing `https://triagenet-frontend.onrender.com`.
+  - **SameSite=None; Secure (`AuthController.java`)**: Response cookies set with `SameSite=None; Secure` in production environments, overcoming modern browser cross-site restrictions on cloud domains like `onrender.com`.
+  - **Dual-Transport Token Client (`api-client.ts`)**:
+    - Stores JWT token in `localStorage` upon authentication.
+    - Attaches `Authorization: Bearer <token>` on all outbound fetch requests alongside `credentials: 'include'`.
+    - Auto-detects cloud hostname via `getApiBaseUrl()` to target `https://triagenet-backend.onrender.com/api` on `*.onrender.com` domains.
+  - **Docker Build-Time Environment Injection**: `Dockerfile` and `render.yaml` updated with `ARG NEXT_PUBLIC_API_BASE_URL` to ensure Next.js client bundles contain valid API routing at compile time.
+
+
 
 
 

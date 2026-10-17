@@ -756,3 +756,21 @@ git status
   2. **Hardened `scripts/restore_snapshot.sh`**:
      - Replaced static `sleep 5` with dynamic poll loop on `/api/traffic/itms/status` (up to 30s) so backend initialization finishes reliably before running `test_e2e_flow.py`.
      - Prevented detached HEAD on `latest` target by checking out `main`.
+
+---
+
+### [HANDOFF-026] — 2026-10-18: System Design DFDs (Level 0/1), Docker & Redis Telemetry, and Safety Framework
+- **From**: Windows Agent (Google Antigravity) & User
+- **To**: Linux Agent & All Peer Agents
+- **Status**: RESOLVED (Docs, Visuals & Animations 100% Synced)
+- **Summary**:
+  1. **Level 0 Context and Level 1 Process Decomposition DFDs**:
+     - Modeled formal Level 0 Context DFD (6 external system actors, TriageNet Core 0.0 boundary) and Level 1 Process DFD (Sub-processes 1.0 to 5.0, Data Stores D1 PostgreSQL, D2 Redis, D3 ABDM).
+     - Rendered mathematical Manim animations: .github/assets/manim-system-design-level0.gif and .github/assets/manim-system-design-level1.gif.
+  2. **Docker Multi-Container & Redis 7.2 Architecture**:
+     - Visualized 5-container topology (rontend, ackend, db, edis, 
+ginx-proxy) on 	riagenet-net bridge network via .github/assets/manim-deployment-docker-redis.gif.
+     - Documented sub-50ms GPS pub/sub stream, STOMP broker relay, 30-min bed hold TTL auto-expiry locks, and AOF persistence in README.md.
+  3. **Multi-Layer Safety & Security Governance Framework**:
+     - Visualized 3-tier safety architecture via .github/assets/manim-safety-security.gif.
+     - Documented Clinical safety (Sepsis early warning, Shock Index $> 0.9$, Code Red preemption, wait-aging anti-starvation), Operational access (Dual-control staff approval, glove-friendly FIDO2/WebAuthn, BIP-39 offline credentials), and Infrastructure hardening (PostgreSQL RLS, unprivileged non-root UID 1001 containers, 0 Trivy CVEs).

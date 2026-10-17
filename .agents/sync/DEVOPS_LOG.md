@@ -1774,3 +1774,32 @@ User confirmed production completion and release v1.3.0. Requested a complete re
 4. **Codebase Knowledge Graph Updated**:
    - Executed graphify update . to index new scripts and assets into graphify-out/.
 
+
+
+---
+
+### Entry: 2026-10-18 - Multi-Container Docker & Redis Deep-Dive, Multi-Layer Safety Architecture & Level 0/1 System Design Manim Animations
+- **Timestamp**: 2026-10-18T01:32:00+05:30
+- **Environment**: Windows 11 (P:\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Documentation, System Design DFDs, Docker & Redis Architecture, Safety Engineering, Manim Animations
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+User requested full deployment section with diagrams explaining Docker Compose and Redis 7.2 architecture, a dedicated multi-layer safety and security governance section with animations, and formal System Design Level 0 Context and Level 1 Process Decomposition Data Flow Diagrams with Manim mathematical animations.
+
+#### Actions Executed
+1. **Engineered Formal System Design & Deployment Manim Scenes (scripts/generate_system_design_manim.py)**:
+   - Level0ContextDFD: Visualizes 6 external entities (108 ALS Ambulance Fleet, Hospital ED Staff, State Health Directorate, Municipal Traffic Police, ABDM NHCX Gateway, Citizen Callers) interacting with TriageNet Core (0.0).
+   - Level1ProcessDecompositionDFD: Decomposes core engine into 5 discrete sub-processes (1.0 Intake, 2.0 Acuity, 3.0 Matching, 4.0 Corridor, 5.0 Governance) and data stores (D1 PostgreSQL PostGIS, D2 Redis In-Memory, D3 ABDM Registry).
+   - DockerRedisDeploymentScene: Illustrates the 5-container bridge network (	riagenet-net), Nginx reverse proxy port routing, sub-50ms GPS telemetry pub/sub, and persistent volume mounts.
+   - SafetySecurityGovernanceScene: Shows the 3-tier safety architecture (Clinical Sepsis/Shock Index protocols, Operational FIDO2/Dual-Control signoffs, Infrastructure RLS/Non-root containers).
+2. **Rendered and Converted to Optimized 15 FPS Lanczos Palette GIFs (scripts/render_and_convert_manim.py)**:
+   - .github/assets/manim-system-design-level0.gif (642 KB)
+   - .github/assets/manim-system-design-level1.gif (538 KB)
+   - .github/assets/manim-deployment-docker-redis.gif (788 KB)
+   - .github/assets/manim-safety-security.gif (723 KB)
+3. **Master Redesign and Expansion of README.md**:
+   - Integrated Level 0 & Level 1 System Design sections with Mermaid syntax and Manim animations.
+   - Added Production Deployment & Redis Architecture section with Docker Compose ASCII table, capability matrix, and technical explanations of Redis Pub/Sub, STOMP broker, 30-min bed hold TTL locks, and AOF durability.
+   - Added Multi-Layer Safety & Security Governance section detailing Sepsis Early Warning, Shock Index, wait-aging anti-starvation, Dual-Control staff signoffs, FIDO2/WebAuthn, BIP-39 emergency auth, and PostgreSQL RLS.

@@ -51,9 +51,6 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     plan: free
     healthCheckPath: /
-    dockerBuildArgs:
-      - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://triagenet-backend.onrender.com/api
     envVars:
       - key: NEXT_PUBLIC_API_BASE_URL
         value: https://triagenet-backend.onrender.com/api

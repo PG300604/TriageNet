@@ -816,3 +816,16 @@ ender.yaml, and essential dotfiles remain in root.
      - Updated scripts/deploy.sh, scripts/restore_snapshot.sh, scripts/take_snapshot.sh.
   3. **ML Benchmark Documentation**:
      - Linked ml/README.md and benchmark scripts in README.md with full multi-dataset benchmark comparison table.
+
+
+---
+
+### [HANDOFF-029] — 2026-10-18: Render Blueprint Schema Fix (Purged dockerBuildArgs)
+- **From**: Windows Agent (Google Antigravity) & User
+- **To**: Linux Agent & All Peer Agents
+- **Status**: RESOLVED (Render Blueprint Validated)
+- **Summary**:
+  - Removed invalid dockerBuildArgs property from 
+ender.yaml.
+  - Render automatically injects envVars as Docker build args.
+  - Pushed fix to origin/main to trigger immediate successful Blueprint sync.

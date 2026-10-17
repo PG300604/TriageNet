@@ -1875,3 +1875,27 @@ estore.txt -> scripts/restore.txt.
    - Updated scripts/restore_snapshot.sh and scripts/take_snapshot.sh with -f docker/docker-compose.yml.
    - Retained 
 ender.yaml at root to maintain Render.com Blueprint Infrastructure-as-Code automation.
+
+
+---
+
+### Entry: 2026-10-18 - Fix Render Blueprint Schema: Purged Invalid dockerBuildArgs Field
+- **Timestamp**: 2026-10-18T02:12:00+05:30
+- **Environment**: Windows 11 (P:\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: DevOps, Cloud Infrastructure, Render.com Blueprints
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+Render Blueprint sync reported an error on sync 2551948:
+dockerBuildArgs: field dockerBuildArgs not found in type file.Service.
+In Render's Blueprint specification, there is no dockerBuildArgs field for Docker services. Render automatically maps all service environment variables (envVars) directly into Docker build arguments (ARG) using the same keys and values.
+
+#### Actions Executed
+1. **Purged dockerBuildArgs from 
+ender.yaml**:
+   - Removed dockerBuildArgs: block under 	riagenet-frontend.
+   - NEXT_PUBLIC_API_BASE_URL is already declared under envVars:, which Render passes directly to Docker build time.
+2. **Synchronized Repository & Blueprints**:
+   - Verified YAML syntax.
+   - Pushed commit to main for automatic Render Blueprint deployment.

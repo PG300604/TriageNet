@@ -1982,3 +1982,24 @@ Per user directives:
 2. **Updated LinkedIn Video Caption**:
    - Replaced local file references with the official Google Drive URL.
    - Verified character count strictly under 3,000 (2,839 characters for Option 1, 2,421 characters for Option 2) with zero en-dashes/em-dashes.
+
+---
+
+### Entry: 2026-10-18 - PowerPoint Slide Deck (.pptx) Generation with Complete Presenter Notes
+- **Timestamp**: 2026-10-18T02:59:00+05:30
+- **Environment**: Windows 11 (P:\\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Documentation, Presentation, Slide Deck, Google Drive Upload
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+Generate an editable, full-resolution PowerPoint presentation slide deck (.pptx) corresponding to the 8-page DJI showroom whitepaper so the user can upload it directly to Google Drive alongside the master video and PDF.
+
+#### Actions Executed
+1. **Engineered scripts/generate_slide_deck_pptx.py**:
+   - Installed python-pptx (1.0.2).
+   - Rendered all 8 PDF slides at 2x Retina resolution (1684 x 1190 px) for crisp projection in Google Slides, Keynote, and PowerPoint.
+   - Built full-bleed slide presentation matching Landscape A4 proportions (11.693 x 8.268 in).
+   - Embedded comprehensive presenter/speaker notes across all 8 slides detailing the Golden Hour problem, distributed architecture, 4 core algorithms, 24-district ITMS green wave, clinical safety tiers, and live cloud sandboxes.
+2. **Output Artifact**:
+   - Canonical file generated: docs/TriageNet_Executive_Slide_Deck.pptx (3.35 MB).

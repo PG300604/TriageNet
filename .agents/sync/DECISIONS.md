@@ -58,3 +58,4 @@ Log of decisions and variations from the initial PRD/TRD specs.
 
 
 
+| 2026-10-18 | GitHub Experience Redesign: Manim Diagrams, Motion GIFs & Visual README | Redesigned repository README with the 112s master explainer video showcase at the top, animated Manim diagrams for system architecture and Dijkstra green wave routing, 60 FPS motion GIFs for the 4 hand-implemented clinical algorithms, labeled screenshots for all major views, live Render cloud demo links (Guest Sandbox), and comprehensive technology taxonomy. |

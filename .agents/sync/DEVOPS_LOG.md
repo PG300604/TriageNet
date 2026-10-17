@@ -1803,3 +1803,34 @@ User requested full deployment section with diagrams explaining Docker Compose a
    - Integrated Level 0 & Level 1 System Design sections with Mermaid syntax and Manim animations.
    - Added Production Deployment & Redis Architecture section with Docker Compose ASCII table, capability matrix, and technical explanations of Redis Pub/Sub, STOMP broker, 30-min bed hold TTL locks, and AOF durability.
    - Added Multi-Layer Safety & Security Governance section detailing Sepsis Early Warning, Shock Index, wait-aging anti-starvation, Dual-Control staff signoffs, FIDO2/WebAuthn, BIP-39 emergency auth, and PostgreSQL RLS.
+
+
+---
+
+### Entry: 2026-10-18 - 1:53 Video Loop Integration, Manim Caption Purge & Mermaid Syntax Hardening
+- **Timestamp**: 2026-10-18T01:46:00+05:30
+- **Environment**: Windows 11 (P:\TriageNet)
+- **Operator / Agent**: Google Antigravity (Windows Session)
+- **Scope / Category**: Documentation, Video Assets, Mermaid Syntax Debugging, GitHub Rendering
+- **Status**: Completed & 100% Operational
+
+#### Context & Objectives
+User requested:
+1. Remove all header text regarding the 112s master explainer video.
+2. Embed the 1:53 keynote video to play on an infinite loop at the top of the README.
+3. Repurpose the dual-bus telemetry animation (hero-architecture-preview.gif) elsewhere in the README.
+4. Remove all occurrences of 'Manim Animation:' captions across the entire README.
+5. Fix GitHub Mermaid diagram parse errors on Level 0 and Docker deployment topologies.
+
+#### Actions Executed
+1. **Engineered 1:53 Infinite Loop Keynote Video Asset**:
+   - Converted full 113.0-second 4K keynote (TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4) into an optimized 760x428 10 FPS GIF (.github/assets/keynote-video-loop.gif, 6.72 MB).
+   - Embedded cleanly at the top of README.md with zero text headers or clunky captions.
+2. **Repurposed Dual-Bus Architecture Animation**:
+   - Re-positioned hero-architecture-preview.gif inside 'System Architecture & Reactive Data Flow' to showcase the dual-bus telemetry and dispatch pipeline.
+3. **Removed All 'Manim Animation:' Captions**:
+   - Purged all italicized 'Manim Animation: ...' captions across Level 0, Level 1, Dijkstra Green Wave, System Architecture, Docker/Redis, and Multi-Layer Safety sections.
+4. **Repaired & Validated All 4 Mermaid Diagrams**:
+   - Removed unquoted parentheses from edge labels (e.g., |Corridor Preemption Requests (NH-33, GT Road)| -> |Corridor Preemption Requests: NH-33 and GT Road| and |/ws/ (WebSocket STOMP)| -> |Live STOMP WebSocket Telemetry|).
+   - Replaced < and > inside safety nodes with safe descriptive phrasing to avoid HTML parser conflicts (SpO2 below 90%, SI exceeding 0.9).
+   - Verified 100% clean parsing via scripts/validate_mermaid.py.

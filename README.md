@@ -27,13 +27,8 @@
 
 ---
 
-### 🎬 Master Explainer Video (112s Silent Tech Keynote)
-*Synced to the high-energy soundtrack "Rise Up" by Aylex — Built with Glassmorphism, 60 FPS Chromium motion graphics, and Manim.*
-
-[![TriageNet 112s Master Explainer Video](.github/assets/hero-architecture-preview.gif)](https://github.com/PG300604/TriageNet/releases/tag/v1.3.0)
-
 <p align="center">
-  <em>👆 <strong>Click the banner to watch or download the full 112s high-production video</strong> (1080p @ 60 FPS, 24.5 MB).</em>
+  <img src=".github/assets/keynote-video-loop.gif" alt="TriageNet Architecture Showcase" width="100%" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 </div>
@@ -117,7 +112,7 @@ In acute polytrauma, severe hemorrhage, and intracranial injury, **60 minutes de
 
 ## 🏛️ System Design Architecture (Level 0 & Level 1)
 
-`Manim v0.22` • `Context DFD Level 0` • `Process DFD Level 1` • `Data Dictionary`
+`Context DFD Level 0` • `Process DFD Level 1` • `Dynamic Data Dictionary` • `Sub-50ms Routing`
 
 TriageNet is structured using formal hierarchical Data Flow Diagrams (DFDs) governing interactions between external human/governmental actors and internal microservices.
 
@@ -125,8 +120,7 @@ TriageNet is structured using formal hierarchical Data Flow Diagrams (DFDs) gove
 The Level 0 Context Diagram establishes the foundational system boundary of TriageNet, detailing all external actors, real-time inputs, and autonomous clinical outputs:
 
 <p align="center">
-  <img src=".github/assets/manim-system-design-level0.gif" alt="Manim Level 0 Context DFD" width="780" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Animation: Level 0 Context System Design detailing bidirectional flows between 6 external entities and TriageNet.</em>
+  <img src=".github/assets/manim-system-design-level0.gif" alt="Level 0 Context DFD" width="780" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 ```mermaid
@@ -153,7 +147,7 @@ flowchart TB
     E3 -->|Budget Grants, Shortage Requisitions| TN
     TN -->|Statewide Risk Telemetry, Capacity Analytics| E3
 
-    TN -->|Corridor Preemption Requests (NH-33, GT Road)| E4
+    TN -->|Corridor Preemption Requests: NH-33 and GT Road| E4
     E4 -->|Green Wave Status Acknowledgement| TN
 
     E5 -->|ABHA Patient IDs, Ayushman Verification| TN
@@ -169,8 +163,7 @@ flowchart TB
 Decomposes the core `0.0` TriageNet platform into 5 cohesive sub-processes, with formal data flows and persistent data stores:
 
 <p align="center">
-  <img src=".github/assets/manim-system-design-level1.gif" alt="Manim Level 1 Process Decomposition" width="780" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Animation: Level 1 Process Decomposition Diagram showing the 5 sub-processes, persistent stores D1-D3, and data contracts.</em>
+  <img src=".github/assets/manim-system-design-level1.gif" alt="Level 1 Process Decomposition" width="780" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 ```mermaid
@@ -182,22 +175,25 @@ flowchart TB
     end
 
     subgraph Processes ["⚡ CORE SUB-PROCESSES"]
-        P1(("1.0<br/>Clinical Intake &<br/>SeverityScorer"))
-        P2(("2.0<br/>Dual-Bus Telemetry<br/>& Event Broker"))
+        P1(("1.0<br/>Clinical Intake and<br/>SeverityScorer"))
+        P2(("2.0<br/>Dual-Bus Telemetry<br/>and Event Broker"))
         P3(("3.0<br/>HungarianMatcher<br/>Specialist Alloc"))
-        P4(("4.0<br/>DijkstraRouter &<br/>Green Wave ITMS"))
-        P5(("5.0<br/>Statewide Capacity<br/>& Grants Ledger"))
+        P4(("4.0<br/>DijkstraRouter and<br/>Green Wave ITMS"))
+        P5(("5.0<br/>Statewide Capacity<br/>and Grants Ledger"))
     end
 
     P1 -->|Acuity Vector| P2
     P1 -->|Patient Record| D1
-    P2 <-->|GPS & STOMP Channels| D3
+    P2 -->|GPS and STOMP Channels| D3
+    D3 -->|Cached Telemetry State| P2
     P2 -->|Acuity Event| P3
     P3 -->|Specialist Reservation| D1
     P3 -->|Assigned Destination| P4
-    P4 <-->|Road Weights & Shortest Path| D2
+    P4 -->|Shortest Path Query| D2
+    D2 -->|Dynamic Road Edge Weights| P4
     P4 -->|Corridor Signal Preemption| P2
-    P5 <-->|Facility Beds & ₹ Ledger| D1
+    P5 -->|Bed Ledger Updates| D1
+    D1 -->|Historical Grant Records| P5
     P2 -->|Real-Time State Sync| P5
 ```
 
@@ -282,8 +278,7 @@ $$\Large W(e) = \text{Length}(e) \cdot \left[1 + \alpha \cdot \left(\frac{\text{
 When an ALS ambulance activates emergency dispatch, the system computes the optimal corridor along NH-33, GT Road, or NH-20 and triggers **Automated Municipal ITMS Signal Preemption**:
 
 <p align="center">
-  <img src=".github/assets/manim-dijkstra-greenwave.gif" alt="Manim Highway Green Wave Graph" width="750" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Mathematical Graph: Vertex network resolving shortest path and preempting traffic signals to ALL-GREEN.</em>
+  <img src=".github/assets/manim-dijkstra-greenwave.gif" alt="Highway Green Wave Graph" width="750" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 <p align="center">
@@ -321,8 +316,8 @@ If a Code Red trauma arrives ($S_{\text{acuity}} \ge 95$), the heap immediately 
 TriageNet employs a **Dual-Bus Reactive Architecture** ensuring that telemetry generated on the road by 108 ambulances reaches clinical screens in less than 50 milliseconds:
 
 <p align="center">
-  <img src=".github/assets/manim-architecture-flow.gif" alt="Manim System Architecture Flow" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Animation: Real-time event propagation across Edge Clients, Spring Core Broker, and Postgres/Redis tiers.</em>
+  <img src=".github/assets/hero-architecture-preview.gif" alt="Distributed Real-Time Telemetry and Dispatch Pipeline" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br><br>
+  <img src=".github/assets/manim-architecture-flow.gif" alt="System Architecture Flow" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 ---
@@ -334,8 +329,7 @@ TriageNet employs a **Dual-Bus Reactive Architecture** ensuring that telemetry g
 TriageNet is engineered as a fully containerized, microservice-ready topology managed via `docker-compose.prod.yml`. The system is designed to run efficiently on single-node cloud servers (e.g., OCI Always Free 4 OCPU / 24 GB RAM) or horizontally across distributed clusters.
 
 <p align="center">
-  <img src=".github/assets/manim-deployment-docker-redis.gif" alt="Manim Docker and Redis Deployment Architecture" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Animation: Docker multi-container topology showing isolated bridge networking, Nginx gateway, and Redis telemetry streams.</em>
+  <img src=".github/assets/manim-deployment-docker-redis.gif" alt="Docker and Redis Deployment Architecture" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 ```mermaid
@@ -361,13 +355,15 @@ flowchart TB
         end
     end
 
-    Internet -->|Ports 80/443| NGINX
-    NGINX -->|/ and /_next/static/| FRONTEND
-    NGINX -->|/api/ and /swagger-ui/| BACKEND
-    NGINX -->|/ws/ (WebSocket STOMP)| BACKEND
+    Internet -->|Ports 80 and 443| NGINX
+    NGINX -->|Web Frontend Static and SSR| FRONTEND
+    NGINX -->|REST API and OpenAPI Swagger| BACKEND
+    NGINX -->|Live STOMP WebSocket Telemetry| BACKEND
 
-    BACKEND <-->|Sub-50ms Pub/Sub & TTL Locks| REDIS
-    BACKEND <-->|JPA / PostGIS Geospatial Queries| POSTGRES
+    BACKEND -->|PubSub Streams and Bed TTL Locks| REDIS
+    REDIS -->|In-Memory Telemetry State| BACKEND
+    BACKEND -->|JPA and PostGIS Spatial Queries| POSTGRES
+    POSTGRES -->|Persisted Clinical Records| BACKEND
 
     POSTGRES --- V_PG
     REDIS --- V_REDIS
@@ -432,17 +428,16 @@ Redis serves four mission-critical functions in TriageNet that traditional SQL c
 Because TriageNet allocates life-critical resources during acute trauma, safety is enforced across three distinct layers:
 
 <p align="center">
-  <img src=".github/assets/manim-safety-security.gif" alt="Manim Safety and Security Framework" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" /><br>
-  <em>Manim Animation: Multi-layer safety governance framework spanning clinical algorithms, access control, and infrastructure.</em>
+  <img src=".github/assets/manim-safety-security.gif" alt="Safety and Security Framework" width="800" style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />
 </p>
 
 ```mermaid
 flowchart TD
     subgraph Layer1 ["🏥 LAYER 1: CLINICAL PATIENT SAFETY"]
-        L1_1["Sepsis Early Warning Protocol<br/>(SpO2 < 90% & HR > 110 bpm)"]
-        L1_2["Shock Index Hemorrhagic Alert<br/>(SI = HR / SBP > 0.9)"]
-        L1_3["Code Red ICU Preemption<br/>(Immediate Bed Grant for Score ≥ 95)"]
-        L1_4["Acuity Wait-Aging Function<br/>(E = S + λ√W Prevents Starvation)"]
+        L1_1["Sepsis Early Warning Protocol<br/>(SpO2 below 90% and HR above 110 bpm)"]
+        L1_2["Shock Index Hemorrhagic Alert<br/>(SI = HR / SBP exceeding 0.9)"]
+        L1_3["Code Red ICU Preemption<br/>(Immediate Bed Grant for Score >= 95)"]
+        L1_4["Acuity Wait-Aging Function<br/>(Priority Boost E = S + lambda * sqrt(W))"]
     end
 
     subgraph Layer2 ["🔐 LAYER 2: OPERATIONAL ACCESS GOVERNANCE"]
@@ -460,7 +455,8 @@ flowchart TD
         L3_4["Dual-Transport Auth Security<br/>(HttpOnly SameSite Cookie + Bearer JWT)"]
     end
 
-    Layer1 --- Layer2 --- Layer3
+    L1_4 --> L2_1
+    L2_5 --> L3_1
 ```
 
 ---

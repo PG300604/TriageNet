@@ -774,3 +774,23 @@ ginx-proxy) on 	riagenet-net bridge network via .github/assets/manim-deployment-
   3. **Multi-Layer Safety & Security Governance Framework**:
      - Visualized 3-tier safety architecture via .github/assets/manim-safety-security.gif.
      - Documented Clinical safety (Sepsis early warning, Shock Index $> 0.9$, Code Red preemption, wait-aging anti-starvation), Operational access (Dual-control staff approval, glove-friendly FIDO2/WebAuthn, BIP-39 offline credentials), and Infrastructure hardening (PostgreSQL RLS, unprivileged non-root UID 1001 containers, 0 Trivy CVEs).
+
+
+---
+
+### [HANDOFF-027] — 2026-10-18: 1:53 Keynote Video Loop, Caption Purge & Mermaid Syntax Hardening
+- **From**: Windows Agent (Google Antigravity) & User
+- **To**: Linux Agent & All Peer Agents
+- **Status**: RESOLVED (README.md, Visual Assets & Mermaid 100% Operational)
+- **Summary**:
+  1. **1:53 Video Loop**:
+     - Embedded .github/assets/keynote-video-loop.gif (6.72 MB, 1:53 duration, 760x428) seamlessly at the top of README.md to play on loop.
+     - Stripped video heading and subtitle text as requested.
+  2. **Repurposed Architecture Animation**:
+     - Moved hero-architecture-preview.gif to 'System Architecture & Reactive Data Flow' to showcase the dual-bus telemetry and dispatch pipeline.
+  3. **Removed 'Manim Animation:' Captions**:
+     - Removed all 'Manim Animation:' captions before Level 0, Level 1, Green Wave, Architecture, Deployment, and Safety sections.
+  4. **Fixed Mermaid Parse Errors**:
+     - Sanitized edge labels in Level 0 and Docker deployment diagrams, eliminating parentheses, slashes, and ampersands.
+     - Sanitized node labels in safety diagram to avoid HTML tag collisions with < and >.
+     - Validated all 4 diagrams via scripts/validate_mermaid.py.

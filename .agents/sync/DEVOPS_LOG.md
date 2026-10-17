@@ -375,6 +375,7 @@ Following the Linux DevOps hardening milestone (`[LOG-014]`), the repository was
    - Built automated vector rendering pipeline (`scripts/generate_social_preview.js`) using `sharp`.
    - Rendered pixel-perfect 1280x640 social preview card at `.github/assets/social-preview.png` and `.github/social-preview.png` featuring authentic dark theme styling, Jharkhand state telemetry, algorithm feature pillars, and circular-masked logo HUD.
 
+<<<<<<< Updated upstream
 ### [LOG-016] — 2026-10-16: Implementation of Remote Director Control Center (`/control`) & Production UI Polish
 
 - **Timestamp**: `2026-10-16T12:05:00+05:30`
@@ -1283,4 +1284,23 @@ px tsc --noEmit passed with 0 errors.
    - Added `video_production/*.mp4` and `video_production/audio/*.wav` to `.gitignore` to keep git history lightweight (largest tracked file capped at 4.5 MB).
    - Tracked all new application components: `/ambulance`, `/portal`, `/simulator`, `/downloads`, `/onboarding`, `/control`, `mobile/` Flutter monorepo, `android-app/` wrapper, and `video_production/` Remotion suite.
 4. **Handoff Coordination**:
-   - Posted `[HANDOFF-016]` in `.agents/sync/HANDOFF.md` with explicit instructions for the Linux agent to pull and begin container testing.
+---
+
+### [LOG-008] — 2026-10-17: Linux Staging Deployment Automation & Full Windows Suite Integration
+
+- **Timestamp**: `2026-10-17T12:03:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity (Linux DevOps Session)
+- **Scope / Category**: Cross-Platform Sync, Deploy Scripts, Staging Architecture
+- **Status**: Completed & In Progress
+
+#### Context & Objectives
+Synchronized with Windows commit `3c4ae21` containing the complete 20-route frontend suite, native Android companion wrapper, Remotion video assets, and OBS director scripts. Re-integrated Linux automated staging deployment infrastructure (`scripts/deploy.sh`, `docker-compose.prod.yml`, `nginx/ssl.conf`).
+
+#### Actions Executed
+1. **Pull & Sync**: Synchronized with `origin/main` commit `3c4ae21` (670 files updated, +102,898 lines).
+2. **Deploy Automation Restored**:
+   - `scripts/deploy.sh`: Multi-command orchestrator (`setup`, `deploy`, `ssl`, `status`, `logs`, `rollback`, `backup`, `restore`, `clean`).
+   - `docker-compose.prod.yml`: Production compose topology with OCI ARM limits and TLS cert mounts.
+   - `nginx/ssl.conf`: Full TLS 1.3 / HTTP/2 reverse proxy configuration.
+

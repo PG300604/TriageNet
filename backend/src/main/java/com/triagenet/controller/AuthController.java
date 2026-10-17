@@ -42,7 +42,7 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(900) // 15 minutes
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
 
@@ -53,7 +53,7 @@ public class AuthController {
                     .secure(isProd)
                     .path("/api/auth")
                     .maxAge(604800) // 7 days
-                    .sameSite("Lax")
+                    .sameSite(isProd ? "None" : "Lax")
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         }
@@ -87,7 +87,7 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(900)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
 
@@ -97,7 +97,7 @@ public class AuthController {
                     .secure(isProd)
                     .path("/api/auth")
                     .maxAge(604800)
-                    .sameSite("Lax")
+                    .sameSite(isProd ? "None" : "Lax")
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         }
@@ -131,14 +131,14 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         ResponseCookie refreshCookie = ResponseCookie.from("triagenet_refresh", "")
                 .httpOnly(true)
                 .secure(isProd)
                 .path("/api/auth")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -197,7 +197,7 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(900)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
 
@@ -207,7 +207,7 @@ public class AuthController {
                     .secure(isProd)
                     .path("/api/auth")
                     .maxAge(604800)
-                    .sameSite("Lax")
+                    .sameSite(isProd ? "None" : "Lax")
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         }
@@ -231,7 +231,7 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(900)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
 
@@ -262,14 +262,14 @@ public class AuthController {
                 .secure(isProd)
                 .path("/")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
         ResponseCookie refreshCookie = ResponseCookie.from("triagenet_refresh", "")
                 .httpOnly(true)
                 .secure(isProd)
                 .path("/api/auth")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(isProd ? "None" : "Lax")
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());

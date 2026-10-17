@@ -59,7 +59,7 @@ const ROLES: RoleCard[] = [
   {
     role: 'SUPER_ADMIN',
     staffId: 'JH-SYS-0001',
-    name: 'Dr. Priyanshu Ghosh',
+    name: 'State Health Command (Super Admin)',
     title: 'State Health Command (Super Admin)',
     jurisdiction: 'Statewide (24 Districts)',
     icon: Shield,

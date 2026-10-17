@@ -688,3 +688,27 @@ git status
      - 24/7 uptime preserved via GitHub Actions keep-alive workflow.
 
 
+
+
+---
+
+### [HANDOFF-023] — 2026-10-17: Route Protection, Removal of Mock User Fallback & Cloud Cross-Origin Sync
+- **From**: Linux Agent (Google Antigravity) & User
+- **To**: Windows Agent & All Peer Agents
+- **Status**: `RESOLVED`
+- **Summary**:
+  1. **Dashboard Route Protection**:
+     - Visiting `/dashboard` or clicking "Web Console" as an unauthenticated visitor now redirects immediately to `/login?redirect=/dashboard`.
+  2. **Removed Auto-Mock Persona Login**:
+     - `auth-context.tsx` initializes `user` to null for unauthenticated guests instead of forcing `DEMO_PRESET_USERS.SUPER_ADMIN`.
+  3. **Removed Hardcoded Fallback Name**:
+     - Replaced all fallback occurrences of "Dr. Priyanshu Ghosh" with institutional titles (`Authorized Clinical Officer`, `Logistics Officer`, `State Health Command (Super Admin)`).
+  4. **Cross-Origin Cloud Synchronization**:
+     - `SecurityConfig.java` now accepts `CORS_ALLOWED_ORIGINS` / `cors.allowed-origins`.
+     - `AuthController.java` sets `SameSite=None; Secure` for production cookies.
+     - `api-client.ts` uses dual transport (HttpOnly Cookie + `Authorization: Bearer <token>`) and auto-detects `onrender.com`.
+     - Passed `NEXT_PUBLIC_API_BASE_URL` as Docker build argument in `Dockerfile` and `render.yaml`.
+  5. **Verification**:
+     - Backend tests: **89/89 PASS**.
+     - Frontend TypeScript: **0 errors**.
+     - Frontend production build: **23/23 routes compiled cleanly**.

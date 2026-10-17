@@ -70,7 +70,7 @@ export const STAFF_ID_ALIASES: Record<string, UserRole> = {
 export const DEMO_PRESET_USERS: Record<UserRole, UserProfile> = {
   SUPER_ADMIN: {
     id: 'demo-super-admin',
-    name: 'Dr. Priyanshu Ghosh',
+    name: 'State Health Command (Super Admin)',
     email: 'superadmin@triagenet.gov.in',
     role: 'SUPER_ADMIN',
     roleTitle: 'State Health Command Controller',
@@ -343,19 +343,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // If unauthenticated or guest visitor, load default demo profile if selected or fallback
-      const demoRole = (typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_role') as UserRole : null) || 'SUPER_ADMIN';
-      const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
-      let finalProfile = defaultProfile;
-      if (typeof window !== 'undefined') {
-        try {
-          const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
-          if (saved) {
-            finalProfile = { ...defaultProfile, ...JSON.parse(saved) };
-          }
-        } catch {}
+      // Only load demo persona if user explicitly activated demo mode (e.g. from /login or /control)
+      const isDemoActive = typeof window !== 'undefined' ? localStorage.getItem('triagenet_demo_active') === 'true' : false;
+      if (isDemoActive) {
+        const demoRole = (typeof window !== 'undefined' ? (localStorage.getItem('triagenet_demo_role') as UserRole) : null) || 'SUPER_ADMIN';
+        const defaultProfile = DEMO_PRESET_USERS[demoRole] || DEMO_PRESET_USERS.SUPER_ADMIN;
+        let finalProfile = defaultProfile;
+        if (typeof window !== 'undefined') {
+          try {
+            const saved = localStorage.getItem(`triagenet_custom_profile_${defaultProfile.id}`);
+            if (saved) {
+              finalProfile = { ...defaultProfile, ...JSON.parse(saved) };
+            }
+          } catch {}
+        }
+        setUser(finalProfile);
+        setIsLoading(false);
+        return;
       }
-      setUser(finalProfile);
+
+      // First-time or unauthenticated visitor: no session
+      setUser(null);
       setIsLoading(false);
     };
 
@@ -407,6 +415,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         staffId: resp.staffId || email,
       };
 
+      if (resp.token) {
+        setAuthToken(resp.token);
+      }
       setToken(resp.token || null);
       setUser(profile);
       setIsShiftActive(!!resp.shiftActive);
@@ -488,6 +499,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         districtName: resp.districtName,
       };
 
+      if (resp.token) {
+        setAuthToken(resp.token);
+      }
       setToken(resp.token || null);
       setUser(profile);
       setIsShiftActive(true);

@@ -1597,11 +1597,55 @@ TriageNet was deployed to Render.com using Infrastructure-as-Code Blueprint (`re
    - Captured final production snapshot (`snapshot-20261017_182635`).
    - Pushed to GitHub `origin/main`.
 
+---
+
+### [LOG-016] — 2026-10-17: Route Auth Guard, Unauthenticated Guest Experience & Cloud Cross-Origin Auth Sync
+
+- **Timestamp**: `2026-10-17T18:43:00+05:30`
+- **Environment**: Cloud Production (Render.com + Linux Fedora 44 Workspace)
+- **Operator / Agent**: Google Antigravity & User Pair Development
+- **Scope / Category**: Security, Auth Guarding, Persona Hygiene, Cross-Origin CORS & Cookie Synchronization
+- **Status**: Completed & Verified
+
+#### Context & Issues Addressed
+1. **Unauthenticated Redirect Issue**: Clicking "Web Console" or navigating to `/dashboard` directly loaded a dashboard session instead of redirecting first-time visitors to the staff login portal.
+2. **Hardcoded Profile Auto-Login**: `frontend/lib/auth-context.tsx` was defaulting unauthenticated visitors to `DEMO_PRESET_USERS.SUPER_ADMIN`, causing every first-time visitor to be automatically logged in as a hardcoded persona ("Dr. Priyanshu Ghosh").
+3. **Hardcoded Fallbacks**: Multiple frontend views had hardcoded fallback strings to "Dr. Priyanshu Ghosh" instead of institutional clinical placeholders.
+4. **Cloud Cross-Origin Disconnect**:
+   - `frontend/Dockerfile` did not accept `NEXT_PUBLIC_API_BASE_URL` as a build arg, baking `http://localhost:8080/api` into the client-side JavaScript bundle.
+   - `SecurityConfig.java` had hardcoded production origins that omitted `https://triagenet-frontend.onrender.com` and ignored `CORS_ALLOWED_ORIGINS`.
+   - `AuthController.java` hardcoded `SameSite=Lax` cookies, preventing cross-origin cookie delivery between `triagenet-frontend.onrender.com` and `triagenet-backend.onrender.com`.
+   - `api-client.ts` lacked `Authorization: Bearer` header transport as a fallback when third-party cookies are blocked by modern browsers on the Public Suffix List (`onrender.com`).
+
+#### Actions Executed
+1. **Route Protection on `/dashboard`**:
+   - Added client-side auth guard in `frontend/components/triagenet/dashboard.tsx`: if `!isLoading && !isAuthenticated`, redirects immediately to `/login?redirect=/dashboard`.
+   - Displays clean verification screen while determining authorization state.
+2. **Eliminated Auto-Login in `auth-context.tsx`**:
+   - Updated `initializeAuth()`: If no active session exists and `triagenet_demo_active` is not explicitly set, state initializes to `user: null` and `isAuthenticated: false`.
+   - Guest and first-time users now see the public citizen portal and login screen as expected.
+3. **Replaced Hardcoded Persona Names**:
+   - `frontend/lib/auth-context.tsx`: SUPER_ADMIN preset name set to `"State Health Command (Super Admin)"` (matching backend seed user `JH-SYS-0001`).
+   - `frontend/components/triagenet/dashboard.tsx`: fallback name changed from `'Dr. Priyanshu Ghosh'` to `'Authorized Clinical Officer'`.
+   - `frontend/components/triagenet/supplies-view.tsx`: officerName fallback changed from `'Dr. Priyanshu Ghosh'` to `'Logistics Officer'`.
+   - `frontend/app/control/page.tsx`: SUPER_ADMIN card name updated to `"State Health Command (Super Admin)"`.
+4. **Cloud Cross-Origin & Token Delivery**:
+   - `backend/src/main/java/com/triagenet/config/SecurityConfig.java`: Updated `corsConfigurationSource()` to inspect `CORS_ALLOWED_ORIGINS` / `cors.allowed-origins` dynamically, with fallback including `https://triagenet-frontend.onrender.com`.
+   - `backend/src/main/java/com/triagenet/controller/AuthController.java`: Configured `sameSite(isProd ? "None" : "Lax")` with `.secure(isProd)` for cross-site cookie support on cloud subdomains.
+   - `frontend/lib/api-client.ts`:
+     - Implemented dynamic `getApiBaseUrl()` detecting `*.onrender.com` in production browser sessions.
+     - Implemented dual-transport token handling: saves JWT in `localStorage` and attaches `Authorization: Bearer <token>` on all requests alongside `credentials: 'include'`.
+   - `frontend/Dockerfile`: Added `ARG NEXT_PUBLIC_API_BASE_URL` and `ENV NEXT_PUBLIC_API_BASE_URL` in builder stage.
+   - `render.yaml`: Added `dockerBuildArgs` with `NEXT_PUBLIC_API_BASE_URL` for `triagenet-frontend`.
+5. **Full Verification**:
+   - Frontend TypeScript: `npx tsc --noEmit` passed with 0 errors.
+   - Frontend Next.js build: `npm run build` compiled 23/23 routes successfully.
+   - Backend unit tests: `./mvnw test` passed 89/89 tests (100% success).
+
 #### Instructions for Windows & Peer Agents
-- TriageNet is now live in production on Render.
-- Cloud URLs:
-  - Frontend: `https://triagenet-frontend.onrender.com`
-  - Backend API: `https://triagenet-backend.onrender.com/api`
+- Pull latest `main`.
+- Unauthenticated users will now be routed directly to `/login`.
+- Demo personas can still be selected directly on the `/login` portal or through the `/control` panel when needed.
 
 
 

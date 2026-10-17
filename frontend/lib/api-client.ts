@@ -1,24 +1,43 @@
 // TriageNet API Client — Type-Safe Spring Boot REST Client
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('onrender.com')) {
+      return 'https://triagenet-backend.onrender.com/api';
+    }
+  }
+  return 'http://localhost:8080/api';
+}
 
-// Auth Helper (State metadata stored in localStorage, JWT stored purely in HttpOnly SameSite cookie)
+// Auth Helper (Dual transport: HttpOnly Cookie + Authorization Bearer header for robust cross-origin cloud deployments)
 export const getAuthToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('triagenet_jwt_token');
+  }
   return null;
 };
 
-export const setAuthToken = (_token: string): void => {
-  // Pure HttpOnly cookie authentication — token is managed securely by the browser via Set-Cookie
+export const setAuthToken = (token: string): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('triagenet_jwt_token', token);
+  }
 };
 
 export const removeAuthToken = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('triagenet_jwt_token');
     localStorage.removeItem('triagenet_user');
+    localStorage.removeItem('triagenet_session_active');
+    localStorage.removeItem('triagenet_demo_active');
+    localStorage.removeItem('triagenet_demo_role');
   }
 };
 
-// Generic API Fetch Wrapper (relying on credentials: 'include' for HttpOnly cookie transport)
+// Generic API Fetch Wrapper (relying on credentials: 'include' + Bearer token for seamless cross-domain auth)
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry: boolean = false): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -26,7 +45,13 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry:
     ...(options.headers as Record<string, string>),
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const token = getAuthToken();
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     credentials: 'include',
     headers,
@@ -37,25 +62,26 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}, isRetry:
     const hasSession = typeof window !== 'undefined' ? localStorage.getItem('triagenet_session_active') === 'true' : false;
     if (hasSession) {
       try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        const refreshResponse = await fetch(`${baseUrl}/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
         });
         if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          if (refreshData?.token) {
+            setAuthToken(refreshData.token);
+          }
           return apiFetch<T>(endpoint, options, true);
         } else {
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('triagenet_session_active');
-          }
+          removeAuthToken();
         }
       } catch {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('triagenet_session_active');
-        }
+        removeAuthToken();
       }
     }
   }

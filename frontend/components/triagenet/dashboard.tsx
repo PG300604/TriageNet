@@ -20,6 +20,7 @@ import {
   triggerBedRelease,
 } from '@/lib/triage-data'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   getHospitalsForDistrict,
   convertFacilityToHospital,
@@ -280,13 +281,20 @@ function buildDistrictState(districtName: string, scenarioKey: ScenarioKey = 'st
 }
 
 export function Dashboard() {
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const { user } = useAuth()
+  useEffect(() => {
+    if (mounted && !isLoading && !isAuthenticated) {
+      router.push('/login?redirect=/dashboard')
+    }
+  }, [mounted, isLoading, isAuthenticated, router])
+
   const currentRole: UserRole = user?.role || 'SUPER_ADMIN'
   const allowedViews = ROLE_ALLOWED_VIEWS[currentRole] || ROLE_ALLOWED_VIEWS.SUPER_ADMIN
   const roleConfig = ROLE_CONFIGS[currentRole] || ROLE_CONFIGS.SUPER_ADMIN
@@ -676,13 +684,13 @@ export function Dashboard() {
     [state.patients],
   )
 
-  if (!mounted) {
+  if (!mounted || isLoading || !isAuthenticated) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#181512] text-stone-100 font-sans">
         <div className="flex flex-col items-center gap-3">
           <div className="size-10 rounded-full border-2 border-[#ea580c] border-t-transparent animate-spin" />
           <p className="text-xs font-mono font-semibold tracking-wider text-stone-400 uppercase">
-            Initializing TriageNet Command Network...
+            {!mounted || isLoading ? 'Initializing TriageNet Command Network...' : 'Redirecting to Clinical Staff Login...'}
           </p>
         </div>
       </div>
@@ -715,7 +723,7 @@ export function Dashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#382416] text-sm">{user?.name || 'Dr. Priyanshu Ghosh'}</span>
+                    <span className="font-bold text-[#382416] text-sm">{user?.name || 'Authorized Clinical Officer'}</span>
                     <span className={cn('font-mono text-[9px] font-bold px-2 py-0.5 rounded border uppercase', roleConfig.color)}>
                       [{roleConfig.badge}]
                     </span>

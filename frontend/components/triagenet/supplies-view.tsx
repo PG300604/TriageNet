@@ -756,7 +756,7 @@ export function SuppliesView({ state, onStateChange, onRunAiSupplyDispatch }: Su
         facilityName={activeHospital.name}
         facilityId={activeHospital.id}
         district={userDistrict}
-        officerName={user?.name || 'Dr. Priyanshu Ghosh'}
+        officerName={user?.name || 'Logistics Officer'}
         officerRole={user?.roleTitle || 'Clinical Triage Officer'}
         onSubmitShortage={handleLogShortageSubmit}
       />

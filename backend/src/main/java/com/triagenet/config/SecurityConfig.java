@@ -24,6 +24,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -74,7 +75,18 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         boolean isDevOrTest = environment.acceptsProfiles(Profiles.of("dev", "test", "local"));
 
-        if (isDevOrTest) {
+        String configuredOrigins = environment.getProperty("cors.allowed-origins");
+        if (configuredOrigins == null) {
+            configuredOrigins = environment.getProperty("CORS_ALLOWED_ORIGINS");
+        }
+
+        if (configuredOrigins != null && !configuredOrigins.isBlank()) {
+            List<String> origins = Arrays.stream(configuredOrigins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            config.setAllowedOrigins(origins);
+        } else if (isDevOrTest) {
             config.setAllowedOrigins(List.of(
                     "http://localhost:3000",
                     "http://127.0.0.1:3000",
@@ -83,6 +95,7 @@ public class SecurityConfig {
         } else {
             // SECURITY (V6): Strict exact origins without wildcards
             config.setAllowedOrigins(List.of(
+                    "https://triagenet-frontend.onrender.com",
                     "https://triagenet.vercel.app",
                     "https://triagenet.dev",
                     "https://triagenet.gov.in"

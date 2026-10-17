@@ -9,6 +9,7 @@ erDiagram
     HOSPITAL ||--o{ RESOURCE : "owns"
     HOSPITAL ||--o{ PATIENT : "admits"
     HOSPITAL ||--o{ STAFF_USER : "employs"
+    HOSPITAL ||--o{ OXYGEN_TELEMETRY : "monitors"
     HOSPITAL ||--o{ HOSPITAL_EDGE : "originates (from_hospital)"
     HOSPITAL ||--o{ HOSPITAL_EDGE : "terminates (to_hospital)"
 
@@ -171,6 +172,18 @@ erDiagram
         string status "PROPOSED | APPROVED | IN_TRANSIT | COMPLETED | REJECTED"
         timestamp requested_at
     }
+
+    OXYGEN_TELEMETRY {
+        uuid id PK
+        uuid hospital_id FK
+        float psa_oxygen_purity "PSA Oxygen Purity %"
+        float lmo_tank_pressure_bar "LMO Cryogenic Pressure (bar)"
+        float flow_rate_lpm "Delivery Flow Rate (LPM)"
+        float capacity_percent "Total Storage Capacity %"
+        boolean alert_triggered "True if purity or pressure breaches safety"
+        string alert_severity "NORMAL | WARNING | CRITICAL"
+        timestamp recorded_at
+    }
 ```
 
 ---
@@ -204,6 +217,12 @@ erDiagram
 - `attempt_count`: Integer failure counter.
 - `lock_expires_at`: Timestamp indicating when temporary account lock expires.
 
+### 2.8 `OXYGEN_TELEMETRY`
+- Ingests real-time IoT telemetry from on-site PSA oxygen plants and cryogenic Liquid Medical Oxygen (LMO) storage tanks.
+- `hospital_id`: Associated hospital facility (FK).
+- `alert_triggered`: Boolean flag set to true when purity drops below 93% or line pressure drops below 4.5 bar.
+- `alert_severity`: Escalation tier (`NORMAL`, `WARNING`, `CRITICAL`).
+
 ---
 
 ## 3. Database Indexes for High-Performance Queries
@@ -231,4 +250,9 @@ CREATE INDEX idx_staff_user_staff_id ON staff_users (staff_id);
 -- Persistent account lockout lookups
 CREATE INDEX idx_login_attempts_email ON login_attempts (email);
 CREATE INDEX idx_login_attempts_lock_expires ON login_attempts (lock_expires_at);
+
+-- High-frequency IoT oxygen telemetry queries
+CREATE INDEX idx_oxygen_hospital ON oxygen_telemetry (hospital_id);
+CREATE INDEX idx_oxygen_alert ON oxygen_telemetry (alert_triggered);
 ```
+

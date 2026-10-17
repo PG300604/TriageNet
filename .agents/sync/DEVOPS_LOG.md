@@ -1357,5 +1357,56 @@ To prevent trauma bed lock-in and clinical resource starvation during inter-dist
 3. **Cross-Platform Sync**:
    - Synchronized all 5 `Essentials/` docs (`brain.md`, `PRD.md`, `TRD.md`, `ERD.md`, `instructions.md`), `DECISIONS.md`, and `WINDOWS_STATUS.md`.
 
+---
+
+### [LOG-011] — 2026-10-17: Phase 11 (IoT Oxygen Telemetry), Phase 13 (Sound Beacon), Phase 14 (ABDM / ABHA Intake), Full-Stack Route Repair & Multi-Container Redeployment
+
+- **Timestamp**: `2026-10-17T13:50:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity & Hermes Agent (Multi-Model Parallel Orchestration)
+- **Scope / Category**: Core Backend Services, REST Routing, Real-Time IoT Telemetry, Web Audio Synthesizer, National Health Stacks, Container Orchestration
+- **Status**: Completed, 100% Tests Passing (81/81), 5/5 Containers Healthy
+
+#### Context & Objectives
+Following Phase 10 completion, user requested addressing all broken parts of full-stack functionalities, executing future phases (Phase 11 IoT Bed & Oxygen Telemetry, Phase 13 Acoustic Siren & Sound Beacon, Phase 14 Ayushman Bharat Digital Mission ABDM / ABHA Integration), and redeploying the Docker container stack with zero errors.
+
+#### Actions Executed
+1. **Full-Stack Route Discrepancies Repaired**:
+   - `TriageQueueController.java`: Added dual-path route aliases `@GetMapping({ "/{hospitalId}", "/hospital/{hospitalId}" })` and `@PostMapping({ "/{hospitalId}/step-time", "/recompute/{hospitalId}" })` aligning backend endpoints with `frontend/lib/api-client.ts`.
+   - `ResourceController.java`: Implemented missing `GET /api/resources/hospital/{hospitalId}` and `POST /api/resources/assign/{hospitalId}` with real Kuhn-Munkres Hungarian bipartite matching allocating waiting patients to available ICU beds, general beds, and ventilators.
+   - `ResourceControllerTest.java`: Added 4 comprehensive MockMvc integration tests verifying resource inventory lookups and Hungarian allocation.
+2. **Phase 11: Real-Time Bed & PSA Oxygen Plant IoT Telemetry Monitor**:
+   - Backend: Created `OxygenTelemetry` entity (indexed on `hospital_id` and `alert_triggered`), `OxygenTelemetryRepository`, `OxygenTelemetryDto`, `OxygenTelemetryService` (thresholds: CRITICAL < 4.2 bar / < 90% purity, WARNING < 4.5 bar / < 93%), and `OxygenTelemetryController` (`POST /api/iot/oxygen-telemetry`, `GET /hospital/{hospitalId}`, `GET /alerts`).
+   - Frontend: Added `ingestOxygenTelemetry`, `getOxygenTelemetryForHospital`, and `getActiveOxygenAlerts` in `api-client.ts`. Built live PSA Oxygen & Telemetry Monitor in `capacity-view.tsx` with purity gauges, cryogenic pressure bars, flow rate meters, pulse simulation, and real-time audio cues.
+3. **Phase 13: Acoustic Siren & Sound Beacon (Web Audio API Synthesizer)**:
+   - `frontend/lib/sound-beacon.ts`: Implemented 100% native Web Audio API synthesizer (zero MP3 dependencies) supporting:
+     - 108 Emergency Dual-Tone Siren (750Hz / 960Hz alternating square wave).
+     - SpO2 Critical Vitals Warning Chimes (1200Hz sine wave).
+     - Hungarian Allocation Harmonic Triad Arpeggio (C5-E5-G5 sine wave).
+     - Tactical PTT Radio Clicks (`playRadioClick()`).
+     - Sound Beacon global toggle button in `top-bar.tsx` with `localStorage` persistence.
+   - Wired sirens to 108 Green Wave preemption and trauma pre-alert dispatch in `ambulance/page.tsx`, and patient crash presets in `triage-queue-view.tsx`.
+4. **Phase 14: Ayushman Bharat Digital Mission (ABDM) / ABHA Patient Intake**:
+   - Backend: Created `AbdmProfileDto`, `AbdmIntegrationService` (with Birsa Munda `12-3456-7890-1234` preset and dynamic verified citizen fallback), and `AbdmController` (`POST /api/abdm/verify-abha`, `GET /patient/{abhaNumber}`).
+   - Frontend: Added ABHA methods in `api-client.ts` and interactive Digital ABHA Patient Intake Console in `triage-queue-view.tsx` with automated clinical prefill of patient demographics, blood group, chronic conditions, and known allergies.
+5. **Testing, Build & Container Verification**:
+   - `FuturePhasesIntegrationTest.java`: 5/5 MockMvc tests passed.
+   - Backend test suite: **81/81 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors in 34.6s).
+   - Frontend TypeScript check: `npx tsc --noEmit` passed with 0 errors.
+   - Frontend Next.js build: Turbopack compiled 20/20 routes in 17.0s with 0 errors.
+   - Multi-tier Docker Compose rebuild & redeploy:
+     - Rebuilt `triagenet-backend` image (`BUILD SUCCESS`).
+     - Rebuilt `triagenet-frontend` image (`BUILD SUCCESS`).
+     - Ran `docker compose up -d --no-deps backend frontend nginx`.
+     - 5/5 containers running and healthy: `triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`.
+6. **OpenAPI 3.0 Contract Updated**:
+   - Re-exported live OpenAPI JSON to `backend/openapi.json` (67 KB, 45+ documented REST endpoints).
+
+#### Instructions for Windows Agents
+- Pull the latest `main` branch.
+- Backend now has 81 unit & integration tests (`.\backend\mvnw.cmd test -B`).
+- Frontend features acoustic sound beacon, PSA oxygen telemetry monitor, and digital ABHA patient intake console.
+
+
 
 

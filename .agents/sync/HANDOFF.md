@@ -568,3 +568,26 @@ git status
      - `http://localhost/v3/api-docs` (HTTP 200, 41 endpoints).
      - `http://localhost/swagger-ui/index.html` (HTTP 200).
   5. Exported formatted schema contract to `backend/openapi.json` for Flutter monorepo (`mobile/`) and Android companion app (`android-app/`).
+
+---
+
+### [HANDOFF-018] — 2026-10-17: Phase 11, 13, 14, Route Repairs & 81-Test Suite Multi-Container Deployment Complete
+- **From**: Linux Agent (Google Antigravity & Hermes Orchestration)
+- **To**: Windows Agent & Public Release
+- **Status**: `RESOLVED` (81/81 Tests Green, 5/5 Containers Healthy)
+- **Summary**:
+  1. **Route Repairs**:
+     - Fixed `TriageQueueController` path mappings (`/api/triage-queue/{hospitalId}` and `/step-time` aliases).
+     - Implemented `ResourceController` endpoints (`GET /api/resources/hospital/{hospitalId}` and `POST /assign/{hospitalId}`) with real Kuhn-Munkres Hungarian matching.
+  2. **Phase 11 (IoT Bed & Oxygen Telemetry)**:
+     - Implemented `OxygenTelemetry` entity, service, controller, repository, and frontend PSA Oxygen Plant monitor in `capacity-view.tsx`.
+  3. **Phase 13 (Acoustic Siren & Sound Beacon)**:
+     - Implemented native Web Audio API synthesizer (`frontend/lib/sound-beacon.ts`) with dual-tone emergency sirens, critical vitals chimes, Hungarian harmonic chords, and radio clicks. Integrated across top bar, ambulance, and triage queue.
+  4. **Phase 14 (ABDM / ABHA Digital Patient Intake)**:
+     - Implemented ABDM verification service and controller (`POST /api/abdm/verify-abha`, `GET /patient/{abhaNumber}`) with Birsa Munda 1-click preset and clinical prefill into intake queue.
+  5. **Verification & Deployment**:
+     - 81/81 Spring Boot backend tests passing (`BUILD SUCCESS`).
+     - Frontend Next.js Turbopack compiles 20/20 routes with 0 errors.
+     - Docker containers rebuilt and verified healthy (`backend`, `frontend`, `db`, `redis`, `proxy`).
+     - OpenAPI spec re-exported to `backend/openapi.json` (45+ endpoints).
+

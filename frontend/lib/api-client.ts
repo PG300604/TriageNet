@@ -433,6 +433,32 @@ export const ApiClient = {
 
   runHungarianAssignment: (hospitalId: string): Promise<any> =>
     apiFetch(`/resources/assign/${hospitalId}`, { method: 'POST' }),
+
+  // Phase 11: Real-Time Bed & Oxygen IoT Telemetry
+  ingestOxygenTelemetry: (dto: {
+    hospitalId: string;
+    psaOxygenPurity?: number;
+    lmoTankPressureBar?: number;
+    flowRateLpm?: number;
+    capacityPercent?: number;
+  }): Promise<any> =>
+    apiFetch('/iot/oxygen-telemetry', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    }),
+
+  getOxygenTelemetryForHospital: (hospitalId: string): Promise<any> =>
+    apiFetch(`/iot/oxygen-telemetry/hospital/${hospitalId}`),
+
+  getActiveOxygenAlerts: (): Promise<any[]> =>
+    apiFetch('/iot/oxygen-telemetry/alerts'),
+
+  // Phase 14: Ayushman Bharat Digital Mission (ABDM)
+  verifyAbha: (abhaNumber: string): Promise<any> =>
+    apiFetch(`/abdm/verify-abha?abhaNumber=${encodeURIComponent(abhaNumber)}`, { method: 'POST' }),
+
+  lookupAbhaPatient: (abhaNumber: string): Promise<any> =>
+    apiFetch(`/abdm/patient/${encodeURIComponent(abhaNumber)}`),
 };
 
 // Referral & Transfer Interfaces

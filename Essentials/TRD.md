@@ -147,6 +147,11 @@
 | `PUT` | `/api/referrals/{id}/status` | Update referral status (`IN_TRANSIT`, `COMPLETED`) |
 | `POST` | `/api/referrals/auto-release` | Sweep and auto-release stale referrals exceeding TTL (default 45m) |
 | `GET` | `/api/referrals/recommendation` | AI Dijkstra + Hungarian overflow transfer recommendation |
+| `POST` | `/api/iot/oxygen-telemetry` | Ingest PSA plant / LMO cryogenic oxygen telemetry |
+| `GET` | `/api/iot/oxygen-telemetry/hospital/{hospitalId}` | Get latest oxygen telemetry reading for hospital |
+| `GET` | `/api/iot/oxygen-telemetry/alerts` | Get active critical/warning oxygen telemetry alerts |
+| `POST` | `/api/abdm/verify-abha` | Verify 14-digit ABHA ID against ABDM and return clinical profile |
+| `GET` | `/api/abdm/patient/{abhaNumber}` | Fetch existing verified citizen record by ABHA number |
 | `GET` | `/v3/api-docs` | OpenAPI 3.0 specification contract |
 | `GET` | `/swagger-ui/**` | Interactive Swagger UI API documentation console |
 | `GET` | `/api/dashboard/state-summary` | Aggregate state-wide command telemetry stats |
@@ -171,7 +176,7 @@
   - Fail-fast JWT startup entropy guard ($\ge 256$ bits) rejecting default secrets in production.
   - Security audit logging with CRLF/control-character sanitization, quote escaping, and email PII masking.
   - Non-root container execution (`USER 1001:1001`) in Dockerfiles.
-  - 71/71 automated backend unit & integration tests passing (100% BUILD SUCCESS).
+  - 81/81 automated backend unit & integration tests passing (100% BUILD SUCCESS).
 - **Explainability**: Every API response for scoring, queue ranking, resource matching, and spatial routing includes human-readable factor attributes.
 
 ---
@@ -267,5 +272,44 @@
   - When primary route delay exceeds 10 minutes, the algorithm evaluates secondary facilities with active ready specialist rosters, returning `diversionHospitalId`, `diversionHospitalName`, and `diversionTimeSavingsMin`.
 - **Hardware-Accelerated SVG Dijkstra Topology Patient Flow**:
   - Active transfers and shortest paths utilize SVG `<animateMotion>` with staggered start times (`begin="0s"`, `begin="1.4s"`) to animate patient wave particles along transfer vectors without JavaScript main-thread re-render overhead.
+
+---
+
+## 13. Phase 11: Real-Time Bed & PSA Oxygen Plant IoT Telemetry Architecture
+
+- **Backend Architecture**:
+  - Entity: `OxygenTelemetry.java` (`table: oxygen_telemetry`, indexes on `hospital_id` and `alert_triggered`).
+  - DTO: `OxygenTelemetryDto.java` mapping `hospitalId`, `psaOxygenPurity` (%), `lmoTankPressureBar` (bar), `flowRateLpm` (LPM), `capacityPercent` (%), `alertTriggered` (boolean), `alertSeverity` (`NORMAL`, `WARNING`, `CRITICAL`), and `recordedAt`.
+  - Service: `OxygenTelemetryService.java` with automatic threshold evaluation:
+    - CRITICAL: Purity $< 90\%$ or Pressure $< 4.2\text{ bar}$.
+    - WARNING: Purity $< 93\%$ or Pressure $< 4.5\text{ bar}$.
+    - NORMAL: Purity $\ge 93\%$ and Pressure $\ge 4.5\text{ bar}$.
+  - Controller: `OxygenTelemetryController.java` (`POST /api/iot/oxygen-telemetry`, `GET /hospital/{hospitalId}`, `GET /alerts`).
+- **Frontend Telemetry Monitor**:
+  - Integrated in `frontend/components/triagenet/capacity-view.tsx` with dynamic purity progress bars, cryogenic pressure indicators, flow rate dials, nominal/critical pulse simulation, and real-time audio cues.
+
+---
+
+## 14. Phase 13: Acoustic Siren & Sound Beacon (Native Web Audio API Synthesizer)
+
+- **Architecture**: `frontend/lib/sound-beacon.ts`
+- **Zero-Dependency Native Synthesis**: Uses browser standard `AudioContext` with zero MP3, WAV, or remote audio dependencies:
+  - *Dual-Tone Ambulance Siren*: Alternating 750 Hz and 960 Hz square waves at 1.8 Hz modulation rate with rapid decay envelopes.
+  - *Critical SpO2 Vital Chime*: High-urgency 1200 Hz sinusoidal alert chime with 0.15s decay.
+  - *Hungarian Bed Allocation Harmonic Chord*: C5-E5-G5 sine wave triad arpeggio celebrating optimal bipartite matching.
+  - *Tactical Radio PTT Click*: High-frequency bandpass noise burst mimicking tactile push-to-talk squelch.
+- **TopBar Sound Beacon Controller**: Mute toggle with `localStorage` audio preference persistence mounted in `frontend/components/triagenet/top-bar.tsx`.
+
+---
+
+## 15. Phase 14: Ayushman Bharat Digital Mission (ABDM) / ABHA Patient Intake
+
+- **Architecture**:
+  - Entity/DTO: `AbdmProfileDto.java` containing `abhaNumber` (14-digit format), `abhaAddress`, `name`, `gender`, `dob`, `age`, `mobile`, `bloodGroup`, `chronicConditions`, `knownAllergies`, `ayushmanCardStatus`, and `verifiedAt`.
+  - Service: `AbdmIntegrationService.java` providing verified national health record mock engine, featuring authentic Jharkhand tribal leader preset for **Birsa Munda** (`12-3456-7890-1234`) and dynamic fallback verification.
+  - Controller: `AbdmController.java` (`POST /api/abdm/verify-abha`, `GET /patient/{abhaNumber}`).
+- **Frontline Intake Console**:
+  - Embedded in `frontend/components/triagenet/triage-queue-view.tsx` with 14-digit ABHA input, Birsa Munda 1-click test button, and automated clinical prefill of demographics, blood group, and medical history into the intake vitals form.
+
 
 

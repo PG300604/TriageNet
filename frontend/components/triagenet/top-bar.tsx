@@ -11,9 +11,12 @@ import {
   X,
   MapPin,
   BadgeCheck,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 
 import { useEffect, useRef, useState } from 'react'
+import { soundBeacon } from '@/lib/sound-beacon'
 import { ClinicianProfileModal } from './clinician-profile-modal'
 import { StaffApprovalModal } from '@/components/staff-approval-modal'
 
@@ -55,6 +58,19 @@ export function TopBar({
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [staffApprovalModalOpen, setStaffApprovalModalOpen] = useState(false)
+  const [soundMuted, setSoundMuted] = useState(false)
+
+  useEffect(() => {
+    setSoundMuted(soundBeacon.isMuted())
+  }, [])
+
+  const handleToggleSound = () => {
+    const next = soundBeacon.toggleMute()
+    setSoundMuted(next)
+    if (!next) {
+      soundBeacon.playRadioClick()
+    }
+  }
 
   // Auto-lock district selector if user is District CMO or Hospital Staff
   useEffect(() => {
@@ -256,6 +272,32 @@ export function TopBar({
           <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
           <span>Live Network Synced</span>
         </div>
+
+        {/* Phase 13: Acoustic Siren & Sound Beacon Toggle */}
+        <button
+          type="button"
+          onClick={handleToggleSound}
+          className={cn(
+            'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold transition-all shadow-2xs cursor-pointer',
+            soundMuted
+              ? 'border-stone-300 bg-stone-100 text-stone-500 hover:bg-stone-200'
+              : 'border-emerald-600/30 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20'
+          )}
+          title={
+            soundMuted
+              ? 'Acoustic Sound Beacon Muted (Click to Unmute)'
+              : 'Acoustic Sound Beacon Active (Phase 13: 108 Sirens & Vitals Chimes)'
+          }
+        >
+          {soundMuted ? (
+            <VolumeX className="size-3.5 text-stone-400" />
+          ) : (
+            <Volume2 className="size-3.5 text-emerald-700 animate-pulse" />
+          )}
+          <span className="hidden xl:inline text-[11px]">
+            {soundMuted ? 'Muted' : 'Acoustic Beacon'}
+          </span>
+        </button>
 
         {/* Physical Clinician Badge & Dual-Control Verification Desk */}
         {(user?.role === 'SUPER_ADMIN' ||

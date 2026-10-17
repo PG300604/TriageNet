@@ -1,2384 +1,2911 @@
 {
-    "openapi": "3.0.1",
-    "info": {
-        "title": "TriageNet Statewide Healthcare Resource Allocation & Routing API",
-        "description": "REST API specification for state-wide triage, Hungarian resource matching, Dijkstra routing, and 108 ambulance referrals across Jharkhand.",
-        "contact": {
-            "name": "Priyanshu Ghosh",
-            "url": "https://github.com/PG300604/TriageNet"
-        },
-        "version": "1.0.0"
+  "openapi": "3.0.1",
+  "info": {
+    "title": "TriageNet Statewide Healthcare Resource Allocation & Routing API",
+    "description": "REST API specification for state-wide triage, Hungarian resource matching, Dijkstra routing, and 108 ambulance referrals across Jharkhand.",
+    "contact": {
+      "name": "Priyanshu Ghosh",
+      "url": "https://github.com/PG300604/TriageNet"
     },
-    "servers": [
-        {
-            "url": "http://127.0.0.1",
-            "description": "Generated server url"
-        }
-    ],
-    "security": [
-        {
-            "bearerAuth": []
-        }
-    ],
-    "paths": {
-        "/api/referrals/{id}/status": {
-            "put": {
-                "tags": [
-                    "referral-controller"
-                ],
-                "operationId": "updateReferralStatus",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ReferralStatusUpdate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ReferralResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/triage-queue/{hospitalId}/step-time": {
-            "post": {
-                "tags": [
-                    "triage-queue-controller"
-                ],
-                "operationId": "stepSimulationTime",
-                "parameters": [
-                    {
-                        "name": "hospitalId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    },
-                    {
-                        "name": "minutes",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "number",
-                            "format": "double",
-                            "default": 7.0
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/QueueItemDto"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/triage-queue/execute-referral": {
-            "post": {
-                "tags": [
-                    "triage-queue-controller"
-                ],
-                "operationId": "executeReferral",
-                "parameters": [
-                    {
-                        "name": "patientId",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    },
-                    {
-                        "name": "toHospitalId",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    },
-                    {
-                        "name": "travelMinutes",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "number",
-                            "format": "double",
-                            "default": 12.0
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/TransferRequest"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/routing/optimal": {
-            "post": {
-                "tags": [
-                    "routing-controller"
-                ],
-                "operationId": "findOptimalHospital",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/OptimalRoutingRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OptimalRoutingResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/resources/transfer": {
-            "post": {
-                "tags": [
-                    "resource-controller"
-                ],
-                "operationId": "transferSupply",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TransferSupplyRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/referrals": {
-            "post": {
-                "tags": [
-                    "referral-controller"
-                ],
-                "operationId": "createReferral",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ReferralRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ReferralResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/patients": {
-            "get": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "getAllPatients",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Patient"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "registerPatient",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Patient"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Patient"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/patients/{id}/evaluate-vitals": {
-            "post": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "evaluateVitals",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ClinicalVitals"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SeverityResult"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/patients/{id}/discharge": {
-            "post": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "dischargePatient",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    },
-                    {
-                        "name": "reason",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "default": "Treatment Completed"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Patient"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/patients/score-vitals": {
-            "post": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "scoreVitalsStandalone",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ClinicalVitals"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SeverityResult"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/hospitals/seed": {
-            "post": {
-                "tags": [
-                    "hospital-controller"
-                ],
-                "operationId": "seedHospitals",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Hospital"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/shift/unlock": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "unlockShift",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ShiftUnlockRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/shift/lock": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "lockShift",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/shift/end": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "endShift",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/register": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "register",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RegisterRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/refresh": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "refresh",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/recovery/mnemonic": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "recoverWithMnemonic",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/MnemonicRecoveryRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/recovery/cmo-escrow": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "approveCmoEscrow",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CmoEscrowApprovalRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/recovery/backup-code": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "recoverWithBackupCode",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/BackupCodeRecoveryRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/logout": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "logout",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/login": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "login",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/LoginRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/2fa/verify": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "verify2fa",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TwoFactorVerifyRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/2fa/setup": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "setup2fa",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/TwoFactorSetupResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/2fa/confirm-setup": {
-            "post": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "confirm2faSetup",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/admin/staff/{id}/reject": {
-            "post": {
-                "tags": [
-                    "admin-staff-controller"
-                ],
-                "operationId": "rejectStaff",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/admin/staff/{id}/approve": {
-            "post": {
-                "tags": [
-                    "admin-staff-controller"
-                ],
-                "operationId": "approveStaff",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/triage-queue/{hospitalId}": {
-            "get": {
-                "tags": [
-                    "triage-queue-controller"
-                ],
-                "operationId": "getQueueForHospital",
-                "parameters": [
-                    {
-                        "name": "hospitalId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/QueueItemDto"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/triage-queue/referral-recommendation": {
-            "get": {
-                "tags": [
-                    "triage-queue-controller"
-                ],
-                "operationId": "getReferralRecommendation",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ReferralRecommendationDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/routing/matrix/{districtName}": {
-            "get": {
-                "tags": [
-                    "routing-controller"
-                ],
-                "operationId": "getDistrictDistanceMatrix",
-                "parameters": [
-                    {
-                        "name": "districtName",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/resources": {
-            "get": {
-                "tags": [
-                    "resource-controller"
-                ],
-                "operationId": "getAllResources",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Resource"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/referrals/recommendation": {
-            "get": {
-                "tags": [
-                    "referral-controller"
-                ],
-                "operationId": "getRecommendation",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ReferralRecommendationDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/referrals/active": {
-            "get": {
-                "tags": [
-                    "referral-controller"
-                ],
-                "operationId": "getActiveReferrals",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/ReferralResponse"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/patients/{id}": {
-            "get": {
-                "tags": [
-                    "patient-controller"
-                ],
-                "operationId": "getPatientById",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Patient"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/hospitals": {
-            "get": {
-                "tags": [
-                    "hospital-controller"
-                ],
-                "operationId": "getAllHospitals",
-                "parameters": [
-                    {
-                        "name": "district",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "includeTertiary",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": false
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Hospital"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/hospitals/{id}": {
-            "get": {
-                "tags": [
-                    "hospital-controller"
-                ],
-                "operationId": "getHospitalById",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Hospital"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/dashboard/state-overview": {
-            "get": {
-                "tags": [
-                    "dashboard-controller"
-                ],
-                "operationId": "getStateOverview",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StateOverviewDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/dashboard/district/{districtName}": {
-            "get": {
-                "tags": [
-                    "dashboard-controller"
-                ],
-                "operationId": "getDistrictDetails",
-                "parameters": [
-                    {
-                        "name": "districtName",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/status/{staffId}": {
-            "get": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "getStaffStatus",
-                "parameters": [
-                    {
-                        "name": "staffId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StaffStatusDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/shift/status": {
-            "get": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "getShiftStatus",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ShiftStatusResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/me": {
-            "get": {
-                "tags": [
-                    "auth-controller"
-                ],
-                "operationId": "getCurrentUser",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/admin/staff/pending": {
-            "get": {
-                "tags": [
-                    "admin-staff-controller"
-                ],
-                "operationId": "getPendingStaff",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "*/*": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PendingStaffDto"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "components": {
-        "schemas": {
-            "ReferralStatusUpdate": {
-                "required": [
-                    "status"
-                ],
-                "type": "object",
-                "properties": {
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "PENDING",
-                            "IN_TRANSIT",
-                            "COMPLETED",
-                            "CANCELLED"
-                        ]
-                    },
-                    "notes": {
-                        "type": "string"
-                    }
-                }
-            },
-            "ReferralResponse": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "patientId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fromHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "toHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "dispatchToken": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "PENDING",
-                            "IN_TRANSIT",
-                            "COMPLETED",
-                            "CANCELLED"
-                        ]
-                    },
-                    "reason": {
-                        "type": "string"
-                    },
-                    "requestedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
-            },
-            "QueueItemDto": {
-                "type": "object",
-                "properties": {
-                    "queueEntryId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "patientId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "patientName": {
-                        "type": "string"
-                    },
-                    "baseSeverity": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "effectivePriority": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "waitMinutes": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "presentingComplaint": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string"
-                    },
-                    "matchReason": {
-                        "type": "string"
-                    }
-                }
-            },
-            "TransferRequest": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "patientId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fromHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "toHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "routingAlgorithm": {
-                        "type": "string",
-                        "enum": [
-                            "DIJKSTRA",
-                            "MCMF"
-                        ]
-                    },
-                    "computedCost": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "PROPOSED",
-                            "APPROVED",
-                            "IN_TRANSIT",
-                            "COMPLETED",
-                            "REJECTED"
-                        ]
-                    },
-                    "requestedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
-            },
-            "ClinicalVitals": {
-                "type": "object",
-                "properties": {
-                    "spo2": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "heartRate": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "systolicBp": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "diastolicBp": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "temperature": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "respRate": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "age": {
-                        "type": "integer",
-                        "format": "int32"
-                    }
-                }
-            },
-            "OptimalRoutingRequest": {
-                "type": "object",
-                "properties": {
-                    "originLat": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "originLng": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "vitals": {
-                        "$ref": "#/components/schemas/ClinicalVitals"
-                    },
-                    "preferredDistrict": {
-                        "type": "string"
-                    },
-                    "requiresIcu": {
-                        "type": "boolean"
-                    },
-                    "requiresVentilator": {
-                        "type": "boolean"
-                    }
-                }
-            },
-            "HospitalDistanceEstimate": {
-                "type": "object",
-                "properties": {
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "hospitalName": {
-                        "type": "string"
-                    },
-                    "districtName": {
-                        "type": "string"
-                    },
-                    "facilityTier": {
-                        "type": "string"
-                    },
-                    "distanceKm": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "estimatedMinutes": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "availableGeneralBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "availableIcuBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "hasVentilator": {
-                        "type": "boolean"
-                    },
-                    "hasTraumaSurgery": {
-                        "type": "boolean"
-                    },
-                    "hasBloodBank": {
-                        "type": "boolean"
-                    },
-                    "latitude": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "longitude": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "suitabilityScore": {
-                        "type": "number",
-                        "format": "double"
-                    }
-                }
-            },
-            "OptimalRoutingResponse": {
-                "type": "object",
-                "properties": {
-                    "patientSeverity": {
-                        "$ref": "#/components/schemas/SeverityResult"
-                    },
-                    "totalCandidateHospitals": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "recommendedHospitals": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/HospitalDistanceEstimate"
-                        }
-                    },
-                    "topChoice": {
-                        "$ref": "#/components/schemas/HospitalDistanceEstimate"
-                    }
-                }
-            },
-            "SeverityResult": {
-                "type": "object",
-                "properties": {
-                    "score": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "riskTier": {
-                        "type": "string"
-                    },
-                    "sepsisWarning": {
-                        "type": "boolean"
-                    },
-                    "topFactor": {
-                        "type": "string"
-                    },
-                    "factorContributions": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "number",
-                            "format": "double"
-                        }
-                    }
-                }
-            },
-            "TransferSupplyRequest": {
-                "type": "object",
-                "properties": {
-                    "fromHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "toHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "resourceType": {
-                        "type": "string"
-                    },
-                    "quantity": {
-                        "type": "integer",
-                        "format": "int32"
-                    }
-                }
-            },
-            "ReferralRequest": {
-                "required": [
-                    "originHospitalId",
-                    "patientId",
-                    "reason",
-                    "resourceType",
-                    "targetHospitalId",
-                    "urgencyLevel"
-                ],
-                "type": "object",
-                "properties": {
-                    "patientId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "originHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "targetHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "reason": {
-                        "type": "string"
-                    },
-                    "resourceType": {
-                        "type": "string",
-                        "enum": [
-                            "BED",
-                            "ICU_BED",
-                            "VENTILATOR",
-                            "OXYGEN_BED",
-                            "SPECIALIST"
-                        ]
-                    },
-                    "urgencyLevel": {
-                        "type": "string"
-                    }
-                }
-            },
-            "Patient": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "age": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "presentingComplaint": {
-                        "type": "string"
-                    },
-                    "heartRate": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "systolicBp": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "spo2": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "bloodType": {
-                        "type": "string"
-                    },
-                    "requiredSpecialty": {
-                        "type": "string"
-                    },
-                    "admittedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "WAITING",
-                            "ASSIGNED",
-                            "TRANSFERRED",
-                            "DISCHARGED"
-                        ]
-                    }
-                }
-            },
-            "Hospital": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "shortCode": {
-                        "type": "string"
-                    },
-                    "region": {
-                        "type": "string"
-                    },
-                    "lat": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "lng": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "totalBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "usedBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "totalVentilators": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "usedVentilators": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "totalSpecialists": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "usedSpecialists": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "icuiCapacityRatio": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "districtName": {
-                        "type": "string"
-                    },
-                    "facilityTier": {
-                        "type": "string"
-                    },
-                    "totalGeneralBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "availableGeneralBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "totalIcuBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "availableIcuBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "hasVentilator": {
-                        "type": "boolean"
-                    },
-                    "hasTraumaSurgery": {
-                        "type": "boolean"
-                    },
-                    "hasBloodBank": {
-                        "type": "boolean"
-                    },
-                    "hasOxygenGenerator": {
-                        "type": "boolean"
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "ventsTotal": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "ventsUsed": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "specialistsUsed": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "specialistsTotal": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "bedsTotal": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "bedsUsed": {
-                        "type": "integer",
-                        "format": "int32"
-                    }
-                }
-            },
-            "ShiftUnlockRequest": {
-                "required": [
-                    "pin"
-                ],
-                "type": "object",
-                "properties": {
-                    "pin": {
-                        "pattern": "^\\d{4}$",
-                        "type": "string"
-                    }
-                }
-            },
-            "LoginResponse": {
-                "type": "object",
-                "properties": {
-                    "token": {
-                        "type": "string"
-                    },
-                    "type": {
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "email": {
-                        "type": "string"
-                    },
-                    "role": {
-                        "type": "string",
-                        "enum": [
-                            "HOSPITAL_STAFF",
-                            "HOSPITAL_ADMIN",
-                            "REGIONAL_COORDINATOR",
-                            "TRIAGE_NURSE",
-                            "AMBULANCE_DISPATCH",
-                            "DISTRICT_CMO",
-                            "STATE_HEALTH_DEPT",
-                            "SUPER_ADMIN"
-                        ]
-                    },
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "hospitalName": {
-                        "type": "string"
-                    },
-                    "districtName": {
-                        "type": "string"
-                    },
-                    "staffId": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "ACTIVE",
-                            "PENDING_VERIFICATION",
-                            "SUSPENDED",
-                            "REJECTED"
-                        ]
-                    },
-                    "refreshToken": {
-                        "type": "string"
-                    },
-                    "twoFactorRequired": {
-                        "type": "boolean"
-                    },
-                    "challengeToken": {
-                        "type": "string"
-                    },
-                    "shiftActive": {
-                        "type": "boolean"
-                    },
-                    "shiftDurationHours": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "screenLocked": {
-                        "type": "boolean"
-                    }
-                }
-            },
-            "RegisterRequest": {
-                "required": [
-                    "email",
-                    "name",
-                    "password"
-                ],
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "staffId": {
-                        "type": "string"
-                    },
-                    "desiredRole": {
-                        "type": "string"
-                    },
-                    "email": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "maxLength": 2147483647,
-                        "minLength": 8,
-                        "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+=\\[\\]{};:'\",.<>?/|`~]).{8,}$",
-                        "type": "string"
-                    },
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "role": {
-                        "type": "string",
-                        "deprecated": true,
-                        "enum": [
-                            "HOSPITAL_STAFF",
-                            "HOSPITAL_ADMIN",
-                            "REGIONAL_COORDINATOR",
-                            "TRIAGE_NURSE",
-                            "AMBULANCE_DISPATCH",
-                            "DISTRICT_CMO",
-                            "STATE_HEALTH_DEPT",
-                            "SUPER_ADMIN"
-                        ]
-                    }
-                }
-            },
-            "UserDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "email": {
-                        "type": "string"
-                    },
-                    "staffId": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "ACTIVE",
-                            "PENDING_VERIFICATION",
-                            "SUSPENDED",
-                            "REJECTED"
-                        ]
-                    },
-                    "role": {
-                        "type": "string",
-                        "enum": [
-                            "HOSPITAL_STAFF",
-                            "HOSPITAL_ADMIN",
-                            "REGIONAL_COORDINATOR",
-                            "TRIAGE_NURSE",
-                            "AMBULANCE_DISPATCH",
-                            "DISTRICT_CMO",
-                            "STATE_HEALTH_DEPT",
-                            "SUPER_ADMIN"
-                        ]
-                    },
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "hospitalName": {
-                        "type": "string"
-                    },
-                    "districtName": {
-                        "type": "string"
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "totpSecret": {
-                        "type": "string"
-                    },
-                    "qrUri": {
-                        "type": "string"
-                    },
-                    "recoveryMnemonic": {
-                        "type": "string"
-                    },
-                    "backupCodes": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "MnemonicRecoveryRequest": {
-                "required": [
-                    "email",
-                    "mnemonic",
-                    "newPassword"
-                ],
-                "type": "object",
-                "properties": {
-                    "email": {
-                        "type": "string"
-                    },
-                    "mnemonic": {
-                        "type": "string"
-                    },
-                    "newPassword": {
-                        "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+=\\[\\]{};:'\",.<>?/|`~]).{8,}$",
-                        "type": "string"
-                    }
-                }
-            },
-            "CmoEscrowApprovalRequest": {
-                "required": [
-                    "escrowReason",
-                    "targetStaffEmail"
-                ],
-                "type": "object",
-                "properties": {
-                    "targetStaffEmail": {
-                        "type": "string"
-                    },
-                    "escrowReason": {
-                        "type": "string"
-                    }
-                }
-            },
-            "BackupCodeRecoveryRequest": {
-                "required": [
-                    "backupCode",
-                    "email",
-                    "newPassword"
-                ],
-                "type": "object",
-                "properties": {
-                    "email": {
-                        "type": "string"
-                    },
-                    "backupCode": {
-                        "type": "string"
-                    },
-                    "newPassword": {
-                        "type": "string"
-                    }
-                }
-            },
-            "LoginRequest": {
-                "required": [
-                    "email",
-                    "password"
-                ],
-                "type": "object",
-                "properties": {
-                    "email": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "type": "string"
-                    }
-                }
-            },
-            "TwoFactorVerifyRequest": {
-                "required": [
-                    "challengeToken",
-                    "code"
-                ],
-                "type": "object",
-                "properties": {
-                    "challengeToken": {
-                        "type": "string"
-                    },
-                    "code": {
-                        "type": "string"
-                    },
-                    "shiftDurationHours": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "shiftPin": {
-                        "pattern": "^\\d{4}$",
-                        "type": "string"
-                    }
-                }
-            },
-            "TwoFactorSetupResponse": {
-                "type": "object",
-                "properties": {
-                    "secret": {
-                        "type": "string"
-                    },
-                    "qrUri": {
-                        "type": "string"
-                    },
-                    "recoveryMnemonic": {
-                        "type": "string"
-                    },
-                    "backupCodes": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "TwoFactorConfirmRequest": {
-                "required": [
-                    "code"
-                ],
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "pattern": "^\\d{6}$",
-                        "type": "string"
-                    }
-                }
-            },
-            "ReferralRecommendationDto": {
-                "type": "object",
-                "properties": {
-                    "fromHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "fromHospitalName": {
-                        "type": "string"
-                    },
-                    "toHospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "toHospitalName": {
-                        "type": "string"
-                    },
-                    "patientId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "patientName": {
-                        "type": "string"
-                    },
-                    "patientSeverity": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "travelMinutes": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "reason": {
-                        "type": "string"
-                    },
-                    "matchReason": {
-                        "type": "string"
-                    }
-                }
-            },
-            "Resource": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "hospitalId": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "BED",
-                            "ICU_BED",
-                            "VENTILATOR",
-                            "OXYGEN_BED",
-                            "SPECIALIST"
-                        ]
-                    },
-                    "subtype": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": [
-                            "AVAILABLE",
-                            "OCCUPIED",
-                            "RESERVED"
-                        ]
-                    },
-                    "lastUpdated": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
-            },
-            "DistrictSummaryDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "cmoName": {
-                        "type": "string"
-                    },
-                    "cmoPhone": {
-                        "type": "string"
-                    },
-                    "hospitalCount": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "totalBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "availableBeds": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "icuTotal": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "icuAvailable": {
-                        "type": "integer",
-                        "format": "int32"
-                    }
-                }
-            },
-            "StateOverviewDto": {
-                "type": "object",
-                "properties": {
-                    "stateName": {
-                        "type": "string"
-                    },
-                    "stateCode": {
-                        "type": "string"
-                    },
-                    "totalDistricts": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "totalHospitals": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "totalGeneralBeds": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "availableGeneralBeds": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "totalIcuBeds": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "availableIcuBeds": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "totalVentilators": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "averageCapacityUtilization": {
-                        "type": "number",
-                        "format": "double"
-                    },
-                    "districts": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/DistrictSummaryDto"
-                        }
-                    }
-                }
-            },
-            "StaffStatusDto": {
-                "type": "object",
-                "properties": {
-                    "staffId": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string"
-                    },
-                    "hospitalName": {
-                        "type": "string"
-                    },
-                    "role": {
-                        "type": "string"
-                    },
-                    "registeredAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
-            },
-            "ShiftStatusResponse": {
-                "type": "object",
-                "properties": {
-                    "shiftActive": {
-                        "type": "boolean"
-                    },
-                    "durationHours": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "startedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "expiresAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "remainingMinutes": {
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "locked": {
-                        "type": "boolean"
-                    }
-                }
-            },
-            "PendingStaffDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "staffId": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "email": {
-                        "type": "string"
-                    },
-                    "role": {
-                        "type": "string"
-                    },
-                    "hospitalId": {
-                        "type": "string"
-                    },
-                    "hospitalName": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string"
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
-            }
-        },
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
-            }
-        }
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
     }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/referrals/{id}/status": {
+      "put": {
+        "tags": [
+          "referral-controller"
+        ],
+        "operationId": "updateReferralStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralStatusUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/{hospitalId}/step-time": {
+      "post": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "stepSimulationTime",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "minutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double",
+              "default": 7.0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/recompute/{hospitalId}": {
+      "post": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "stepSimulationTime_1",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "minutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double",
+              "default": 7.0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/execute-referral": {
+      "post": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "executeReferral",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "toHospitalId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "travelMinutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double",
+              "default": 12.0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferRequest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routing/optimal": {
+      "post": {
+        "tags": [
+          "routing-controller"
+        ],
+        "operationId": "findOptimalHospital",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimalRoutingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimalRoutingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources/transfer": {
+      "post": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "transferSupply",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferSupplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources/hospital/{hospitalId}/assign": {
+      "post": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "assignResources",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentResultDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources/assign/{hospitalId}": {
+      "post": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "assignResources_1",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentResultDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals": {
+      "post": {
+        "tags": [
+          "referral-controller"
+        ],
+        "operationId": "createReferral",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals/auto-release": {
+      "post": {
+        "tags": [
+          "referral-controller"
+        ],
+        "operationId": "autoReleaseExpired",
+        "parameters": [
+          {
+            "name": "ttlMinutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 45
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients": {
+      "get": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "getAllPatients",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Patient"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "registerPatient",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Patient"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Patient"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients/{id}/evaluate-vitals": {
+      "post": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "evaluateVitals",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicalVitals"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeverityResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients/{id}/discharge": {
+      "post": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "dischargePatient",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "Treatment Completed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Patient"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients/score-vitals": {
+      "post": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "scoreVitalsStandalone",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicalVitals"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeverityResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/iot/oxygen-telemetry": {
+      "post": {
+        "tags": [
+          "oxygen-telemetry-controller"
+        ],
+        "operationId": "ingestTelemetry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OxygenTelemetryDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OxygenTelemetry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hospitals/seed": {
+      "post": {
+        "tags": [
+          "hospital-controller"
+        ],
+        "operationId": "seedHospitals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Hospital"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/shift/unlock": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "unlockShift",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShiftUnlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/shift/lock": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "lockShift",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/shift/end": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "endShift",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/recovery/mnemonic": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "recoverWithMnemonic",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MnemonicRecoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/recovery/cmo-escrow": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "approveCmoEscrow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CmoEscrowApprovalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/recovery/backup-code": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "recoverWithBackupCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupCodeRecoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/verify": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "verify2fa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwoFactorVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/setup": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "setup2fa",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorSetupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/confirm-setup": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "confirm2faSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff/{id}/reject": {
+      "post": {
+        "tags": [
+          "admin-staff-controller"
+        ],
+        "operationId": "rejectStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff/{id}/approve": {
+      "post": {
+        "tags": [
+          "admin-staff-controller"
+        ],
+        "operationId": "approveStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abdm/verify-abha": {
+      "post": {
+        "tags": [
+          "abdm-controller"
+        ],
+        "operationId": "verifyAbha",
+        "parameters": [
+          {
+            "name": "abhaNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbdmProfileDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/referral-recommendation": {
+      "get": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "getReferralRecommendation",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralRecommendationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/{hospitalId}": {
+      "get": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "getQueueForHospital",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/triage-queue/hospital/{hospitalId}": {
+      "get": {
+        "tags": [
+          "triage-queue-controller"
+        ],
+        "operationId": "getQueueForHospital_1",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routing/matrix/{districtName}": {
+      "get": {
+        "tags": [
+          "routing-controller"
+        ],
+        "operationId": "getDistrictDistanceMatrix",
+        "parameters": [
+          {
+            "name": "districtName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources": {
+      "get": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "getAllResources",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources/hospital/{hospitalId}": {
+      "get": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "getResourcesByHospital",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resources/{hospitalId}": {
+      "get": {
+        "tags": [
+          "resource-controller"
+        ],
+        "operationId": "getResourcesByHospital_1",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals/recommendation": {
+      "get": {
+        "tags": [
+          "referral-controller"
+        ],
+        "operationId": "getRecommendation",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralRecommendationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/referrals/active": {
+      "get": {
+        "tags": [
+          "referral-controller"
+        ],
+        "operationId": "getActiveReferrals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReferralResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients/{id}": {
+      "get": {
+        "tags": [
+          "patient-controller"
+        ],
+        "operationId": "getPatientById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Patient"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/iot/oxygen-telemetry/hospital/{hospitalId}": {
+      "get": {
+        "tags": [
+          "oxygen-telemetry-controller"
+        ],
+        "operationId": "getLatestForHospital",
+        "parameters": [
+          {
+            "name": "hospitalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OxygenTelemetry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/iot/oxygen-telemetry/alerts": {
+      "get": {
+        "tags": [
+          "oxygen-telemetry-controller"
+        ],
+        "operationId": "getActiveAlerts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OxygenTelemetry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hospitals": {
+      "get": {
+        "tags": [
+          "hospital-controller"
+        ],
+        "operationId": "getAllHospitals",
+        "parameters": [
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeTertiary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Hospital"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hospitals/{id}": {
+      "get": {
+        "tags": [
+          "hospital-controller"
+        ],
+        "operationId": "getHospitalById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hospital"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/state-overview": {
+      "get": {
+        "tags": [
+          "dashboard-controller"
+        ],
+        "operationId": "getStateOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StateOverviewDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/district/{districtName}": {
+      "get": {
+        "tags": [
+          "dashboard-controller"
+        ],
+        "operationId": "getDistrictDetails",
+        "parameters": [
+          {
+            "name": "districtName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/status/{staffId}": {
+      "get": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "getStaffStatus",
+        "parameters": [
+          {
+            "name": "staffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffStatusDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/shift/status": {
+      "get": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "getShiftStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/staff/pending": {
+      "get": {
+        "tags": [
+          "admin-staff-controller"
+        ],
+        "operationId": "getPendingStaff",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingStaffDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abdm/patient/{abhaNumber}": {
+      "get": {
+        "tags": [
+          "abdm-controller"
+        ],
+        "operationId": "lookupPatient",
+        "parameters": [
+          {
+            "name": "abhaNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbdmProfileDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReferralStatusUpdate": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "ReferralResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dispatchToken": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QueueItemDto": {
+        "type": "object",
+        "properties": {
+          "queueEntryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientName": {
+            "type": "string"
+          },
+          "baseSeverity": {
+            "type": "number",
+            "format": "double"
+          },
+          "effectivePriority": {
+            "type": "number",
+            "format": "double"
+          },
+          "waitMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "presentingComplaint": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "matchReason": {
+            "type": "string"
+          }
+        }
+      },
+      "TransferRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routingAlgorithm": {
+            "type": "string",
+            "enum": [
+              "DIJKSTRA",
+              "MCMF"
+            ]
+          },
+          "computedCost": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PROPOSED",
+              "APPROVED",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ClinicalVitals": {
+        "type": "object",
+        "properties": {
+          "spo2": {
+            "type": "number",
+            "format": "double"
+          },
+          "heartRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "systolicBp": {
+            "type": "number",
+            "format": "double"
+          },
+          "diastolicBp": {
+            "type": "number",
+            "format": "double"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "respRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OptimalRoutingRequest": {
+        "type": "object",
+        "properties": {
+          "originLat": {
+            "type": "number",
+            "format": "double"
+          },
+          "originLng": {
+            "type": "number",
+            "format": "double"
+          },
+          "vitals": {
+            "$ref": "#/components/schemas/ClinicalVitals"
+          },
+          "preferredDistrict": {
+            "type": "string"
+          },
+          "requiresIcu": {
+            "type": "boolean"
+          },
+          "requiresVentilator": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HospitalDistanceEstimate": {
+        "type": "object",
+        "properties": {
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalName": {
+            "type": "string"
+          },
+          "districtName": {
+            "type": "string"
+          },
+          "facilityTier": {
+            "type": "string"
+          },
+          "distanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "estimatedMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "availableGeneralBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableIcuBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasVentilator": {
+            "type": "boolean"
+          },
+          "hasTraumaSurgery": {
+            "type": "boolean"
+          },
+          "hasBloodBank": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "suitabilityScore": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "OptimalRoutingResponse": {
+        "type": "object",
+        "properties": {
+          "patientSeverity": {
+            "$ref": "#/components/schemas/SeverityResult"
+          },
+          "totalCandidateHospitals": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recommendedHospitals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HospitalDistanceEstimate"
+            }
+          },
+          "topChoice": {
+            "$ref": "#/components/schemas/HospitalDistanceEstimate"
+          }
+        }
+      },
+      "SeverityResult": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "riskTier": {
+            "type": "string"
+          },
+          "sepsisWarning": {
+            "type": "boolean"
+          },
+          "topFactor": {
+            "type": "string"
+          },
+          "factorContributions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        }
+      },
+      "TransferSupplyRequest": {
+        "type": "object",
+        "properties": {
+          "fromHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AssignmentResultDto": {
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientName": {
+            "type": "string"
+          },
+          "severityScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "assignedResourceType": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "matchReason": {
+            "type": "string"
+          }
+        }
+      },
+      "ReferralRequest": {
+        "required": [
+          "originHospitalId",
+          "patientId",
+          "reason",
+          "resourceType",
+          "targetHospitalId",
+          "urgencyLevel"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "originHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string",
+            "enum": [
+              "BED",
+              "ICU_BED",
+              "VENTILATOR",
+              "OXYGEN_BED",
+              "SPECIALIST"
+            ]
+          },
+          "urgencyLevel": {
+            "type": "string"
+          }
+        }
+      },
+      "Patient": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "presentingComplaint": {
+            "type": "string"
+          },
+          "heartRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "systolicBp": {
+            "type": "number",
+            "format": "double"
+          },
+          "spo2": {
+            "type": "number",
+            "format": "double"
+          },
+          "bloodType": {
+            "type": "string"
+          },
+          "requiredSpecialty": {
+            "type": "string"
+          },
+          "admittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "ASSIGNED",
+              "TRANSFERRED",
+              "DISCHARGED"
+            ]
+          }
+        }
+      },
+      "OxygenTelemetryDto": {
+        "type": "object",
+        "properties": {
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "psaOxygenPurity": {
+            "type": "number",
+            "format": "double"
+          },
+          "lmoTankPressureBar": {
+            "type": "number",
+            "format": "double"
+          },
+          "flowRateLpm": {
+            "type": "number",
+            "format": "double"
+          },
+          "capacityPercent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "OxygenTelemetry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "psaOxygenPurity": {
+            "type": "number",
+            "format": "double"
+          },
+          "lmoTankPressureBar": {
+            "type": "number",
+            "format": "double"
+          },
+          "flowRateLpm": {
+            "type": "number",
+            "format": "double"
+          },
+          "capacityPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "alertTriggered": {
+            "type": "boolean"
+          },
+          "alertSeverity": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Hospital": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shortCode": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lng": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usedBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVentilators": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usedVentilators": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSpecialists": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "usedSpecialists": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "icuiCapacityRatio": {
+            "type": "number",
+            "format": "double"
+          },
+          "districtName": {
+            "type": "string"
+          },
+          "facilityTier": {
+            "type": "string"
+          },
+          "totalGeneralBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableGeneralBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalIcuBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableIcuBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasVentilator": {
+            "type": "boolean"
+          },
+          "hasTraumaSurgery": {
+            "type": "boolean"
+          },
+          "hasBloodBank": {
+            "type": "boolean"
+          },
+          "hasOxygenGenerator": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "specialistsTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ventsUsed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "specialistsUsed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ventsTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bedsTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bedsUsed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ShiftUnlockRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "pattern": "^\\d{4}$",
+            "type": "string"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "HOSPITAL_STAFF",
+              "HOSPITAL_ADMIN",
+              "REGIONAL_COORDINATOR",
+              "TRIAGE_NURSE",
+              "AMBULANCE_DISPATCH",
+              "DISTRICT_CMO",
+              "STATE_HEALTH_DEPT",
+              "SUPER_ADMIN"
+            ]
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalName": {
+            "type": "string"
+          },
+          "districtName": {
+            "type": "string"
+          },
+          "staffId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING_VERIFICATION",
+              "SUSPENDED",
+              "REJECTED"
+            ]
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "twoFactorRequired": {
+            "type": "boolean"
+          },
+          "challengeToken": {
+            "type": "string"
+          },
+          "shiftActive": {
+            "type": "boolean"
+          },
+          "shiftDurationHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "screenLocked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "required": [
+          "email",
+          "name",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "staffId": {
+            "type": "string"
+          },
+          "desiredRole": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 2147483647,
+            "minLength": 8,
+            "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+=\\[\\]{};:'\",.<>?/|`~]).{8,}$",
+            "type": "string"
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "deprecated": true,
+            "enum": [
+              "HOSPITAL_STAFF",
+              "HOSPITAL_ADMIN",
+              "REGIONAL_COORDINATOR",
+              "TRIAGE_NURSE",
+              "AMBULANCE_DISPATCH",
+              "DISTRICT_CMO",
+              "STATE_HEALTH_DEPT",
+              "SUPER_ADMIN"
+            ]
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "staffId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PENDING_VERIFICATION",
+              "SUSPENDED",
+              "REJECTED"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "HOSPITAL_STAFF",
+              "HOSPITAL_ADMIN",
+              "REGIONAL_COORDINATOR",
+              "TRIAGE_NURSE",
+              "AMBULANCE_DISPATCH",
+              "DISTRICT_CMO",
+              "STATE_HEALTH_DEPT",
+              "SUPER_ADMIN"
+            ]
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalName": {
+            "type": "string"
+          },
+          "districtName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totpSecret": {
+            "type": "string"
+          },
+          "qrUri": {
+            "type": "string"
+          },
+          "recoveryMnemonic": {
+            "type": "string"
+          },
+          "backupCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MnemonicRecoveryRequest": {
+        "required": [
+          "email",
+          "mnemonic",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "mnemonic": {
+            "type": "string"
+          },
+          "newPassword": {
+            "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\-+=\\[\\]{};:'\",.<>?/|`~]).{8,}$",
+            "type": "string"
+          }
+        }
+      },
+      "CmoEscrowApprovalRequest": {
+        "required": [
+          "escrowReason",
+          "targetStaffEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "targetStaffEmail": {
+            "type": "string"
+          },
+          "escrowReason": {
+            "type": "string"
+          }
+        }
+      },
+      "BackupCodeRecoveryRequest": {
+        "required": [
+          "backupCode",
+          "email",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "backupCode": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginRequest": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "TwoFactorVerifyRequest": {
+        "required": [
+          "challengeToken",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "shiftDurationHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shiftPin": {
+            "pattern": "^\\d{4}$",
+            "type": "string"
+          }
+        }
+      },
+      "TwoFactorSetupResponse": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string"
+          },
+          "qrUri": {
+            "type": "string"
+          },
+          "recoveryMnemonic": {
+            "type": "string"
+          },
+          "backupCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TwoFactorConfirmRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "pattern": "^\\d{6}$",
+            "type": "string"
+          }
+        }
+      },
+      "AbdmProfileDto": {
+        "type": "object",
+        "properties": {
+          "abhaNumber": {
+            "type": "string"
+          },
+          "abhaAddress": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "bloodGroup": {
+            "type": "string"
+          },
+          "allergies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chronicConditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "emergencyContact": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReferralRecommendationDto": {
+        "type": "object",
+        "properties": {
+          "fromHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromHospitalName": {
+            "type": "string"
+          },
+          "toHospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toHospitalName": {
+            "type": "string"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientName": {
+            "type": "string"
+          },
+          "patientSeverity": {
+            "type": "number",
+            "format": "double"
+          },
+          "travelMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "matchReason": {
+            "type": "string"
+          }
+        }
+      },
+      "Resource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hospitalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "BED",
+              "ICU_BED",
+              "VENTILATOR",
+              "OXYGEN_BED",
+              "SPECIALIST"
+            ]
+          },
+          "subtype": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "OCCUPIED",
+              "RESERVED"
+            ]
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DistrictSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cmoName": {
+            "type": "string"
+          },
+          "cmoPhone": {
+            "type": "string"
+          },
+          "hospitalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableBeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "icuTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "icuAvailable": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StateOverviewDto": {
+        "type": "object",
+        "properties": {
+          "stateName": {
+            "type": "string"
+          },
+          "stateCode": {
+            "type": "string"
+          },
+          "totalDistricts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalHospitals": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalGeneralBeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "availableGeneralBeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalIcuBeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "availableIcuBeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalVentilators": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageCapacityUtilization": {
+            "type": "number",
+            "format": "double"
+          },
+          "districts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistrictSummaryDto"
+            }
+          }
+        }
+      },
+      "StaffStatusDto": {
+        "type": "object",
+        "properties": {
+          "staffId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "hospitalName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ShiftStatusResponse": {
+        "type": "object",
+        "properties": {
+          "shiftActive": {
+            "type": "boolean"
+          },
+          "durationHours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "remainingMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PendingStaffDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "staffId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "hospitalId": {
+            "type": "string"
+          },
+          "hospitalName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
 }

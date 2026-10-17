@@ -18,8 +18,14 @@ import {
   Stethoscope,
   ChevronRight,
   Sparkles,
+  Gauge,
+  Radio,
+  CheckCircle2,
+  Droplets,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { apiClient } from '@/lib/api-client'
+import { soundBeacon } from '@/lib/sound-beacon'
 
 interface CapacityViewProps {
   state: TriageState
@@ -92,6 +98,53 @@ export function CapacityView({
   // Arc of 24 segments (180 degree semi-circle)
   const numSegments = 24
   const activeSegments = Math.round((occupancyPercent / 100) * numSegments)
+
+  // Phase 11: Real-time IoT Oxygen & Cryogenic Telemetry State
+  const [telemetryPurity, setTelemetryPurity] = React.useState(94.8)
+  const [telemetryPressure, setTelemetryPressure] = React.useState(4.8)
+  const [telemetryFlowRate, setTelemetryFlowRate] = React.useState(175.0)
+  const [telemetryCapacity, setTelemetryCapacity] = React.useState(82.0)
+  const [telemetryAlert, setTelemetryAlert] = React.useState<'NORMAL' | 'WARNING' | 'CRITICAL'>('NORMAL')
+  const [isTransmittingTelemetry, setIsTransmittingTelemetry] = React.useState(false)
+
+  const handleIngestTelemetryPulse = async (simulatedSeverity?: 'NORMAL' | 'CRITICAL') => {
+    setIsTransmittingTelemetry(true)
+    const isCrit = simulatedSeverity === 'CRITICAL'
+    const nextPurity = isCrit ? 88.5 : +(93.0 + Math.random() * 3.0).toFixed(1)
+    const nextPressure = isCrit ? 3.9 : +(4.4 + Math.random() * 0.8).toFixed(2)
+    const nextFlow = +(150 + Math.random() * 40).toFixed(0)
+    const nextCap = isCrit ? 24.0 : +(70 + Math.random() * 20).toFixed(0)
+
+    setTelemetryPurity(nextPurity)
+    setTelemetryPressure(nextPressure)
+    setTelemetryFlowRate(nextFlow)
+    setTelemetryCapacity(nextCap)
+
+    const status = isCrit ? 'CRITICAL' : nextPressure < 4.5 || nextPurity < 93 ? 'WARNING' : 'NORMAL'
+    setTelemetryAlert(status)
+
+    if (status === 'CRITICAL') {
+      soundBeacon.playCriticalVitalsChime()
+    } else {
+      soundBeacon.playRadioClick()
+    }
+
+    try {
+      if (selectedHospital?.id) {
+        await apiClient.ingestOxygenTelemetry({
+          hospitalId: selectedHospital.id,
+          psaOxygenPurity: nextPurity,
+          lmoTankPressureBar: nextPressure,
+          flowRateLpm: nextFlow,
+          capacityPercent: nextCap,
+        })
+      }
+    } catch {
+      // Backend unavailable or simulated mode - state updated locally
+    } finally {
+      setIsTransmittingTelemetry(false)
+    }
+  }
 
   return (
     <div className="space-y-6 font-sans text-[#2c1b0e]">
@@ -419,6 +472,108 @@ export function CapacityView({
             <span className="font-semibold text-stone-600 font-mono text-[11px]">
               Waitlist: {waitingPatientsCount} Queued · Avg {avgWaitTillAssigned}m Turnaround
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Phase 11: Real-Time PSA Oxygen Plant & Critical IoT Telemetry Monitor */}
+      <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+              <Wind className="size-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#382416] flex items-center gap-2">
+                <span>Phase 11: Real-Time PSA Oxygen & IoT Telemetry</span>
+                <span className="rounded-full bg-teal-100/70 border border-teal-300 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+                  {selectedHospital?.name || 'Selected Facility'}
+                </span>
+              </h3>
+              <p className="text-[11px] text-stone-500">
+                Continuous PSA purity analyzer, cryogenic pressure transducers & emergency flow monitoring
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold shadow-2xs',
+                telemetryAlert === 'CRITICAL'
+                  ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse'
+                  : telemetryAlert === 'WARNING'
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              )}
+            >
+              <Radio className="size-3 animate-ping" />
+              <span>{telemetryAlert === 'CRITICAL' ? 'CRITICAL O2 DEFICIT' : telemetryAlert === 'WARNING' ? 'WARNING: LOW PRESSURE' : 'NOMINAL PSA HEALTH'}</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={() => handleIngestTelemetryPulse('NORMAL')}
+              disabled={isTransmittingTelemetry}
+              className="rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 px-3 py-1.5 text-xs font-bold text-stone-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            >
+              Pulse Nominal
+            </button>
+            <button
+              type="button"
+              onClick={() => handleIngestTelemetryPulse('CRITICAL')}
+              disabled={isTransmittingTelemetry}
+              className="rounded-xl bg-rose-500 hover:bg-rose-600 px-3 py-1.5 text-xs font-bold text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            >
+              Simulate Failure
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Telemetry Metrics */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
+            <div className="flex items-center justify-between text-stone-500 text-[11px] font-semibold">
+              <span>PSA O2 PURITY</span>
+              <Gauge className="size-3.5 text-teal-600" />
+            </div>
+            <p className={cn("mt-2 text-2xl font-extrabold tracking-tight", telemetryPurity < 90 ? "text-rose-600" : telemetryPurity < 93 ? "text-amber-600" : "text-stone-900")}>
+              {telemetryPurity}%
+            </p>
+            <span className="text-[10px] text-stone-500 font-medium">Standard: 93% ± 3% (ISO 10083)</span>
+          </div>
+
+          <div className="rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
+            <div className="flex items-center justify-between text-stone-500 text-[11px] font-semibold">
+              <span>LMO CRYOGENIC PRESSURE</span>
+              <Droplets className="size-3.5 text-cyan-600" />
+            </div>
+            <p className={cn("mt-2 text-2xl font-extrabold tracking-tight", telemetryPressure < 4.2 ? "text-rose-600" : telemetryPressure < 4.5 ? "text-amber-600" : "text-stone-900")}>
+              {telemetryPressure} bar
+            </p>
+            <span className="text-[10px] text-stone-500 font-medium">Normal Range: 4.5 – 5.5 bar</span>
+          </div>
+
+          <div className="rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
+            <div className="flex items-center justify-between text-stone-500 text-[11px] font-semibold">
+              <span>FLOW CONSUMPTION</span>
+              <Activity className="size-3.5 text-indigo-600" />
+            </div>
+            <p className="mt-2 text-2xl font-extrabold tracking-tight text-stone-900">
+              {telemetryFlowRate} LPM
+            </p>
+            <span className="text-[10px] text-stone-500 font-medium">Peak High-Flow ICU Delivery</span>
+          </div>
+
+          <div className="rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
+            <div className="flex items-center justify-between text-stone-500 text-[11px] font-semibold">
+              <span>CRYOGENIC RESERVE</span>
+              <CheckCircle2 className="size-3.5 text-emerald-600" />
+            </div>
+            <p className={cn("mt-2 text-2xl font-extrabold tracking-tight", telemetryCapacity < 30 ? "text-rose-600" : "text-stone-900")}>
+              {telemetryCapacity}%
+            </p>
+            <span className="text-[10px] text-stone-500 font-medium">Automated Surge Reorder: 25%</span>
           </div>
         </div>
       </div>

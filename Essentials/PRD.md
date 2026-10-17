@@ -167,10 +167,31 @@ Without automated state-wide coordination:
 ### Module F20 — Multi-Corridor Bypass Routing, AI Specialist Traffic Diversion & SVG Topology Patient Flow
 - **Multi-Corridor Highway Selection**: Real-time toggle between Route 1 (Primary Highway) and Route 2 (Express Bypass), with live calculation of distance and delay deltas.
 - **Dynamic Specialist Traffic Diversion**: When severe gridlock (+10m delay) blocks the primary apex facility, the AI dynamically evaluates alternative hospitals with verified on-duty specialists, presenting an urgent diversion recommendation banner with a 1-click divert action.
-### Module F21 — Phase 9.7: Inter-District Patient Referral & Cross-Boundary Transfer Protocol
+#### Module F21 — Phase 9.7: Inter-District Patient Referral & Cross-Boundary Transfer Protocol
 - **Cross-District Bed Hold TTL Engine**: 45-minute automatic reservation TTL (`autoReleaseExpiredReferrals`) preventing resource starvation at receiving tertiary trauma facilities. If an ambulance is delayed or fails to arrive, the bed reservation is auto-released back to general availability, transitioning transfer request status to `REJECTED` and reverting the patient to `WAITING` status at the originating hospital.
 - **Automated Sweep & Manual Override**: 60-second `@Scheduled` background worker continually enforces TTL expiration across all active transfers (`PROPOSED`, `IN_TRANSIT`), paired with an authorized REST endpoint (`POST /api/referrals/auto-release`) for on-demand audit and triage reconciliation.
 - **Frontend ApiClient & Multi-Tenant Support**: Full integration in frontend `ApiClient.autoReleaseExpiredReferrals()` and role-based permissions (`AMBULANCE_DISPATCH`, `HOSPITAL_ADMIN`, `DISTRICT_CMO`, `STATE_HEALTH_DEPT`, `SUPER_ADMIN`).
+
+### Module F22 — Phase 11: Real-Time Bed & PSA Oxygen Plant IoT Telemetry Monitor
+- **PSA Generator & Cryogenic LMO Tank Telemetry**: Ingests high-frequency IoT sensor telemetry (`psaOxygenPurity`, `lmoTankPressureBar`, `flowRateLpm`, `capacityPercent`) with automatic threshold evaluation.
+- **Dynamic Clinical Severity Alerts**:
+  - `CRITICAL`: Purity $< 90\%$ or Pressure $< 4.2\text{ bar}$.
+  - `WARNING`: Purity $< 93\%$ or Pressure $< 4.5\text{ bar}$.
+  - `NORMAL`: Purity $\ge 93\%$ and Pressure $\ge 4.5\text{ bar}$.
+- **Interactive UI Dashboard**: Embedded in `CapacityView` (`frontend/components/triagenet/capacity-view.tsx`) with dynamic purity progress meters, cryogenic tank level visualizers, nominal/critical pulse simulation, and real-time audio cues.
+
+### Module F23 — Phase 13: Acoustic Siren & Sound Beacon (Native Web Audio API Synthesizer)
+- **Zero MP3 / Zero External Asset Synthesizer**: Pure native Web Audio API synthesizer (`frontend/lib/sound-beacon.ts`) producing crisp, latency-free tactical audio cues:
+  - *108 Emergency Dual-Tone Siren*: 750 Hz / 960 Hz alternating square wave for ambulance mobilization and traffic preemption.
+  - *SpO2 Critical Vitals Warning Chime*: 1200 Hz pulsed warning tone for rapid patient crash identification.
+  - *Hungarian Match Harmonic Triad Arpeggio*: C5-E5-G5 sine wave chord progression celebrating optimal bipartite bed allocation.
+  - *Tactical Radio PTT Click*: Quick radio squelch burst confirming dispatcher commands.
+- **Universal TopBar Mute Controller**: Accessible from header across all roles with persistent `localStorage` audio preference state.
+
+### Module F24 — Phase 14: Ayushman Bharat Digital Mission (ABDM) / ABHA Patient Intake Integration
+- **National ABHA Verification Engine**: REST endpoints (`POST /api/abdm/verify-abha`, `GET /patient/{abhaNumber}`) validating 14-digit citizen ABHA health IDs against India's digital health stack.
+- **Pre-Configured Jharkhand Cultural Preset**: Built-in 1-click test preset for legendary tribal leader **Birsa Munda** (`12-3456-7890-1234`) with complete verified clinical profile and Ayushman Bharat PM-JAY gold card coverage.
+- **Automated Clinical Intake Prefill**: Directly injects patient demographics, age, gender, blood group, chronic conditions, and known allergies into frontline nurse intake vitals.
 
 ---
 
@@ -196,5 +217,7 @@ Without automated state-wide coordination:
 
 ## 9. Launch & Shipping Readiness Status
 
-- **Promotional Artifacts**: Master 4K 60FPS Apple Keynote Explainer Video (ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4, 3840x2160 @ 60 FPS, 113.00s) verified and ready for public showcase.
-- **Production DevOps Target**: Multi-tier Docker Compose containerization across Spring Boot 3.3 (Java 17), Next.js 15, PostgreSQL 16, Redis 7, and Nginx.
+- **Promotional Artifacts**: Master 4K 60FPS Apple Keynote Explainer Video (`video_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4`, 3840x2160 @ 60 FPS, 113.00s) verified and ready for public showcase.
+- **Production DevOps Target**: Multi-tier Docker Compose containerization across Spring Boot 3.3 (Java 17), Next.js 16, PostgreSQL 16, Redis 7, and Nginx reverse proxy.
+- **Phases 1-14 Complete**: Core algorithms, 108 CAD, Motion Graphics, PSA Oxygen IoT, Sound Beacon, and ABDM verified with 81/81 backend tests passing and 0 frontend errors.
+

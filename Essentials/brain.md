@@ -98,7 +98,7 @@ This file serves as the standing, persistent context for the AI coding agent (**
 2. **Explainability**: Every score, queue re-ranking, resource assignment, and spatial routing decision must return a clear, human-readable breakdown of contributing factors.
 3. **RBAC Scope Locking**: Ensure role boundaries are enforced strictly across both UI navigation and backend API endpoints with method-level `@PreAuthorize`.
 4. **Deployability & Parity**: Maintain Docker container parity (non-root `1001:1001`) for Spring Boot 3.3.13 backend and Next.js 16.4.1 frontend deployment with Redis 7-alpine and Nginx reverse proxy.
-5. **Continuous Integration**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (72/72), frontend Turbopack build, and Trivy offline security scanning.
+5. **Continuous Integration & Testing Gates**: Enforce 100% passing automated test and security gates in GitHub Actions (`.github/workflows/ci.yml`) covering backend tests (81/81 passing), frontend Turbopack build (20/20 routes), and Trivy offline security scanning.
 
 ---
 
@@ -111,26 +111,27 @@ TriageNet/
 │   ├── rules/                # devops-log-synchronization, phase-doc-synchronization, graphify
 │   ├── workflows/            # graphify workflow
 │   └── sync/                 # DEVOPS_LOG.md, DECISIONS.md, HANDOFF.md, LINUX_STATUS.md, WINDOWS_STATUS.md
-├── .github/                  # GitHub Actions CI/CD pipeline (ci.yml) and security trackers
+├── .github/                  # GitHub Actions CI/CD pipeline (ci.yml) and community profiles
 │   └── workflows/ci.yml      # Parallel Backend test, Frontend build, and Trivy security scans
 ├── nginx/                    # Reverse proxy configuration
 │   └── default.conf          # Location routing for /, /api/, /ws/, /_next/static/, /healthz, /v3/api-docs, /swagger-ui
-├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 72/72 tests)
+├── backend/                  # Java 17 + Spring Boot 3.3.13 backend (JJWT 0.12.5, non-root Docker UID 1001, 81/81 tests)
 │   └── src/main/java/com/triagenet/
-│       ├── config/           # SecurityConfig (CORS, CSP, HSTS, frameOptions), JwtAuthenticationFilter, CustomUserDetails
-│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, Dashboard, Admin
-│       ├── dto/              # Login, Register, User, Response, Referral, Shortage DTOs
+│       ├── config/           # SecurityConfig, JwtAuthenticationFilter, OpenApiConfig, CustomUserDetails
+│       ├── controller/       # Auth, Patient, Hospital, Resource, TriageQueue, Routing, Referral, OxygenTelemetry, Abdm, Dashboard, Admin
+│       ├── dto/              # Login, Register, User, Response, Referral, Shortage, OxygenTelemetry, AbdmProfile DTOs
 │       ├── engine/           # SeverityScorer, HungarianMatcher, DijkstraRouter
-│       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, StaffUser, ShiftSession, RefreshToken
-│       ├── repository/       # Spring Data JPA Repositories
-│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
+│       ├── entity/           # District, Hospital, Patient, SeverityScore, TriageQueueEntry, Resource, OxygenTelemetry, StaffUser, ShiftSession, RefreshToken
+│       ├── repository/       # Spring Data JPA Repositories (including OxygenTelemetryRepository)
+│       └── service/          # Patient, Hospital, TriageQueue, SpatialRouting, Referral, OxygenTelemetry, AbdmIntegration, Seed, Totp, MnemonicRecovery, ShiftSession, HospitalAuth, LoginAttempt, SecurityAudit
 ├── frontend/                 # React 19 + Next.js 16.4.1 (App Router / Turbopack) + Tailwind CSS + Lucide + Leaflet + PWA
-│   ├── app/                  # Route handlers, login onboarding wizard, recovery portal, sitemap, robots, manifest
-│   ├── components/triagenet/ # Capacity, Queue, Regional Network, Doctors Roster, Supplies Governance, Modals (Shortage, Pill Approval, Overviews)
-│   └── lib/                  # api-client, auth-context, jharkhand-data, predictive-supply-engine, triage-data
-├── mobile/                   # (Phase 3) Planned Flutter monorepo (108 Ambulance, Bedside Nurse, Command Monitor)
+│   ├── app/                  # 20 routes (/ambulance, /portal, /simulator, /downloads, /onboarding, /control, /dashboard, etc.)
+│   ├── components/triagenet/ # Capacity (PSA Oxygen IoT Monitor), Queue (ABHA Console), Regional Network, Doctors Roster, Supplies Governance, Modals
+│   └── lib/                  # api-client, auth-context, sound-beacon (Web Audio API), jharkhand-data, predictive-supply-engine, triage-data
+├── mobile/                   # (Phase 3) Flutter monorepo (108 Ambulance, Bedside Nurse, Command Monitor)
+├── android-app/              # Native Android companion wrapper with build-apk.ps1
 ├── ml/                       # Python ML training & 4-dataset benchmarking scripts
-└── scripts/                  # Scraping pipeline & Jharkhand JSON/TS data builders
+└── scripts/                  # deploy.sh, verify_system_integrity.py, scraping pipeline & Jharkhand builders
 ```
 
 ---
@@ -146,5 +147,15 @@ TriageNet/
 
 ## 7. Current Project State & Shipping Status (October 2026)
 
-- **Apple Keynote Video Release Completed**: Native 4K UHD 60FPS explainer video (ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4, 3840x2160, 60 FPS, 1:53 exact duration) with official Spring Boot branding and Java 17 LTS architecture.
-- **Tomorrow's Shipping Objective**: Final DevOps, Docker Compose containerization (Spring Boot 3.3, Next.js 15, PostgreSQL 16, Redis 7, Nginx), CI/CD verification, and public GitHub repository launch.
+- **Apple Keynote Video Release Completed**: Native 4K UHD 60FPS explainer video (`video_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4`, 3840x2160, 60 FPS, 1:53 exact duration) with official Spring Boot branding and Java 17 LTS architecture.
+- **Phases Completed & Verified**:
+  - Phase 1–10: Core Algorithms, RBAC, Emergency Triage, Spatial Map, 108 CAD, Motion Graphics, Staging Automation.
+  - Phase 11: Real-Time Bed & PSA Oxygen Plant IoT Telemetry Monitor (Entity, Service, Controller, Live Gauge Monitor).
+  - Phase 13: Acoustic Siren & Sound Beacon (Native Web Audio API synthesizer: 108 emergency sirens, critical vitals chimes, Hungarian chords).
+  - Phase 14: Ayushman Bharat Digital Mission (ABDM / ABHA Patient Intake Integration with 14-digit verification & clinical prefill).
+- **Quality & Test Gates**:
+  - Backend: **81 / 81 tests PASS** (`BUILD SUCCESS`, 0 failures, 0 errors).
+  - Frontend: 0 TypeScript errors, 20/20 routes compile cleanly with Turbopack.
+  - Containerization: 5/5 containers running and healthy (`triagenet-backend`, `triagenet-frontend`, `triagenet-db`, `triagenet-redis`, `triagenet-proxy`).
+  - OpenAPI 3.0 Contract: Documented in `backend/openapi.json` with 45+ REST endpoints.
+

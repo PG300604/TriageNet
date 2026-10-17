@@ -49,6 +49,7 @@ import {
 } from '@/lib/accident-hotspots'
 import { directorBridge, type DirectorEvent } from '@/lib/director-bridge'
 import { buildScenario } from '@/lib/triage-data'
+import { soundBeacon } from '@/lib/sound-beacon'
 
 export default function AmbulanceMobilePage() {
   const [selectedHotspot, setSelectedHotspot] = useState<AccidentHotspot>(ACCIDENT_HOTSPOTS[0])
@@ -190,6 +191,11 @@ export default function AmbulanceMobilePage() {
     const nextState = !greenWaveActive
     setGreenWaveActive(nextState)
     directorBridge.send({ type: 'TOGGLE_GREEN_WAVE', active: nextState })
+    if (nextState) {
+      soundBeacon.playDualToneSiren(2.4)
+    } else {
+      soundBeacon.playRadioClick()
+    }
     setLastActionMessage(
       nextState
         ? '⚡ 108 Green Wave Activated! Highway traffic signals preempted to green.'
@@ -200,6 +206,7 @@ export default function AmbulanceMobilePage() {
 
   const handleSelectDestination = (opt: CandidateHospitalEvaluation, modeLabel: string) => {
     setSelectedHospitalId(opt.hospitalId)
+    soundBeacon.playRadioClick()
     directorBridge.send({
       type: 'SELECT_DESTINATION_HOSPITAL',
       hospitalId: opt.hospitalId,
@@ -212,6 +219,8 @@ export default function AmbulanceMobilePage() {
 
   const handleDispatchAndPrealert = (opt: CandidateHospitalEvaluation) => {
     setIsTransmitting(true)
+    soundBeacon.playRadioClick()
+    soundBeacon.playDualToneSiren(1.8)
     directorBridge.send({
       type: 'DISPATCH_AMBULANCE_FROM_MOBILE',
       ambulanceNumber,
@@ -225,6 +234,7 @@ export default function AmbulanceMobilePage() {
 
     setTimeout(() => {
       setIsTransmitting(false)
+      soundBeacon.playAllocationChime()
       setLastActionMessage(
         `🚨 Trauma Bay Pre-Alert Broadcasted! Destination: ${opt.hospitalName} (ETA ${opt.effectiveEtaMin}m)`
       )
@@ -239,18 +249,21 @@ export default function AmbulanceMobilePage() {
       setSpo2(76)
       setSystolicBp(72)
       setHeartRate(148)
+      soundBeacon.playCriticalVitalsChime()
       setLastActionMessage('Vitals Preset: Severe Decompensation / Arrest Risk (GCS 7, SpO2 76%)')
     } else if (type === 'moderate') {
       setGcs(11)
       setSpo2(89)
       setSystolicBp(94)
       setHeartRate(118)
+      soundBeacon.playRadioClick()
       setLastActionMessage('Vitals Preset: Moderate Polytrauma (GCS 11, SpO2 89%)')
     } else {
       setGcs(14)
       setSpo2(98)
       setSystolicBp(120)
       setHeartRate(82)
+      soundBeacon.playRadioClick()
       setLastActionMessage('Vitals Preset: Stabilized Post-Resuscitation (GCS 14, SpO2 98%)')
     }
     setTimeout(() => setLastActionMessage(null), 4000)

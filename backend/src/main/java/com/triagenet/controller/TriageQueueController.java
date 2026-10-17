@@ -19,14 +19,14 @@ public class TriageQueueController {
     private final TriageQueueService triageQueueService;
     private final ReferralService referralService;
 
-    @GetMapping("/{hospitalId}")
+    @GetMapping({ "/{hospitalId}", "/hospital/{hospitalId}" })
     @PreAuthorize("hasAnyRole('TRIAGE_NURSE', 'HOSPITAL_STAFF', 'HOSPITAL_ADMIN', 'DISTRICT_CMO', 'STATE_HEALTH_DEPT', 'SUPER_ADMIN')")
     public ResponseEntity<List<TriageQueueService.QueueItemDto>> getQueueForHospital(@PathVariable UUID hospitalId) {
         return ResponseEntity.ok(triageQueueService.getQueueForHospital(hospitalId));
     }
 
-    @PostMapping("/{hospitalId}/step-time")
-    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'SUPER_ADMIN')")
+    @PostMapping({ "/{hospitalId}/step-time", "/recompute/{hospitalId}" })
+    @PreAuthorize("hasAnyRole('HOSPITAL_ADMIN', 'SUPER_ADMIN', 'TRIAGE_NURSE')")
     public ResponseEntity<List<TriageQueueService.QueueItemDto>> stepSimulationTime(
             @PathVariable UUID hospitalId,
             @RequestParam(defaultValue = "7.0") double minutes) {

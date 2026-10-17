@@ -108,7 +108,8 @@ These are the operational working rules for the AI coding agent (**Google Antigr
 
 
 
-- **Final DevOps & Shipping Sprint (Immediate Next Step)**:
-  - Multi-tier container build: ackend/Dockerfile (Java 17 Spring Boot 3.3), rontend/Dockerfile (Next.js 15 standalone).
-  - Production orchestration: docker-compose.yml with automated database migrations, Redis in-memory cache, and Nginx reverse proxy.
-  - Video showcase assets: ideo_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4 linked for public showcase.
+- **Final DevOps & Shipping Sprint Status**:
+  - Multi-tier container build: `backend/Dockerfile` (Java 17 Spring Boot 3.3.13), `frontend/Dockerfile` (Next.js 16.4.1 standalone).
+  - Production orchestration: `docker-compose.yml` with PostgreSQL 16 Alpine, Redis 7 Alpine in-memory cache, Spring Boot backend (81/81 tests passing), Next.js frontend (20/20 routes), and Nginx reverse proxy.
+  - Verification & Healthchecks: `http://localhost/healthz` (200 healthy), `http://localhost/v3/api-docs` (OpenAPI 3.0), and `http://localhost/swagger-ui/index.html`.
+  - Video showcase assets: `video_production/my-video/out/TRIAGENET_APPLE_KEYNOTE_4K_60FPS.mp4` linked for public showcase.

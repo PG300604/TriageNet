@@ -66,8 +66,8 @@
 - [ ] **Windows / All (Final Milestone)**: **Phase 10** — High-Impact Pure Motion Graphics & Product Launch Showcase (OBS Studio + Motion Canvas algorithm visuals + Remotion UI telemetry + DaVinci Resolve Free 4K master timeline).
 - [x] **Linux**: Refine Docker Compose with healthchecks, test containerized build with PostgreSQL 16.
 - [x] **Linux**: Setup initial GitHub Actions CI workflow (`.github/workflows/ci.yml`) for backend Maven test & frontend build verification (100% Green!).
-- [ ] **Linux / DevOps**: Script automated staging deployment (`scripts/deploy.sh`) for OCI Always Free ARM instance with Certbot TLS.
-- [ ] **Both**: Export OpenAPI specification from Spring Boot for mobile contract synchronization.
+- [x] **Linux / DevOps**: Script automated staging deployment (`scripts/deploy.sh`) for OCI Always Free ARM instance with Certbot TLS.
+- [x] **Both**: Export OpenAPI specification from Spring Boot for mobile contract synchronization (`backend/openapi.json`).
 
 
 ### [HANDOFF-003] — 2026-10-15: Linux DevOps Hardening, Hermes Coordination & 100% Green CI Complete
@@ -553,3 +553,18 @@ git status
      - Task 2: Hermes generated `scripts/verify_system_integrity.py` (Verified ✅, exits with code 0).
   6. Staging scripts: `scripts/deploy.sh`, `docker-compose.prod.yml`, and `nginx/ssl.conf` created and verified.
 
+
+---
+
+### [HANDOFF-017] — 2026-10-17: OpenAPI 3.0 Contract & Swagger UI Deployment Complete
+- **From**: Linux Agent (Google Antigravity & Hermes)
+- **To**: Windows Agent (Mobile/Full-Stack) & Public Repository
+- **Status**: `RESOLVED`
+- **Summary**:
+  1. Integrated `springdoc-openapi-starter-webmvc-ui:2.6.0` in `backend/pom.xml`.
+  2. Configured OpenAPI specifications and security scheme in `backend/src/main/java/com/triagenet/config/OpenApiConfig.java`.
+  3. Added proxy pass directives in `nginx/default.conf` and `nginx/ssl.conf` for `/v3/api-docs` and `/swagger-ui`.
+  4. Tested live endpoints:
+     - `http://localhost/v3/api-docs` (HTTP 200, 41 endpoints).
+     - `http://localhost/swagger-ui/index.html` (HTTP 200).
+  5. Exported formatted schema contract to `backend/openapi.json` for Flutter monorepo (`mobile/`) and Android companion app (`android-app/`).

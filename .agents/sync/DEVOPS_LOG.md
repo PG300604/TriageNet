@@ -1304,3 +1304,31 @@ Synchronized with Windows commit `3c4ae21` containing the complete 20-route fron
    - `docker-compose.prod.yml`: Production compose topology with OCI ARM limits and TLS cert mounts.
    - `nginx/ssl.conf`: Full TLS 1.3 / HTTP/2 reverse proxy configuration.
 
+---
+
+### [LOG-009] — 2026-10-17: OpenAPI 3.0 Integration, Swagger UI Proxying & Mobile Contract Export
+
+- **Timestamp**: `2026-10-17T13:06:00+05:30`
+- **Environment**: Linux (Fedora 44, `x86_64`)
+- **Operator / Agent**: Google Antigravity & Hermes Agent
+- **Scope / Category**: API Contract Synchronization, Documentation, Reverse Proxy Routing
+- **Status**: Completed & Verified
+
+#### Context & Objectives
+To enable seamless contract parity across Flutter (`mobile/`), Android (`android-app/`), and third-party health networks, SpringDoc OpenAPI 3.0 was integrated into Spring Boot 3.3.13, exposed through Nginx reverse proxy, and exported as a versioned static contract (`backend/openapi.json`).
+
+#### Actions Executed
+1. **SpringDoc OpenAPI Integration**:
+   - Added `org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0` to `backend/pom.xml`.
+   - Created `backend/src/main/java/com/triagenet/config/OpenApiConfig.java` with JWT Bearer authentication scheme and metadata.
+   - Permitted `/v3/api-docs/**` and `/swagger-ui/**` in `SecurityConfig.java`.
+2. **Nginx Reverse Proxy Updates**:
+   - Updated `nginx/default.conf` and `nginx/ssl.conf` to proxy `/v3/api-docs` and `/swagger-ui` to `backend_upstream`.
+3. **Container Build & Live Endpoint Verification**:
+   - Rebuilt `triagenet-backend` multi-stage Docker container.
+   - Verified live OpenAPI JSON endpoint (`http://localhost/v3/api-docs` -> HTTP 200, 41 endpoints).
+   - Verified live Swagger UI console (`http://localhost/swagger-ui/index.html` -> HTTP 200).
+4. **Mobile Contract Export**:
+   - Exported formatted contract to `backend/openapi.json` for consumption by Flutter and Android companion applications.
+
+

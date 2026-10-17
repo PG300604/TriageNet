@@ -131,6 +131,10 @@ public class SecurityConfig {
                     "/api/hospitals",
                     "/api/hospitals/**",
                     "/api/routing/optimal",
+                    "/v3/api-docs/**",
+                    "/v3/api-docs",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated();

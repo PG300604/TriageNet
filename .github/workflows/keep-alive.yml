@@ -2,7 +2,7 @@ name: Keep-Alive Health Ping
 
 on:
   schedule:
-    - cron: '*/14 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
 
       - name: Run keep_alive.py
         env:
-          TARGET_URL: ${{ vars.TARGET_URL || 'https://triagenet-frontend.onrender.com,https://triagenet-backend.onrender.com/api/traffic/itms/status' }}
-          PING_TIMEOUT: ${{ vars.PING_TIMEOUT || '60' }}
+          TARGET_URL: ${{ vars.TARGET_URL || 'https://triagenet-frontend.onrender.com/healthz,https://triagenet-backend.onrender.com/healthz' }}
+          PING_TIMEOUT: ${{ vars.PING_TIMEOUT || '120' }}
           PING_RETRIES: ${{ vars.PING_RETRIES || '3' }}
         run: python scripts/keep_alive.py

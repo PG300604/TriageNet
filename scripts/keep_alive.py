@@ -2,8 +2,8 @@
 """Keep-alive health ping script for TriageNet.
 
 Configurable via TARGET_URL (comma-separated URLs). Defaults to:
-  - http://localhost/healthz
-  - http://localhost/api/traffic/itms/status
+  - https://triagenet-frontend.onrender.com/healthz
+  - https://triagenet-backend.onrender.com/healthz
 
 Logs status code and latency with timeout and retry.
 """
@@ -14,10 +14,10 @@ import urllib.request
 from urllib.error import URLError
 
 DEFAULT_URLS = [
-    "http://localhost/healthz",
-    "http://localhost/api/traffic/itms/status",
+    "https://triagenet-frontend.onrender.com/healthz",
+    "https://triagenet-backend.onrender.com/healthz",
 ]
-TIMEOUT = int(os.getenv("PING_TIMEOUT", "60"))
+TIMEOUT = int(os.getenv("PING_TIMEOUT", "120"))
 RETRIES = int(os.getenv("PING_RETRIES", "3"))
 
 
@@ -35,18 +35,22 @@ def ping(url: str, timeout: int, retries: int) -> tuple[int, float]:
             last_exc = exc
             latency = (time.perf_counter() - start) * 1000
             print(f"[{url}] attempt {attempt}/{retries} returned HTTP {exc.code} (latency {latency:.2f}ms)")
-            if exc.code == 404 and url.rstrip("/").endswith("/healthz"):
+            if (exc.code == 404 or exc.code == 403) and url.rstrip("/").endswith("/healthz"):
                 base_url = url.rstrip("/")[:-len("/healthz")].rstrip("/")
-                fallback_url = (base_url if base_url else "") + "/"
-                try:
-                    f_req = urllib.request.Request(fallback_url, method="GET")
-                    f_req.add_header("User-Agent", "TriageNet-keep-alive/1.0")
-                    with urllib.request.urlopen(f_req, timeout=timeout) as f_resp:
-                        f_latency = (time.perf_counter() - start) * 1000
-                        print(f"[{url}] fallback to root {fallback_url} succeeded with HTTP {f_resp.status} ({f_latency:.2f}ms)")
-                        return f_resp.status, f_latency
-                except Exception as f_exc:
-                    print(f"[{url}] fallback attempt to {fallback_url} failed: {f_exc}")
+                fallback_candidates = [
+                    (base_url if base_url else "") + "/api/traffic/itms/status",
+                    (base_url if base_url else "") + "/",
+                ]
+                for fallback_url in fallback_candidates:
+                    try:
+                        f_req = urllib.request.Request(fallback_url, method="GET")
+                        f_req.add_header("User-Agent", "TriageNet-keep-alive/1.0")
+                        with urllib.request.urlopen(f_req, timeout=timeout) as f_resp:
+                            f_latency = (time.perf_counter() - start) * 1000
+                            print(f"[{url}] fallback to {fallback_url} succeeded with HTTP {f_resp.status} ({f_latency:.2f}ms)")
+                            return f_resp.status, f_latency
+                    except Exception as f_exc:
+                        print(f"[{url}] fallback to {fallback_url} failed: {f_exc}")
             if attempt < retries:
                 time.sleep(3)
         except Exception as exc:

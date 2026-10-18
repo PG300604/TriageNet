@@ -153,6 +153,8 @@ public class SecurityConfig {
                     auth.requestMatchers("/h2-console/**").permitAll();
                 }
                 auth.requestMatchers(
+                    "/healthz",
+                    "/api/health",
                     "/actuator/**",
                     "/api/actuator/**",
                     "/api/auth/**",

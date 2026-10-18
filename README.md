@@ -642,12 +642,6 @@ Every language, framework, and tool in TriageNet is selected for reliability and
 - **GitHub Actions**: Automated 3-job CI/CD pipeline (`ci.yml`) and health monitor (`keep-alive.yml`).
 - **Aqua Security Trivy**: Continuous vulnerability scanner reporting 0 critical CVEs.
 
-### 🎬 Media, Motion Graphics & Visualization
-- **Manim Community v0.22**: Mathematical animation engine generating diagram GIFs.
-- **Puppeteer Core & Chromium**: Headless frame renderer capturing 60 FPS HTML5 glassmorphic scenes.
-- **FFmpeg 9.0**: Ultra-fast lossless video encoding, palette generation, and audio muxing.
-- **DaVinci Resolve**: 4-track timeline editing, audio ducking, and master video assembly.
-
 ---
 
 ## 🚀 Quickstart & Deployment Guide

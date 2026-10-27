@@ -121,3 +121,6 @@ backups/db/
 release_artifacts/
 media/
 
+
+.dart_tool/
+
